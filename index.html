@@ -2,63 +2,293 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>БЕЗДНА — 3D Шахматы ULTIMATE</title>
+<title>БЕЗДНА — 3D Шахматы</title>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q183Y4K613"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-Q183Y4K613');
+</script>
+
+<!-- Counter.dev -->
+<script src="https://cdn.counter.dev/script.js" data-id="55535d28-be7e-43c3-8290-cf0181f5acc6" data-utcoffset="3"></script>
+
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #000; color: #0f0; }
-#intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%); display: flex; justify-content: center; align-items: center; z-index: 2000; flex-direction: column; }
-#intro-text { font-size: 16px; color: #0f0; text-shadow: 0 0 8px #0f0; line-height: 1.6; white-space: pre-wrap; text-align: center; margin-bottom: 30px; min-height: 100px; }
-.cursor { display: inline-block; width: 10px; height: 18px; background: #0f0; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 4px; }
+/* Базовые стили */
+body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #000; color: #0f0; transition: background 0.3s, color 0.3s; }
+
+/* ТЕМЫ ОФОРМЛЕНИЯ — ПОЛНОСТЬЮ МЕНЯЮТ ВСЕ ЦВЕТА */
+body.theme-matrix { background: #000; color: #0f0; }
+body.theme-matrix .game-ui, body.theme-matrix #history-panel, body.theme-matrix #mode-panel, body.theme-matrix #undo-panel { background: rgba(0,0,0,0.85); border-color: #0f0; color: #0f0; }
+body.theme-matrix .menu-btn { border-color: #0f0; color: #0f0; }
+body.theme-matrix .menu-btn:hover { background: #0f0; color: #000; }
+
+body.theme-classic { background: #f5e6c8; color: #4a2c1a; }
+body.theme-classic .game-ui, body.theme-classic #history-panel, body.theme-classic #mode-panel, body.theme-classic #undo-panel { background: rgba(245,230,200,0.9); border-color: #8b5a2b; color: #4a2c1a; }
+body.theme-classic .menu-btn { border-color: #8b5a2b; color: #4a2c1a; }
+body.theme-classic .menu-btn:hover { background: #8b5a2b; color: #f5e6c8; }
+
+body.theme-cosmos { background: #0a0a2a; color: #88aaff; }
+body.theme-cosmos .game-ui, body.theme-cosmos #history-panel, body.theme-cosmos #mode-panel, body.theme-cosmos #undo-panel { background: rgba(10,10,42,0.85); border-color: #88aaff; color: #88aaff; }
+body.theme-cosmos .menu-btn { border-color: #88aaff; color: #88aaff; }
+body.theme-cosmos .menu-btn:hover { background: #88aaff; color: #0a0a2a; }
+
+body.theme-gold { background: #1a1a0a; color: #ffd700; }
+body.theme-gold .game-ui, body.theme-gold #history-panel, body.theme-gold #mode-panel, body.theme-gold #undo-panel { background: rgba(26,26,10,0.85); border-color: #ffd700; color: #ffd700; }
+body.theme-gold .menu-btn { border-color: #ffd700; color: #ffd700; }
+body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
+
+/* Остальные стили меню и интерфейса — такие же, как в финальном коде */
+#main-menu {
+  position: fixed; top: 0; left: 0; width: 100%;
+  background: rgba(0,0,0,0.95); border-bottom: 1px solid #0f0;
+  padding: 6px 15px; z-index: 5000; display: flex; justify-content: center; gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Темы оформления */
+body.theme-matrix { background: #000; color: #0f0; }
+body.theme-classic { background: #f5e6c8; color: #4a2c1a; }
+body.theme-cosmos { background: #0a0a2a; color: #88aaff; }
+body.theme-gold { background: #1a1a0a; color: #ffd700; }
+
+/* КОМПАКТНОЕ МЕНЮ */
+#main-menu {
+  position: fixed; top: 0; left: 0; width: 100%;
+  background: rgba(0,0,0,0.95); border-bottom: 1px solid #0f0;
+  padding: 6px 15px; z-index: 5000; display: flex; justify-content: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.menu-btn {
+  background: transparent; color: #0f0; border: 1px solid #0f0; padding: 4px 12px;
+  font-family: 'Courier New', monospace; font-size: 13px; cursor: pointer;
+  text-shadow: 0 0 3px #0f0; transition: all 0.3s;
+  white-space: nowrap;
+}
+.menu-btn:hover, .menu-btn.active { background: #0f0; color: #000; box-shadow: 0 0 8px rgba(0,255,0,0.6); }
+
+#theme-selector {
+  position: fixed; top: 45px; right: 10px;
+  background: rgba(0,0,0,0.7); padding: 3px 8px; border-radius: 4px;
+  z-index: 5000; font-size: 10px;
+}
+#theme-selector select {
+  background: #111; color: #0f0; border: 1px solid #0f0;
+  font-family: monospace; padding: 2px 5px; margin-left: 5px; font-size: 10px;
+}
+
+/* Счётчик посещений (общее число) */
+#stats-panel {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.6);
+  color: #0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  z-index: 100;
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  border-left: 2px solid #0f0;
+  line-height: 1.4;
+}
+#stats-panel span { color: #f5d742; font-weight: bold; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+#intro-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 6000; flex-direction: column;
+}
+#intro-text {
+  font-size: 14px; color: #0f0; text-shadow: 0 0 5px #0f0;
+  line-height: 1.5; white-space: pre-wrap; text-align: center; margin-bottom: 20px; min-height: 80px;
+}
+.cursor { display: inline-block; width: 8px; height: 14px; background: #0f0; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 3px; }
 @keyframes blink { 50% { opacity: 0; } }
-#intro-actions { display: none; gap: 30px; }
-.intro-btn { background: transparent; color: #0f0; border: 2px solid #0f0; padding: 12px 30px; font-family: 'Courier New', monospace; font-size: 18px; cursor: pointer; text-shadow: 0 0 5px #0f0; box-shadow: 0 0 10px rgba(0,255,0,0.3); transition: all 0.3s; }
-.intro-btn:hover { background: #0f0; color: #000; box-shadow: 0 0 25px rgba(0,255,0,0.8); transform: scale(1.05); }
-#intro-subtitle { margin-top: 50px; font-size: 11px; color: #335533; letter-spacing: 3px; }
-.game-ui { position: absolute; background: rgba(0,0,0,0.85); color: #0f0; padding: 10px; font-family: 'Courier New', monospace; z-index: 100; border-radius: 5px; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
+#intro-actions { display: none; gap: 20px; }
+.intro-btn {
+  background: transparent; color: #0f0; border: 2px solid #0f0; padding: 8px 20px;
+  font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer;
+  text-shadow: 0 0 3px #0f0; box-shadow: 0 0 8px rgba(0,255,0,0.3); transition: all 0.3s;
+}
+.intro-btn:hover { background: #0f0; color: #000; box-shadow: 0 0 15px rgba(0,255,0,0.6); transform: scale(1.02); }
+#intro-subtitle { margin-top: 30px; font-size: 9px; color: #335533; letter-spacing: 2px; }
+
+.game-ui {
+  position: absolute; background: rgba(0,0,0,0.8); color: #0f0; padding: 6px 10px;
+  font-family: 'Courier New', monospace; z-index: 100; border-radius: 4px;
+  opacity: 0; pointer-events: none; transition: opacity 1.5s ease;
+  font-size: 11px;
+}
 .game-ui.visible { opacity: 1; pointer-events: auto; }
-#turn { top: 20px; right: 20px; color: gold; font-size: 16px; font-weight: bold; }
-#info { bottom: 20px; left: 260px; font-size: 13px; }
-#check { top: 60px; left: 260px; background: #aa0000; color: white; font-weight: bold; display: none; padding: 8px 16px; }
-#history-panel { top: 10px; left: 10px; width: 240px; border-left: 3px solid #0f0; max-height: 90vh; overflow-y: auto; }
-#history-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 5px; }
-#history-list { height: 200px; overflow-y: auto; font-size: 11px; margin-bottom: 10px; }
-#history-list div { padding: 3px 5px; border-bottom: 1px solid #222; }
+
+#turn { top: 10px; right: 10px; color: gold; font-size: 13px; font-weight: bold; }
+#mode-panel { top: 50px; right: 10px; text-align: center; min-width: 150px; padding: 6px; }
+#undo-panel { top: 180px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
+#history-panel { top: 10px; left: 10px; width: 200px; border-left: 2px solid #0f0; max-height: 85vh; overflow-y: auto; padding: 6px; }
+#info { bottom: 10px; left: 210px; font-size: 10px; }
+#check { top: 80px; left: 210px; background: #aa0000; color: white; font-weight: bold; display: none; padding: 4px 10px; font-size: 11px; }
+#camera-control { bottom: 10px; right: 10px; font-size: 8px; color: #555; text-align: right; }
+
+/* Модальные окна */
+#subscription-modal, #gift-modal, #network-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  justify-content: center;
+  align-items: center;
+  z-index: 7000;
+}
+#subscription-content, #gift-content, #network-content {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+  border: 3px solid gold;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  max-width: 400px;
+}
+#gift-content, #network-content { border-color: #0f0; }
+#subscription-title {
+  font-size: 22px;
+  color: gold;
+  margin-bottom: 15px;
+  text-shadow: 0 0 5px gold;
+}
+#subscription-message {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+#subscription-price {
+  font-size: 24px;
+  color: #f5d742;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+.subscription-btn, .gift-btn {
+  background: #111;
+  color: gold;
+  border: 2px solid gold;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  transition: all 0.3s;
+  margin: 0 8px;
+}
+.gift-btn { border-color: #0f0; color: #0f0; }
+.subscription-btn:hover, .gift-btn:hover { background: gold; color: #000; transform: scale(1.02); }
+#gift-input {
+  background: #222;
+  border: 1px solid #0f0;
+  color: #0f0;
+  padding: 8px;
+  width: 100%;
+  margin: 15px 0;
+  font-family: monospace;
+  font-size: 12px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.mode-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; margin: 0 2px 3px 0; transition: 0.2s; }
+.mode-btn.active { background: #0f0; color: #000; }
+#difficulty-panel { margin-top: 6px; padding-top: 5px; border-top: 1px solid #333; }
+#difficulty-slider { width: 100%; margin: 5px 0; cursor: pointer; }
+#difficulty-value { font-size: 10px; font-weight: bold; color: #f5d742; }
+#ai-status { font-size: 8px; color: #666; margin-top: 5px; }
+
+.control-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; transition: 0.2s; width: 100%; }
+.control-btn:hover { background: #0f0; color: #000; }
+.control-btn.disabled { opacity: 0.5; cursor: not-allowed; border-color: #666; color: #666; }
+.control-btn.disabled:hover { background: #111; color: #666; }
+
+#continue-btn { display: none; background: #0f0; color: #000; font-weight: bold; }
+
+#history-title { font-size: 11px; font-weight: bold; margin-bottom: 5px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 3px; }
+#history-list { height: 150px; overflow-y: auto; font-size: 9px; margin-bottom: 5px; }
+#history-list div { padding: 2px 3px; border-bottom: 1px solid #222; }
 .history-white { color: #f5d742; }
 .history-black { color: #88aaff; }
 .move-piece { color: #ffaa66; font-weight: bold; }
-#history-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-.history-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 11px; transition: 0.2s; }
+#history-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
+.history-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 9px; transition: 0.2s; }
 .history-btn:hover { background: #0f0; color: #000; }
-#mode-panel { top: 80px; right: 20px; text-align: center; min-width: 180px; }
-.mode-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 8px 16px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; margin: 0 3px 5px 0; transition: 0.2s; }
-.mode-btn.active { background: #0f0; color: #000; }
-#difficulty-panel { margin-top: 10px; padding-top: 8px; border-top: 1px solid #333; }
-#difficulty-slider { width: 100%; margin: 8px 0; cursor: pointer; }
-#difficulty-value { font-size: 12px; font-weight: bold; color: #f5d742; }
-#ai-status { font-size: 10px; color: #666; margin-top: 8px; }
-#camera-control { bottom: 20px; right: 20px; font-size: 10px; color: #555; text-align: right; }
+
+#promotion-modal {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 4000;
+}
+#promotion-content { background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%); border: 3px solid #0f0; border-radius: 12px; padding: 25px; text-align: center; box-shadow: 0 0 30px rgba(0,255,0,0.4); }
+#promotion-title { font-size: 18px; color: #0f0; margin-bottom: 20px; text-shadow: 0 0 5px #0f0; }
+.promotion-pieces { display: flex; gap: 15px; justify-content: center; }
+.promo-btn { width: 60px; height: 60px; background: #111; border: 2px solid #0f0; border-radius: 8px; cursor: pointer; font-size: 30px; transition: all 0.3s; }
+.promo-btn:hover { background: #0f0; transform: scale(1.05); box-shadow: 0 0 15px rgba(0,255,0,0.6); }
+
 #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 3000; }
-#result-content { background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%); border: 4px solid #0f0; border-radius: 20px; padding: 50px; text-align: center; box-shadow: 0 0 80px rgba(0,255,0,0.6), inset 0 0 80px rgba(0,255,0,0.1); max-width: 600px; animation: resultPulse 2s ease-in-out infinite; }
-@keyframes resultPulse { 0%, 100% { box-shadow: 0 0 80px rgba(0,255,0,0.6), inset 0 0 80px rgba(0,255,0,0.1); } 50% { box-shadow: 0 0 120px rgba(0,255,0,0.8), inset 0 0 120px rgba(0,255,0,0.2); } }
-#result-icon { font-size: 100px; margin-bottom: 20px; animation: trophyBounce 1s ease-in-out; }
-@keyframes trophyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-#result-title { font-size: 42px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; color: #0f0; text-shadow: 0 0 20px #0f0; }
-#result-message { font-size: 18px; color: #aaa; margin-bottom: 15px; line-height: 1.6; }
-#result-level { font-size: 24px; color: #f5d742; margin-bottom: 30px; font-weight: bold; text-shadow: 0 0 10px #f5d742; }
-#result-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-.result-btn { background: #111; color: #0f0; border: 2px solid #0f0; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; transition: all 0.3s; }
-.result-btn:hover { background: #0f0; color: #000; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,255,0,0.5); }
+#result-content { background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%); border: 4px solid #0f0; border-radius: 15px; padding: 30px; text-align: center; box-shadow: 0 0 50px rgba(0,255,0,0.5); max-width: 450px; animation: resultPulse 2s ease-in-out infinite; }
+@keyframes resultPulse { 0%, 100% { box-shadow: 0 0 50px rgba(0,255,0,0.5), inset 0 0 30px rgba(0,255,0,0.05); } 50% { box-shadow: 0 0 70px rgba(0,255,0,0.7), inset 0 0 50px rgba(0,255,0,0.1); } }
+#result-icon { font-size: 60px; margin-bottom: 15px; animation: trophyBounce 1s ease-in-out; }
+@keyframes trophyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+#result-title { font-size: 28px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; color: #0f0; text-shadow: 0 0 10px #0f0; }
+#result-message { font-size: 14px; color: #aaa; margin-bottom: 15px; line-height: 1.5; }
+#result-level { font-size: 16px; color: #f5d742; margin-bottom: 20px; font-weight: bold; text-shadow: 0 0 5px #f5d742; }
+#result-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+.result-btn { background: #111; color: #0f0; border: 2px solid #0f0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; transition: all 0.3s; }
+.result-btn:hover { background: #0f0; color: #000; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,255,0,0.3); }
 </style>
 </head>
 <body>
 
+<div id="theme-selector">
+  🎨 ТЕМА:
+  <select id="themeSelect" onchange="changeTheme(this.value)">
+    <option value="matrix">MATRIX</option>
+    <option value="classic">CLASSIC</option>
+    <option value="cosmos">COSMOS</option>
+    <option value="gold">GOLD</option>
+  </select>
+</div>
+
+<div id="main-menu">
+  <button class="menu-btn active" onclick="showPage('game')">🎮 Главная</button>
+  <button class="menu-btn" onclick="showPage('tutorial')">📖 Обучение</button>
+  <button class="menu-btn" onclick="showPage('rules')">📜 Правила</button>
+  <button class="menu-btn" onclick="showPage('about')">ℹ️ О проекте</button>
+  <button class="menu-btn" onclick="showSubscription()">💎 ПОДПИСКА</button>
+  <button class="menu-btn" onclick="showGift()">🎁 ПОДАРИТЬ</button>
+  <button class="menu-btn" onclick="showNetwork()">🌐 СЕТЕВАЯ ИГРА</button>
+</div>
+
+<div id="stats-panel">
+  🌍 ПОСЕТИТЕЛЕЙ: <span id="stats-total">0</span>
+</div>
+
+<div id="game-page" class="page active">
+
 <div id="intro-overlay">
-  <div id="intro-text"><span class="cursor"></span></div>
+  <div id="intro-text"></div>
   <div id="intro-actions">
     <button class="intro-btn" id="btn-yes">[ ДА ]</button>
     <button class="intro-btn" id="btn-no">[ НЕТ ]</button>
   </div>
-  <div id="intro-subtitle">3D CHESS ENGINE v5.4 // BEZDNA MODULE</div>
+  <div id="intro-subtitle">3D CHESS ENGINE // BEZDNA MODULE</div>
 </div>
 
 <div id="history-panel" class="game-ui">
@@ -82,6 +312,12 @@ body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; backg
   <div id="ai-status">🤖 AI: ЧЁРНЫЕ (ждёт хода)</div>
 </div>
 
+<div id="undo-panel" class="game-ui">
+  <button class="control-btn" id="undo-btn" onclick="undoMove()">↩️ Отменить ход</button>
+  <button class="control-btn" id="continue-btn" onclick="continueGame()">▶️ Продолжить</button>
+  <button class="control-btn" id="highlightBtn" onclick="highlightLastMove()">🔦 Подсветка</button>
+</div>
+
 <div id="camera-control" class="game-ui">
   🔄 ПКМ + drag: камера<br>
   🖱️ ЛКМ + drag: вращение
@@ -90,6 +326,18 @@ body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; backg
 <div id="turn" class="game-ui">⚪ ХОД БЕЛЫХ</div>
 <div id="check" class="game-ui">⚠️ ШАХ! ⚠️</div>
 <div id="info" class="game-ui">🎯 Клик по фигуре → зелёные шары → клик по шару</div>
+
+<div id="promotion-modal">
+  <div id="promotion-content">
+    <div id="promotion-title">ВЫБЕРИТЕ ФИГУРУ</div>
+    <div class="promotion-pieces">
+      <button class="promo-btn" onclick="promoteTo('queen')">♕</button>
+      <button class="promo-btn" onclick="promoteTo('rook')">♖</button>
+      <button class="promo-btn" onclick="promoteTo('bishop')">♗</button>
+      <button class="promo-btn" onclick="promoteTo('knight')">♘</button>
+    </div>
+  </div>
+</div>
 
 <div id="result-modal">
   <div id="result-content">
@@ -104,145 +352,159 @@ body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; backg
   </div>
 </div>
 
+<div id="subscription-modal">
+  <div id="subscription-content">
+    <div id="subscription-title">💎 ПРЕМИУМ ПОДПИСКА</div>
+    <div id="subscription-message">
+      Доступ к уровням КМС, МС, ГРОССМЕЙСТЕР и БОГ<br>
+      Сетевая игра (скоро)<br>
+      Турниры с призовым фондом $1,000,000
+    </div>
+    <div id="subscription-price">10 000 ₽ / год</div>
+    <button class="subscription-btn" onclick="buySubscription()">КУПИТЬ</button>
+    <button class="subscription-btn" onclick="closeSubscription()">ОТМЕНА</button>
+  </div>
+</div>
+
+<div id="gift-modal">
+  <div id="gift-content">
+    <div id="subscription-title">🎁 ПОДАРИТЬ ПОДПИСКУ</div>
+    <div id="subscription-message">Введите никнейм друга, чтобы подарить ему годовую подписку</div>
+    <input type="text" id="gift-input" placeholder="НИКНЕЙМ ДРУГА">
+    <button class="gift-btn" onclick="sendGift()">ПОДАРИТЬ</button>
+    <button class="gift-btn" onclick="closeGift()">ОТМЕНА</button>
+  </div>
+</div>
+
+<div id="network-modal">
+  <div id="network-content">
+    <div id="subscription-title">🌐 СЕТЕВАЯ ИГРА</div>
+    <div id="subscription-message">
+      ⚡ В РАЗРАБОТКЕ ⚡<br><br>
+      В будущем здесь будет:<br>
+      • Игра с друзьями по ссылке<br>
+      • Рейтинговая система<br>
+      • Турниры с призовым фондом $1,000,000
+    </div>
+    <button class="subscription-btn" onclick="closeNetwork()">ЗАКРЫТЬ</button>
+  </div>
+</div>
+
+</div>
+
+<div id="tutorial-page" class="page">
+  <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📖 ОБУЧЕНИЕ</h1>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🎯 Цель игры</h3><p style="font-size:13px;">Объявить мат королю противника.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📐 Трёхмерное поле</h3><p style="font-size:13px;">Поле 8×8×8: 8 по X (горизонталь), 8 по Y (вертикаль), 8 по Z (глубина).</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♟️ Как ходят фигуры</h3><p style="font-size:13px;">Пешки ходят вперёд по Z и Y, бьют по диагонали. Остальные фигуры ходят как в обычных шахматах, но в 3D.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🏰 Рокировка</h3><p style="font-size:13px;">Король перемещается на две клетки к ладье, ладья перепрыгивает.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">💎 Подписка</h3><p style="font-size:13px;">Уровни КМС, МС, Гроссмейстер и Бог доступны только по подписке (10 000 ₽/год).</p></div>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← Вернуться к игре</button>
+  </div>
+</div>
+
+<div id="rules-page" class="page">
+  <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📜 ПРАВИЛА</h1>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">Основные правила</h3><p style="font-size:13px;">Аналогичны классическим шахматам, но адаптированы для 3D-пространства.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">Отмена ходов</h3><p style="font-size:13px;">Доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД, 3 РАЗРЯД.</p></div>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← Вернуться к игре</button>
+  </div>
+</div>
+
+<div id="about-page" class="page">
+  <div style="padding:80px 30px;max-width:800px;margin:0 auto;text-align:center;">
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">ℹ️ О ПРОЕКТЕ</h1>
+    <p style="font-size:14px;line-height:1.6;margin-bottom:15px;"><strong>БЕЗДНА</strong> — трёхмерные шахматы 8×8×8<br>с искусственным интеллектом.</p>
+    <p style="font-size:12px;color:#888;margin-top:30px;">Three.js<br>© 2026</p>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:30px;">← Вернуться к игре</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-// ===== ПРОВЕРКА ДОМЕНА =====
-const allowedDomains = ['bezdnachess.com', 'bezdnachess.ru', 'www.bezdnachess.com', 'www.bezdnachess.ru', 'localhost', '127.0.0.1'];
-const currentHost = window.location.hostname;
-if (!allowedDomains.includes(currentHost)) {
-  document.body.innerHTML = '<div style="color:#0f0;font-family:monospace;text-align:center;margin-top:20vh;padding:20px;"><h1>⚠️ ДОСТУП ЗАПРЕЩЁН</h1><p>Это неофициальная копия.</p><p>Оригинал: <a href="https://bezdnachess.com" style="color:#0f0;text-decoration:underline;">bezdnachess.com</a></p></div>';
-  throw new Error('Unauthorized domain');
-}
+// ============================================================
+// БЕЗДНА — 3D ШАХМАТЫ (ФИНАЛЬНАЯ ВЕРСИЯ)
+// ============================================================
 
-let scene, camera, renderer, controls;
-let pieces = [];
-let selected = null;
-let turn = 'white';
-let moveHistory = [];
-let moveNumber = 1;
-let gameMode = 'ai';
-let aiThinking = false;
-let aiLevel = 5;
-let gameEnded = false;
-let isIntroActive = true;
-let hl, starField;
-let cinematicMode = false;
-let cinematicStartTime = 0;
-let audioContext = null;
-
-const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
-const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
-
-function playTypeSound() {
-  if(!audioContext) return;
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(200 + Math.random() * 100, audioContext.currentTime);
-  gain.gain.setValueAtTime(0.05, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-  osc.start(audioContext.currentTime);
-  osc.stop(audioContext.currentTime + 0.05);
-}
-
-function playMajesticChord() {
-  if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const freqs = [8.18, 16.35, 32.70, 65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51, 23.31, 46.25, 58.27];
-  const now = audioContext.currentTime;
-  const duration = 10.0;
-  freqs.forEach((freq, i) => {
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    if(i < 5) osc.type = 'sawtooth';
-    else if(i < 10) osc.type = 'square';
-    else if(i < 15) osc.type = 'sine';
-    else osc.type = 'triangle';
-    osc.frequency.value = freq;
-    const startTime = now + i * 0.1;
-    gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(0.25, startTime + 1.0);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  });
-  const convolver = audioContext.createConvolver();
-  const impulseLength = audioContext.sampleRate * 8;
-  const impulse = audioContext.createBuffer(2, impulseLength, audioContext.sampleRate);
-  for(let c=0;c<2;c++){const d=impulse.getChannelData(c);for(let i=0;i<impulseLength;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/impulseLength,2);}
-  convolver.buffer = impulse;
-}
-
-function initIntro() {
-  const textEl = document.getElementById('intro-text');
-  const actionsEl = document.getElementById('intro-actions');
-  const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА v5.4...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."];
-  function typeText(text, callback) {
-    textEl.innerHTML = '<span class="cursor"></span>';
-    let i = 0;
-    function type() {
-      if (i < text.length) {
-        playTypeSound();
-        textEl.innerHTML = text.substring(0, i+1) + '<span class="cursor"></span>';
-        i++;
-        setTimeout(type, 30 + Math.random()*20);
-      } else { if(callback) setTimeout(callback, 500); }
+// ------------------- СЧЁТЧИК ПОСЕТИТЕЛЕЙ (Counter.dev) -------------------
+async function loadVisitorCount() {
+  try {
+    const response = await fetch('https://api.counter.dev/stats/55535d28-be7e-43c3-8290-cf0181f5acc6');
+    const data = await response.json();
+    if (data && data.total) {
+      document.getElementById('stats-total').textContent = data.total.toLocaleString();
     }
-    playTypeSound();
-    type();
-  }
-  setTimeout(() => {
-    typeText(texts[0], () => {
-      setTimeout(() => { typeText(texts[1], () => { actionsEl.style.display = 'flex'; }); }, 800);
-    });
-  }, 500);
-  
-  document.getElementById('btn-yes').onclick = () => {
-    if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    actionsEl.style.display = 'none';
-    typeText(texts[2], () => {
-      playMajesticChord();
-      cinematicMode = true;
-      cinematicStartTime = Date.now();
-      setTimeout(() => {
-        document.getElementById('intro-overlay').style.opacity = '0';
-        setTimeout(() => {
-          document.getElementById('intro-overlay').style.display = 'none';
-          isIntroActive = false;
-          cinematicMode = false;
-          document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
-          if(controls) controls.enabled = true;
-        }, 2000);
-      }, 1000);
-    });
-  };
-  document.getElementById('btn-no').onclick = () => {
-    typeText("ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", () => { setTimeout(() => location.reload(), 1500); });
-  };
+  } catch(e) { console.log('Ошибка загрузки счётчика:', e); }
 }
 
-function addDeveloperStamp() {
-  // Base64 закодированная ссылка (защищено от простого копирования)
+// ------------------- ТЕМЫ ОФОРМЛЕНИЯ -------------------
+function changeTheme(theme) {
+  document.body.classList.remove('theme-matrix', 'theme-classic', 'theme-cosmos', 'theme-gold');
+  document.body.classList.add(`theme-${theme}`);
+  localStorage.setItem('bezna_theme', theme);
+}
+function loadTheme() {
+  const saved = localStorage.getItem('bezna_theme');
+  if (saved && ['matrix', 'classic', 'cosmos', 'gold'].includes(saved)) {
+    changeTheme(saved);
+    document.getElementById('themeSelect').value = saved;
+  }
+}
+
+// ------------------- ПОДПИСКА -------------------
+let hasSubscription = false;
+function loadSubscription() {
+  const saved = localStorage.getItem('bezna_subscription');
+  if (saved) {
+    const sub = JSON.parse(saved);
+    if (sub.expiry > Date.now()) hasSubscription = true;
+    else localStorage.removeItem('bezna_subscription');
+  }
+}
+function buySubscription() {
+  alert('💎 Демо-режим: подписка активирована!\nВ реальной версии здесь будет платёжный шлюз.');
+  hasSubscription = true;
+  localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 }));
+  closeSubscription();
+  updateUndoButton();
+  updateLevel();
+}
+function showSubscription() { document.getElementById('subscription-modal').style.display = 'flex'; }
+function closeSubscription() { document.getElementById('subscription-modal').style.display = 'none'; }
+function showGift() { document.getElementById('gift-modal').style.display = 'flex'; }
+function closeGift() { document.getElementById('gift-modal').style.display = 'none'; }
+function sendGift() {
+  const friend = document.getElementById('gift-input').value.trim();
+  if (friend) {
+    alert(`🎁 Подарок отправлен пользователю ${friend}!\nВ реальной версии здесь будет отправка подписки.`);
+    document.getElementById('gift-input').value = '';
+    closeGift();
+  } else alert('Введите никнейм друга');
+}
+function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; }
+function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
+
+function canUndo() { return aiLevel <= 4; }
+function updateUndoButton() {
+  const btn = document.getElementById('undo-btn');
+  if (canUndo()) { btn.classList.remove('disabled'); btn.disabled = false; }
+  else { btn.classList.add('disabled'); btn.disabled = true; }
+}
+function isPremiumLevel() { return aiLevel >= 7; }
+
+// ------------------- QR-КОД ДЛЯ ДОНАТОВ -------------------
+function addDonationQR() {
   const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3";
   const myLink = atob(encodedLink);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(myLink)}`;
-  
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}`;
   const loader = new THREE.TextureLoader();
   loader.load(qrUrl, function(texture) {
-    const geometry = new THREE.PlaneGeometry(0.9, 0.9);
-    const material = new THREE.MeshBasicMaterial({ 
-      map: texture, 
-      transparent: true, 
-      side: THREE.DoubleSide,
-      opacity: 0.95,
-      depthWrite: false,
-      renderOrder: 1
-    });
+    const geometry = new THREE.PlaneGeometry(0.7, 0.7);
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 });
     const qrPlane = new THREE.Mesh(geometry, material);
     qrPlane.position.set(-3.5, -4.05, -3.5);
     qrPlane.rotation.x = -Math.PI / 2;
@@ -250,516 +512,502 @@ function addDeveloperStamp() {
   });
 }
 
+// ------------------- AI С ГЛУБИНОЙ ПОИСКА (МИНИМАКС) -------------------
+function evaluateBoardForColor(color) {
+  let score = 0;
+  for (const p of pieces) {
+    const val = pieceValues[p.userData.type] || 0;
+    const multiplier = p.userData.color === color ? 1 : -1;
+    const posBonus = (4.5 - Math.abs(p.userData.z - 4.5)) * 0.1 + (4.5 - Math.abs(p.userData.y - 4.5)) * 0.1;
+    score += multiplier * (val + posBonus);
+  }
+  return score;
+}
+
+function minimax(depth, isMax, alpha, beta) {
+  if (depth === 0) return evaluateBoardForColor('black');
+  
+  const color = isMax ? 'black' : 'white';
+  const allMoves = [];
+  for (const p of pieces.filter(p => p.userData.color === color)) {
+    for (const m of getAllMoves(p)) {
+      allMoves.push({ piece: p, move: m });
+    }
+  }
+  
+  if (allMoves.length === 0) {
+    const king = getKing(color);
+    if (king && isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, color)) {
+      return isMax ? -10000 + depth : 10000 - depth;
+    }
+    return 0;
+  }
+  
+  if (isMax) {
+    let maxEval = -Infinity;
+    for (const { piece, move } of allMoves) {
+      const target = find(move.z, move.y, move.x);
+      const oldZ = piece.userData.z, oldY = piece.userData.y, oldX = piece.userData.x;
+      let removed = null;
+      if (target && target.userData.color !== color) { removed = target; pieces = pieces.filter(p => p !== target); }
+      piece.userData.z = move.z; piece.userData.y = move.y; piece.userData.x = move.x;
+      const eval = minimax(depth - 1, false, alpha, beta);
+      piece.userData.z = oldZ; piece.userData.y = oldY; piece.userData.x = oldX;
+      if (removed) pieces.push(removed);
+      maxEval = Math.max(maxEval, eval);
+      alpha = Math.max(alpha, eval);
+      if (beta <= alpha) break;
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for (const { piece, move } of allMoves) {
+      const target = find(move.z, move.y, move.x);
+      const oldZ = piece.userData.z, oldY = piece.userData.y, oldX = piece.userData.x;
+      let removed = null;
+      if (target && target.userData.color !== color) { removed = target; pieces = pieces.filter(p => p !== target); }
+      piece.userData.z = move.z; piece.userData.y = move.y; piece.userData.x = move.x;
+      const eval = minimax(depth - 1, true, alpha, beta);
+      piece.userData.z = oldZ; piece.userData.y = oldY; piece.userData.x = oldX;
+      if (removed) pieces.push(removed);
+      minEval = Math.min(minEval, eval);
+      beta = Math.min(beta, eval);
+      if (beta <= alpha) break;
+    }
+    return minEval;
+  }
+}
+
+function selectBestMoveMinimax(moves, depth) {
+  let bestScore = -Infinity;
+  let bestMove = moves[0];
+  for (const mv of moves) {
+    const target = find(mv.move.z, mv.move.y, mv.move.x);
+    const oldZ = mv.piece.userData.z, oldY = mv.piece.userData.y, oldX = mv.piece.userData.x;
+    let removed = null;
+    if (target && target.userData.color !== 'black') { removed = target; pieces = pieces.filter(p => p !== target); }
+    mv.piece.userData.z = mv.move.z; mv.piece.userData.y = mv.move.y; mv.piece.userData.x = mv.move.x;
+    const score = minimax(depth - 1, false, -Infinity, Infinity);
+    mv.piece.userData.z = oldZ; mv.piece.userData.y = oldY; mv.piece.userData.x = oldX;
+    if (removed) pieces.push(removed);
+    if (score > bestScore) { bestScore = score; bestMove = mv; }
+  }
+  return bestMove;
+}
+
+function getAIDepth() {
+  if (aiLevel === 5) return 2;
+  if (aiLevel === 6) return 3;
+  if (aiLevel === 7) return 4;
+  if (aiLevel === 8) return 5;
+  if (aiLevel === 9) return 6;
+  if (aiLevel === 10) return 8;
+  return 1;
+}
+
+function selectBestMove(moves) {
+  if (aiLevel <= 4) {
+    moves.sort((a, b) => b.score - a.score);
+    if (aiLevel === 1) return moves[Math.floor(Math.random() * moves.length)];
+    if (aiLevel === 2) return moves[Math.floor(Math.random() * Math.max(1, Math.floor(moves.length * 0.5)))];
+    if (aiLevel === 3) return moves[Math.floor(Math.random() * Math.max(1, Math.floor(moves.length * 0.3)))];
+    if (aiLevel === 4) return moves[Math.floor(Math.random() * Math.max(1, Math.floor(moves.length * 0.2)))];
+  }
+  const depth = getAIDepth();
+  return selectBestMoveMinimax(moves, depth);
+}
+
+// ------------------- ЗВУК -------------------
+let audioContext = null, audioEnabled = false;
+function playTypeSound() {
+  if (!audioEnabled || !audioContext) return;
+  const now = audioContext.currentTime;
+  const buffer = audioContext.createBuffer(1, 4096, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < 4096; i++) data[i] = (Math.random() - 0.5) * 0.3 * Math.exp(-i / audioContext.sampleRate * 150);
+  const src = audioContext.createBufferSource();
+  src.buffer = buffer;
+  src.connect(audioContext.destination);
+  src.start();
+}
+function initAudio() { if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
+async function enableAudio() { if (!audioContext) initAudio(); if (audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
+function playMajesticChord() {
+  if (!audioContext) initAudio();
+  if (audioContext.state === 'suspended') audioContext.resume();
+  const freqs = [65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+  const now = audioContext.currentTime;
+  freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); });
+}
+
+// ------------------- ИНТРО -------------------
+function typeText(el, txt, withSound, cb) {
+  el.innerHTML = '<span class="cursor"></span>';
+  let i = 0;
+  function type() {
+    if (i < txt.length) {
+      if (withSound && audioEnabled) playTypeSound();
+      el.innerHTML = txt.substring(0, i + 1) + '<span class="cursor"></span>';
+      i++;
+      setTimeout(type, 50 + Math.random() * 30);
+    } else { if (cb) setTimeout(cb, 500); }
+  }
+  type();
+}
+function initIntro() {
+  const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions');
+  const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."];
+  const btn = document.createElement('button');
+  btn.textContent = 'ВХОД'; btn.className = 'intro-btn';
+  btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`;
+  btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; };
+  btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; };
+  document.getElementById('intro-overlay').appendChild(btn);
+  btn.onclick = async () => {
+    await enableAudio(); btn.remove();
+    typeText(textEl, texts[0], true, () => {
+      setTimeout(() => {
+        typeText(textEl, texts[1], true, () => {
+          actionsEl.style.display = 'flex';
+          document.getElementById('btn-yes').onclick = () => {
+            actionsEl.style.display = 'none';
+            typeText(textEl, texts[2], true, () => {
+              playMajesticChord(); cinematicMode = true; cinematicStartTime = Date.now();
+              setTimeout(() => {
+                document.getElementById('intro-overlay').style.opacity = '0';
+                setTimeout(() => {
+                  document.getElementById('intro-overlay').style.display = 'none';
+                  isIntroActive = false; cinematicMode = false;
+                  document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
+                  if (controls) controls.enabled = true;
+                  addDonationQR();
+                }, 2000);
+              }, 1000);
+            });
+          };
+          document.getElementById('btn-no').onclick = () => {
+            actionsEl.style.display = 'none';
+            typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", true, () => setTimeout(() => location.reload(), 1500));
+          };
+        });
+      }, 800);
+    });
+  };
+}
+
+// ------------------- НАВИГАЦИЯ -------------------
+function showPage(pageName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(pageName + '-page').classList.add('active');
+  event.target.classList.add('active');
+  if (pageName === 'game' && scene) document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
+}
+
+// ------------------- ТРЁХМЕРНАЯ СЦЕНА -------------------
+let scene, camera, renderer, controls;
+let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1, gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false, isIntroActive = true, hl, starField, cinematicMode = false, cinematicStartTime = 0, aiTimeoutId = null;
+let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null;
+const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
+const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
+
 function init() {
   try {
-    if(typeof THREE === 'undefined') throw new Error("Three.js не загружен.");
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000010);
-    scene.fog = new THREE.FogExp2(0x000010, 0.02);
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 30);
-    renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    document.body.appendChild(renderer.domElement);
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enabled = false;
-    
+    if (typeof THREE === 'undefined') throw new Error("Three.js не загружен.");
+    scene = new THREE.Scene(); scene.background = new THREE.Color(0x000010); scene.fog = new THREE.FogExp2(0x000010, 0.02);
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 0, 30);
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.05; controls.enabled = false;
     scene.add(new THREE.AmbientLight(0x202040, 0.5));
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    mainLight.position.set(10, 15, 10);
-    mainLight.castShadow = true;
-    scene.add(mainLight);
-    scene.add(new THREE.PointLight(0x00ffff, 0.6, 50));
-    scene.add(new THREE.PointLight(0xff00ff, 0.4, 50));
-    
-    const starsGeom = new THREE.BufferGeometry();
-    const posArray = new Float32Array(3000 * 3);
-    for(let i=0; i<9000; i++) posArray[i] = (Math.random() - 0.5) * 150;
-    starsGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    starField = new THREE.Points(starsGeom, new THREE.PointsMaterial({size: 0.2, color: 0xffffff, transparent: true, opacity: 0.9}));
+    const ml = new THREE.DirectionalLight(0xffffff, 1.2); ml.position.set(10, 15, 10); ml.castShadow = true; scene.add(ml);
+    scene.add(new THREE.PointLight(0x00ffff, 0.6, 50)); scene.add(new THREE.PointLight(0xff00ff, 0.4, 50));
+    const stars = new THREE.BufferGeometry(); const pos = new Float32Array(3000 * 3);
+    for (let i = 0; i < 9000; i++) pos[i] = (Math.random() - 0.5) * 150;
+    stars.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    starField = new THREE.Points(stars, new THREE.PointsMaterial({ size: 0.2, color: 0xffffff, transparent: true, opacity: 0.9 }));
     scene.add(starField);
-    
-    const gridMat = new THREE.LineBasicMaterial({color: 0x00ffff, transparent: true, opacity: 0.3});
-    for(let i=0; i<=8; i++) {
-      for(let j=0; j<=8; j++) {
-        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i-4, j-4, -4), new THREE.Vector3(i-4, j-4, 4)]), gridMat));
-        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i-4, -4, j-4), new THREE.Vector3(i-4, 4, j-4)]), gridMat));
-        scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4, i-4, j-4), new THREE.Vector3(4, i-4, j-4)]), gridMat));
-      }
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
+    for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) {
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i - 4, j - 4, -4), new THREE.Vector3(i - 4, j - 4, 4)]), gridMat));
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i - 4, -4, j - 4), new THREE.Vector3(i - 4, 4, j - 4)]), gridMat));
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4, i - 4, j - 4), new THREE.Vector3(4, i - 4, j - 4)]), gridMat));
     }
-    
-    hl = new THREE.Group();
-    scene.add(hl);
-    
-    setupPieces();
-    addDeveloperStamp();
-    
-    animate();
-  } catch(e) { alert("Ошибка: " + e.message); console.error(e); }
+    hl = new THREE.Group(); scene.add(hl);
+    setupPieces(); saveState(); animate();
+  } catch (e) { alert("Ошибка: " + e.message); console.error(e); }
 }
 
 function createPiece(type, color, z, y, x) {
-  const g = new THREE.Group();
-  g.userData = {type, color, z, y, x, hasMoved: false};
+  const g = new THREE.Group(); g.userData = { type, color, z, y, x, hasMoved: false };
   const isWhite = color === 'white';
-  const matBody = new THREE.MeshStandardMaterial({color: isWhite ? 0xffffff : 0x4a4a4a, metalness: 0.6, roughness: 0.2, emissive: isWhite ? 0x222222 : 0x111111});
-  const matGold = new THREE.MeshStandardMaterial({color: isWhite ? 0xffffaa : 0xff6600, metalness: 0.9, emissive: 0x221100});
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 0.12, 24), matBody);
-  base.position.y = -0.22; base.castShadow = true; g.add(base);
-  switch(type) {
+  const matBody = new THREE.MeshStandardMaterial({ color: isWhite ? 0xffffff : 0x4a4a4a, metalness: 0.6, roughness: 0.2 });
+  const matGold = new THREE.MeshStandardMaterial({ color: isWhite ? 0xffffaa : 0xff6600, metalness: 0.9 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 0.12, 24), matBody); base.position.y = -0.22; base.castShadow = true; g.add(base);
+  switch (type) {
     case 'pawn':
-      const pawnBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.4, 16), matBody);
-      pawnBody.position.set(0, 0.05, 0); pawnBody.castShadow = true; g.add(pawnBody);
-      const pawnTop = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), matGold);
-      pawnTop.position.set(0, 0.38, 0); pawnTop.castShadow = true; g.add(pawnTop);
+      const bd = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.4, 16), matBody); bd.position.set(0, 0.05, 0); bd.castShadow = true; g.add(bd);
+      const tp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), matGold); tp.position.set(0, 0.38, 0); tp.castShadow = true; g.add(tp);
       break;
     case 'rook':
-      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.55, 8), matBody);
-      tower.position.set(0, 0.1, 0); tower.castShadow = true; g.add(tower);
-      for(let i=0;i<4;i++){const a=i*Math.PI/2; const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.2), matBody); tooth.position.set(Math.sin(a)*0.45,0.48,Math.cos(a)*0.45); tooth.castShadow=true; g.add(tooth);}
+      const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.55, 8), matBody); tw.position.set(0, 0.1, 0); tw.castShadow = true; g.add(tw);
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; const t = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.2), matBody); t.position.set(Math.sin(a) * 0.45, 0.48, Math.cos(a) * 0.45); t.castShadow = true; g.add(t); }
       break;
     case 'knight':
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.45, 8), matBody);
-      neck.position.set(0, 0.08, 0); neck.castShadow = true; g.add(neck);
-      const head = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.4, 6), matBody);
-      head.position.set(0.15,0.4,0.1); head.rotation.z=-0.2; head.castShadow=true;
-      g.add(head);
+      const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.45, 8), matBody); nk.position.set(0, 0.08, 0); nk.castShadow = true; g.add(nk);
+      const hd = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.4, 6), matBody); hd.position.set(0.15, 0.4, 0.1); hd.rotation.z = -0.2; hd.castShadow = true; g.add(hd);
       break;
     case 'bishop':
-      const bBody = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.65, 12), matBody);
-      bBody.position.set(0, 0.15, 0); bBody.castShadow = true; g.add(bBody);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.06, 16, 32), matGold);
-      ring.rotation.x = Math.PI/2; ring.position.set(0,0.52,0); ring.castShadow = true; g.add(ring);
-      const bTop = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), matGold);
-      bTop.position.set(0,0.68,0); bTop.castShadow = true; g.add(bTop);
+      const bb = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.65, 12), matBody); bb.position.set(0, 0.15, 0); bb.castShadow = true; g.add(bb);
+      const rn = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.06, 16, 32), matGold); rn.rotation.x = Math.PI / 2; rn.position.set(0, 0.52, 0); rn.castShadow = true; g.add(rn);
+      const bt = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), matGold); bt.position.set(0, 0.68, 0); bt.castShadow = true; g.add(bt);
       break;
     case 'queen':
-      const qBody = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.65, 12), matBody);
-      qBody.position.set(0, 0.1, 0); qBody.castShadow = true; g.add(qBody);
-      const qRing = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 16, 32), matGold);
-      qRing.rotation.x = Math.PI/2; qRing.position.set(0,0.45,0); qRing.castShadow = true; g.add(qRing);
-      const qCrown = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), matGold);
-      qCrown.position.set(0,0.62,0); qCrown.castShadow = true; g.add(qCrown);
-      for(let i=0;i<4;i++){const a=i*Math.PI/2; const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.1,0.2,4), matGold); tooth.position.set(Math.sin(a)*0.25,0.78,Math.cos(a)*0.25); tooth.castShadow=true; g.add(tooth);}
-      const qTop = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), matGold);
-      qTop.position.set(0,0.82,0); qTop.castShadow = true; g.add(qTop);
+      const qb = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.65, 12), matBody); qb.position.set(0, 0.1, 0); qb.castShadow = true; g.add(qb);
+      const qr = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 16, 32), matGold); qr.rotation.x = Math.PI / 2; qr.position.set(0, 0.45, 0); qr.castShadow = true; g.add(qr);
+      const qc = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), matGold); qc.position.set(0, 0.62, 0); qc.castShadow = true; g.add(qc);
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; const t = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), matGold); t.position.set(Math.sin(a) * 0.25, 0.78, Math.cos(a) * 0.25); t.castShadow = true; g.add(t); }
+      const qt = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), matGold); qt.position.set(0, 0.82, 0); qt.castShadow = true; g.add(qt);
       break;
     case 'king':
-      const kBody = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.7, 12), matBody);
-      kBody.position.set(0, 0.12, 0); kBody.castShadow = true; g.add(kBody);
-      const crossBase = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), matGold);
-      crossBase.position.set(0,0.72,0); crossBase.castShadow = true; g.add(crossBase);
-      const crossVert = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), matGold);
-      crossVert.position.set(0,0.88,0); crossVert.castShadow = true; g.add(crossVert);
-      const crossHor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.08), matGold);
-      crossHor.position.set(0,0.88,0); crossHor.castShadow = true; g.add(crossHor);
+      const kb = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.7, 12), matBody); kb.position.set(0, 0.12, 0); kb.castShadow = true; g.add(kb);
+      const cb = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), matGold); cb.position.set(0, 0.72, 0); cb.castShadow = true; g.add(cb);
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), matGold); cv.position.set(0, 0.88, 0); cv.castShadow = true; g.add(cv);
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.08), matGold); ch.position.set(0, 0.88, 0); ch.castShadow = true; g.add(ch);
       break;
   }
-  g.position.set(x-4.5, z-4.5, y-4.5);
+  g.position.set(x - 4.5, z - 4.5, y - 4.5);
   return g;
 }
 
 function setupPieces() {
   const order = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
-  order.forEach((t, i) => { const p = createPiece(t, 'white', 1, 1, i+1); scene.add(p); pieces.push(p); });
-  for(let x=1; x<=8; x++) for(let z=1; z<=2; z++) for(let y=1; y<=2; y++) { if(z===1 && y===1) continue; const p = createPiece('pawn', 'white', z, y, x); scene.add(p); pieces.push(p); }
-  order.forEach((t, i) => { const p = createPiece(t, 'black', 8, 8, 8-i); scene.add(p); pieces.push(p); });
-  for(let x=1; x<=8; x++) for(let z=7; z<=8; z++) for(let y=7; y<=8; y++) { if(z===8 && y===8) continue; const p = createPiece('pawn', 'black', z, y, x); scene.add(p); pieces.push(p); }
+  order.forEach((t, i) => { const p = createPiece(t, 'white', 1, 1, i + 1); scene.add(p); pieces.push(p); });
+  for (let x = 1; x <= 8; x++) for (let z = 1; z <= 2; z++) for (let y = 1; y <= 2; y++) if (z !== 1 || y !== 1) { const p = createPiece('pawn', 'white', z, y, x); scene.add(p); pieces.push(p); }
+  order.forEach((t, i) => { const p = createPiece(t, 'black', 8, 8, 8 - i); scene.add(p); pieces.push(p); });
+  for (let x = 1; x <= 8; x++) for (let z = 7; z <= 8; z++) for (let y = 7; y <= 8; y++) if (z !== 8 || y !== 8) { const p = createPiece('pawn', 'black', z, y, x); scene.add(p); pieces.push(p); }
 }
 
-function pos(z, y, x) { return new THREE.Vector3(x-4.5, z-4.5, y-4.5); }
-function find(z, y, x) { return pieces.find(p => p && p.userData && p.userData.z === z && p.userData.y === y && p.userData.x === x); }
+function pos(z, y, x) { return new THREE.Vector3(x - 4.5, z - 4.5, y - 4.5); }
+function find(z, y, x) { return pieces.find(p => p.userData && p.userData.z === z && p.userData.y === y && p.userData.x === x); }
 function getKing(color) { return pieces.find(p => p.userData.type === 'king' && p.userData.color === color); }
 
 function getRawMoves(p) {
-  const res = [];
-  const {z, y, x, type, color, hasMoved} = p.userData;
-  function push(nz, ny, nx) {
-    if(nz<1 || ny<1 || nx<1 || nz>8 || ny>8 || nx>8) return false;
-    const t = find(nz, ny, nx);
-    if(!t) { res.push({z:nz, y:ny, x:nx}); return true; }
-    if(t.userData.color !== color) { res.push({z:nz, y:ny, x:nx}); return false; }
-    return false;
-  }
-  function ray(dz, dy, dx) { let nz=z, ny=y, nx=x; while(true){nz+=dz;ny+=dy;nx+=dx; if(!push(nz,ny,nx)) break;} }
-  if(type === 'rook' || type === 'queen') [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(d => ray(...d));
-  if(type === 'bishop' || type === 'queen') for(let dz=-1;dz<=1;dz++) for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if(Math.abs(dz)+Math.abs(dy)+Math.abs(dx)>=2 && (dz||dy||dx)) ray(dz,dy,dx);
-  if(type === 'king') for(let dz=-1;dz<=1;dz++) for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if(dz||dy||dx) push(z+dz, y+dy, x+dx);
-  if(type === 'knight') { const d=[[2,1,0],[1,2,0],[2,0,1],[0,2,1],[1,0,2],[0,1,2]]; d.forEach(([a,b,c])=>{[[a,b,c],[-a,b,c],[a,-b,c],[a,b,-c],[-a,-b,c],[-a,b,-c],[a,-b,-c],[-a,-b,-c]].forEach(([dz,dy,dx])=>push(z+dz,y+dy,x+dx));}); }
-  if(type === 'pawn') {
-    if(color === 'white') {
-      if(!find(z+1,y,x)) push(z+1,y,x);
-      if(!hasMoved && !find(z+1,y,x) && !find(z+2,y,x)) push(z+2,y,x);
-      if(!find(z,y+1,x)) push(z,y+1,x);
-      if(!hasMoved && !find(z,y+1,x) && !find(z,y+2,x)) push(z,y+2,x);
-      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if(dy||dx) { const t=find(z+1,y+dy,x+dx); if(t&&t.userData.color!==color) push(z+1,y+dy,x+dx); }
-      for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++) if(dz||dx) { const t=find(z+dz,y+1,x+dx); if(t&&t.userData.color!==color) push(z+dz,y+1,x+dx); }
-      for(let dx=-1;dx<=1;dx++) if(dx) { const t=find(z+1,y+1,x+dx); if(t&&t.userData.color!==color) push(z+1,y+1,x+dx); }
-    } else {
-      if(!find(z-1,y,x)) push(z-1,y,x);
-      if(!hasMoved && !find(z-1,y,x) && !find(z-2,y,x)) push(z-2,y,x);
-      if(!find(z,y-1,x)) push(z,y-1,x);
-      if(!hasMoved && !find(z,y-1,x) && !find(z,y-2,x)) push(z,y-2,x);
-      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if(dy||dx) { const t=find(z-1,y+dy,x+dx); if(t&&t.userData.color!==color) push(z-1,y+dy,x+dx); }
-      for(let dz=-1;dz<=0;dz++) for(let dx=-1;dx<=1;dx++) if(dz||dx) { const t=find(z+dz,y-1,x+dx); if(t&&t.userData.color!==color) push(z+dz,y-1,x+dx); }
-      for(let dx=-1;dx<=1;dx++) if(dx) { const t=find(z-1,y-1,x+dx); if(t&&t.userData.color!==color) push(z-1,y-1,x+dx); }
-    }
+  const res = []; const { z, y, x, type, color, hasMoved } = p.userData;
+  const push = (nz, ny, nx) => { if (nz < 1 || ny < 1 || nx < 1 || nz > 8 || ny > 8 || nx > 8) return false; const t = find(nz, ny, nx); if (!t) { res.push({ z: nz, y: ny, x: nx }); return true; } if (t.userData.color !== color) { res.push({ z: nz, y: ny, x: nx }); return false; } return false; };
+  const ray = (dz, dy, dx) => { let nz = z, ny = y, nx = x; while (true) { nz += dz; ny += dy; nx += dx; if (!push(nz, ny, nx)) break; } };
+  if (type === 'rook' || type === 'queen') [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].forEach(d => ray(...d));
+  if (type === 'bishop' || type === 'queen') { const dirs = [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0], [1, 0, 1], [1, 0, -1], [-1, 0, 1], [-1, 0, -1], [0, 1, 1], [0, 1, -1], [0, -1, 1], [0, -1, -1]]; dirs.forEach(d => ray(...d)); }
+  if (type === 'king') for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dz || dy || dx) push(z + dz, y + dy, x + dx);
+  if (type === 'knight') { const off = [[2, 1, 0], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [0, 1, 2]]; off.forEach(([a, b, c]) => { [[a, b, c], [-a, b, c], [a, -b, c], [a, b, -c], [-a, -b, c], [-a, b, -c], [a, -b, -c], [-a, -b, -c]].forEach(([dz, dy, dx]) => push(z + dz, y + dy, x + dx)); }); }
+  if (type === 'pawn') {
+    const dz = color === 'white' ? 1 : -1, dy = color === 'white' ? 1 : -1;
+    if (!find(z + dz, y, x)) { push(z + dz, y, x); if (!hasMoved && !find(z + dz * 2, y, x)) push(z + dz * 2, y, x); }
+    if (!find(z, y + dy, x)) { push(z, y + dy, x); if (!hasMoved && !find(z, y + dy * 2, x)) push(z, y + dy * 2, x); }
+    if (!find(z + dz, y + dy, x)) { push(z + dz, y + dy, x); if (!hasMoved && !find(z + dz * 2, y + dy * 2, x)) push(z + dz * 2, y + dy * 2, x); }
+    for (let cy = -1; cy <= 1; cy++) for (let cx = -1; cx <= 1; cx++) if (cy || cx) { const t1 = find(z + dz, y + cy, x + cx); if (t1 && t1.userData.color !== color) push(z + dz, y + cy, x + cx); const t2 = find(z + cy, y + dy, x + cx); if (t2 && t2.userData.color !== color) push(z + cy, y + dy, x + cx); const t3 = find(z + dz, y + dy, x + cx); if (t3 && t3.userData.color !== color) push(z + dz, y + dy, x + cx); }
   }
   return res;
 }
 
+function isSquareAttacked(z, y, x, color) { for (const p of pieces) if (p.userData.color !== color && getRawMoves(p).some(m => m.z === z && m.y === y && m.x === x)) return true; return false; }
+
 function getValidMoves(p) {
-  const raw = getRawMoves(p);
-  const {color} = p.userData;
-  const valid = [];
-  for(const move of raw) {
-    const target = find(move.z, move.y, move.x);
-    const oldZ = p.userData.z, oldY = p.userData.y, oldX = p.userData.x;
-    let removed = null;
-    if(target && target.userData.color !== color) { removed = target; pieces = pieces.filter(pc => pc !== target); }
+  const raw = getRawMoves(p), valid = []; const { color } = p.userData;
+  for (const move of raw) {
+    const t = find(move.z, move.y, move.x); const old = { z: p.userData.z, y: p.userData.y, x: p.userData.x }; let rem = null;
+    if (t && t.userData.color !== color) { rem = t; pieces = pieces.filter(pc => pc !== t); }
     p.userData.z = move.z; p.userData.y = move.y; p.userData.x = move.x;
-    const king = getKing(color);
-    const safe = !king || !isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, color);
-    if(safe) valid.push(move);
-    p.userData.z = oldZ; p.userData.y = oldY; p.userData.x = oldX;
-    if(removed) pieces.push(removed);
+    const king = getKing(color); const safe = !king || !isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, color);
+    if (safe) valid.push(move);
+    p.userData.z = old.z; p.userData.y = old.y; p.userData.x = old.x;
+    if (rem) pieces.push(rem);
   }
   return valid;
 }
 
 function getCastlingMoves(king) {
-  if(king.userData.hasMoved) return [];
-  const {color, z, y, x} = king.userData;
-  const startZ = color === 'white' ? 1 : 8;
-  const startY = color === 'white' ? 1 : 8;
-  if(z !== startZ || y !== startY) return [];
-  const moves = [];
-  const rookK = find(startZ, startY, 8);
-  if(rookK && !rookK.userData.hasMoved && rookK.userData.type === 'rook') {
-    let pathClear = true;
-    for(let cx = x + 1; cx < 8; cx++) { if(find(startZ, startY, cx)) { pathClear = false; break; } }
-    if(pathClear) {
-      const targetX = x + 2;
-      if(!isSquareAttacked(startZ, startY, x, color) && !isSquareAttacked(startZ, startY, x + 1, color) && !isSquareAttacked(startZ, startY, targetX, color)) {
-        moves.push({z: startZ, y: startY, x: targetX, castling: true, rook: rookK, rookTargetX: targetX - 1});
-      }
-    }
-  }
-  const rookQ = find(startZ, startY, 1);
-  if(rookQ && !rookQ.userData.hasMoved && rookQ.userData.type === 'rook') {
-    let pathClear = true;
-    for(let cx = x - 1; cx > 1; cx--) { if(find(startZ, startY, cx)) { pathClear = false; break; } }
-    if(pathClear) {
-      const targetX = x - 2;
-      if(!isSquareAttacked(startZ, startY, x, color) && !isSquareAttacked(startZ, startY, x - 1, color) && !isSquareAttacked(startZ, startY, targetX, color)) {
-        moves.push({z: startZ, y: startY, x: targetX, castling: true, rook: rookQ, rookTargetX: targetX + 1});
-      }
-    }
-  }
+  if (king.userData.hasMoved) return []; const { color, z, y, x } = king.userData; const startZ = color === 'white' ? 1 : 8, startY = color === 'white' ? 1 : 8; if (z !== startZ || y !== startY) return [];
+  const moves = []; const rookK = find(startZ, startY, 8); if (rookK && !rookK.userData.hasMoved && rookK.userData.type === 'rook') { let clear = true; for (let cx = x + 1; cx < 8; cx++) if (find(startZ, startY, cx)) { clear = false; break; } if (clear && !isSquareAttacked(startZ, startY, x, color) && !isSquareAttacked(startZ, startY, x + 1, color) && !isSquareAttacked(startZ, startY, x + 2, color)) moves.push({ z: startZ, y: startY, x: x + 2, castling: true, rook: rookK, rookTargetX: x + 1 }); }
+  const rookQ = find(startZ, startY, 1); if (rookQ && !rookQ.userData.hasMoved && rookQ.userData.type === 'rook') { let clear = true; for (let cx = x - 1; cx > 1; cx--) if (find(startZ, startY, cx)) { clear = false; break; } if (clear && !isSquareAttacked(startZ, startY, x, color) && !isSquareAttacked(startZ, startY, x - 1, color) && !isSquareAttacked(startZ, startY, x - 2, color)) moves.push({ z: startZ, y: startY, x: x - 2, castling: true, rook: rookQ, rookTargetX: x - 1 }); }
   return moves;
 }
 
-function isSquareAttacked(z, y, x, color) {
-  for(const p of pieces) {
-    if(p.userData.color !== color) {
-      if(getRawMoves(p).some(m => m.z === z && m.y === y && m.x === x)) return true;
-    }
+function getAllMoves(p) { return p.userData.type === 'king' ? [...getValidMoves(p), ...getCastlingMoves(p)] : getValidMoves(p); }
+function isCheckmate(color) { const k = getKing(color); if (!k || !isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false; return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0); }
+function isStalemate(color) { const k = getKing(color); if (!k || isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false; return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0); }
+
+function promotePawn(piece, type) {
+  const { z, y, x, color } = piece.userData;
+  scene.remove(piece); pieces = pieces.filter(p => p !== piece);
+  const np = createPiece(type, color, z, y, x); scene.add(np); pieces.push(np);
+}
+
+function makeMove(piece, move) {
+  if (gameEnded) return;
+  const { z, y, x, castling, rook, rookTargetX } = move; const wasCapture = !!find(z, y, x); const fromZ = piece.userData.z, fromY = piece.userData.y, fromX = piece.userData.x;
+  const target = find(z, y, x); if (target && target !== piece) { scene.remove(target); pieces = pieces.filter(p => p !== target); }
+  piece.position.copy(pos(z, y, x)); piece.userData.z = z; piece.userData.y = y; piece.userData.x = x; piece.userData.hasMoved = true;
+  if (castling && rook) { rook.position.copy(pos(z, y, rookTargetX)); rook.userData.x = rookTargetX; rook.userData.hasMoved = true; }
+  if (piece.userData.type === 'pawn' && ((piece.userData.color === 'white' && z === 8) || (piece.userData.color === 'black' && z === 1))) {
+    if (gameMode === 'ai' && piece.userData.color === 'black') promotePawn(piece, 'queen');
+    else { pendingPromotion = { piece, z, y, x, fromZ, fromY, fromX, wasCapture }; document.getElementById('promotion-modal').style.display = 'flex'; return; }
   }
-  return false;
+  finishMove(piece, fromZ, fromY, fromX, z, y, x, wasCapture);
 }
-
-function getAllMoves(p) {
-  if(p.userData.type === 'king') return [...getValidMoves(p), ...getCastlingMoves(p)];
-  return getValidMoves(p);
-}
-
-function isCheckmate(color) {
-  const k = getKing(color);
-  if(!k || !isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false;
-  return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0);
-}
-
-function isStalemate(color) {
-  const k = getKing(color);
-  if(!k || isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false;
-  return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0);
-}
-
-function makeMove(piece, move, isAI = false) {
-  if(gameEnded) return;
-  const {z, y, x} = move;
-  const wasCapture = !!find(z, y, x);
-  const fz = piece.userData.z, fy = piece.userData.y, fx = piece.userData.x;
-  const target = find(z, y, x);
-  if(target && target !== piece) { scene.remove(target); pieces = pieces.filter(p => p !== target); }
-  piece.position.copy(pos(z, y, x));
-  piece.userData.z = z; piece.userData.y = y; piece.userData.x = x;
-  piece.userData.hasMoved = true;
-  if(move.castling && move.rook) {
-    move.rook.position.copy(pos(move.z, move.y, move.rookTargetX));
-    move.rook.userData.x = move.rookTargetX;
-    move.rook.userData.hasMoved = true;
-  }
-  if(piece.userData.type === 'pawn') {
-    if((piece.userData.color === 'white' && z === 8) || (piece.userData.color === 'black' && z === 1)) promotePawn(piece);
-  }
+function promoteTo(type) { if (pendingPromotion) { promotePawn(pendingPromotion.piece, type); document.getElementById('promotion-modal').style.display = 'none'; finishMove(pendingPromotion.piece, pendingPromotion.fromZ, pendingPromotion.fromY, pendingPromotion.fromX, pendingPromotion.z, pendingPromotion.y, pendingPromotion.x, pendingPromotion.wasCapture); pendingPromotion = null; } }
+function finishMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture) {
+  lastMoveCoords = { fromZ, fromY, fromX, toZ, toY, toX };
   const isCheck = isSquareAttacked(getKing(turn).userData.z, getKing(turn).userData.y, getKing(turn).userData.x, turn);
-  addToHistory(formatMove(piece, fz, fy, fx, z, y, x, wasCapture, isCheck), turn === 'white');
-  const next = turn === 'white' ? 'black' : 'white';
-  if(isCheckmate(next)) {
-    setTimeout(() => showResult(next === 'white' ? 'loss' : 'win', `МАТ!<br>Победили ${next === 'white' ? 'ЧЁРНЫЕ' : 'БЕЛЫЕ'}<br>Ходов: ${moveNumber}`), 400);
-    turn = next; updateTurnDisplay(); clearHL(); selected = null; return;
-  }
-  if(isStalemate(next)) {
-    setTimeout(() => showResult('draw', `ПАТ!<br>Ничья<br>Ходов: ${moveNumber}`), 400);
-    turn = next; updateTurnDisplay(); clearHL(); selected = null; return;
-  }
-  turn = next; updateTurnDisplay();
-  const kNow = getKing(turn);
-  if(kNow && isSquareAttacked(kNow.userData.z, kNow.userData.y, kNow.userData.x, turn)) {
-    document.getElementById('check').style.display = 'block';
-    setTimeout(() => document.getElementById('check').style.display = 'none', 1500);
-  }
+  const moveText = formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck);
+  addToHistory(moveText, turn === 'white');
+  saveState();
+  turn = turn === 'white' ? 'black' : 'white';
+  updateTurnDisplay();
+  const king = getKing(turn);
+  if (king && isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, turn)) { document.getElementById('check').innerHTML = `⚠️ ШАХ ${turn === 'white' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}! ⚠️`; document.getElementById('check').style.display = 'block'; setTimeout(() => document.getElementById('check').style.display = 'none', 1500); }
+  if (isCheckmate(turn)) { const winner = turn === 'white' ? 'ЧЁРНЫЕ' : 'БЕЛЫЕ'; document.getElementById('info').innerHTML = `🏆 МАТ! ПОБЕДА ${winner}! 🏆`; gameEnded = true; document.getElementById('result-message').innerHTML = `МАТ!<br>Победили ${winner}`; document.getElementById('result-modal').style.display = 'flex'; }
+  else if (isStalemate(turn)) { document.getElementById('info').innerHTML = `🌌 ПАТ! НИЧЬЯ! 🌌`; gameEnded = true; document.getElementById('result-message').innerHTML = `ПАТ!<br>Ничья`; document.getElementById('result-modal').style.display = 'flex'; }
   clearHL(); selected = null;
-  if(gameMode === 'ai' && turn === 'black' && !gameEnded) setTimeout(aiMove, 300);
+  if (gameMode === 'ai' && turn === 'black' && !gameEnded && !isUndoMode) aiTimeoutId = setTimeout(() => aiMove(), 500);
 }
-
-function promotePawn(p) {
-  if(p.userData.type !== 'pawn') return;
-  const {z, y, x, color} = p.userData;
-  if((color === 'white' && z !== 8) || (color === 'black' && z !== 1)) return;
-  scene.remove(p); pieces = pieces.filter(pc => pc !== p);
-  const q = createPiece('queen', color, z, y, x); scene.add(q); pieces.push(q);
-  document.getElementById('info').textContent = '✨ ПЕШКА → ФЕРЗЬ ✨';
-  setTimeout(() => document.getElementById('info').textContent = '🎯 Клик по фигуре → шары → ход', 2000);
+function formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
+  const sym = { king: { white: '♔', black: '♚', letter: 'K' }, queen: { white: '♕', black: '♛', letter: 'Q' }, rook: { white: '♖', black: '♜', letter: 'R' }, bishop: { white: '♗', black: '♝', letter: 'B' }, knight: { white: '♘', black: '♞', letter: 'N' }, pawn: { white: '♙', black: '♟', letter: '' } };
+  const d = sym[piece.userData.type]; const icon = piece.userData.color === 'white' ? d.white : d.black; const toCoord = `${toZ}${String.fromCharCode(96 + toY)}${toX}`;
+  let move = (piece.userData.type === 'pawn' ? '' : d.letter) + (wasCapture ? 'x' : '') + toCoord; if (isCheck) move += '+';
+  return { html: `<span class="move-piece">${icon}</span> ${move}`, text: move };
 }
-
-function formatMove(piece, fz, fy, fx, tz, ty, tx, cap, chk) {
-  const s = {king:{white:'♔',black:'♚',letter:'K'}, queen:{white:'♕',black:'♛',letter:'Q'}, rook:{white:'♖',black:'♜',letter:'R'}, bishop:{white:'♗',black:'♝',letter:'B'}, knight:{white:'♘',black:'♞',letter:'N'}, pawn:{white:'♙',black:'♟',letter:''}};
-  const d = s[piece.userData.type];
-  const ic = piece.userData.color === 'white' ? d.white : d.black;
-  const tc = `${tz}${String.fromCharCode(96+ty)}${tx}`;
-  let m = (piece.userData.type === 'pawn' ? '' : d.letter) + (cap ? 'x' : '') + tc;
-  if(chk) m += '+';
-  return {html: `<span class="move-piece">${ic}</span> ${m}`, text: m};
-}
-
 function addToHistory(fmt, isWhite) {
-  const h = document.getElementById('history-list');
-  if(isWhite) {
-    h.innerHTML += `<div><span style="color:#888">${moveNumber}.</span> <span class="history-white">${fmt.html}</span></div>`;
-    moveHistory.push({number: moveNumber, white: fmt.text, black: null});
+  const div = document.getElementById('history-list');
+  if (isWhite) {
+    div.innerHTML += `<div><span style="color:#888">${moveNumber}.</span> <span class="history-white">${fmt.html}</span></div>`;
+    moveHistory.push({ number: moveNumber, white: fmt.text, black: null });
   } else {
-    const last = h.lastChild;
-    if(last && moveHistory.length && moveHistory[moveHistory.length-1].black === null) {
-      last.innerHTML += ` <span class="history-black">${fmt.html}</span>`;
-      moveHistory[moveHistory.length-1].black = fmt.text;
-    } else {
-      h.innerHTML += `<div><span style="color:#888">${moveNumber}.</span> <span class="history-white">-</span> <span class="history-black">${fmt.html}</span></div>`;
-      moveHistory.push({number: moveNumber, white: '-', black: fmt.text});
-    }
+    const last = moveHistory[moveHistory.length - 1];
+    if (last && last.black === null) { div.lastChild.innerHTML += ` <span class="history-black">${fmt.html}</span>`; last.black = fmt.text; }
+    else { div.innerHTML += `<div><span style="color:#888">${moveNumber}.</span> <span class="history-white">-</span> <span class="history-black">${fmt.html}</span></div>`; moveHistory.push({ number: moveNumber, white: '-', black: fmt.text }); }
     moveNumber++;
   }
-  h.scrollTop = h.scrollHeight;
+  div.scrollTop = div.scrollHeight;
 }
-
 function clearHistory() { moveHistory = []; moveNumber = 1; document.getElementById('history-list').innerHTML = ''; }
-
-function aiMove() {
-  if(aiThinking || gameMode !== 'ai' || turn !== 'black' || gameEnded) return;
-  aiThinking = true;
-  document.getElementById('ai-status').textContent = `🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`;
-  setTimeout(() => {
-    const all = [];
-    pieces.filter(p => p.userData.color === 'black').forEach(p => getAllMoves(p).forEach(m => all.push({piece: p, move: m})));
-    if(all.length) { const best = selectBestMove(all); makeMove(best.piece, best.move, true); }
-    aiThinking = false;
-    document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
-  }, 100);
-}
-
-function selectBestMove(moves) {
-  const depth = aiLevel <= 3 ? 2 : aiLevel <= 6 ? 3 : aiLevel <= 8 ? 4 : 5;
-  if(aiLevel === 10) {
-    let bestMove = null, bestValue = -Infinity, alpha = -Infinity, beta = Infinity;
-    for(const {piece, move} of moves) {
-      const target = find(move.z, move.y, move.x);
-      const oldPos = {z: piece.userData.z, y: piece.userData.y, x: piece.userData.x};
-      let removed = null;
-      if(target && target.userData.color !== 'black') { removed = target; pieces = pieces.filter(p => p !== target); }
-      piece.userData.z = move.z; piece.userData.y = move.y; piece.userData.x = move.x;
-      const boardValue = minimax(depth - 1, false, alpha, beta);
-      piece.userData.z = oldPos.z; piece.userData.y = oldPos.y; piece.userData.x = oldPos.x;
-      if(removed) pieces.push(removed);
-      if(boardValue > bestValue) { bestValue = boardValue; bestMove = {piece, move}; }
-      alpha = Math.max(alpha, bestValue);
-    }
-    return bestMove || moves[Math.floor(Math.random() * moves.length)];
-  } else {
-    const ev = moves.map(m => ({...m, score: evaluateMove(m.piece, m.move, true)})).sort((a,b) => b.score - a.score);
-    if(aiLevel >= 7) return ev[0];
-    const top = aiLevel <= 4 ? 0.4 : aiLevel <= 6 ? 0.2 : 0.1;
-    return ev[Math.floor(Math.random() * Math.max(1, Math.floor(ev.length * top)))];
-  }
-}
-
 function evaluateMove(piece, move, isBlackMove) {
-  let score = 0;
-  const target = find(move.z, move.y, move.x);
-  if(target && target.userData.color !== piece.userData.color) {
-    const tv = pieceValues[target.userData.type]||0, pv = pieceValues[piece.userData.type]||0;
-    score += tv*12; if(tv < pv) score -= (pv-tv)*6;
-  }
-  if(piece.userData.type === 'pawn') {
-    if(isBlackMove && move.z < piece.userData.z) score += (8-move.z)*3;
-    if(!isBlackMove && move.z > piece.userData.z) score += move.z*3;
-  }
-  score += (14 - (Math.abs(move.y-4.5)+Math.abs(move.x-4.5)))*0.8;
-  const king = getKing(piece.userData.color);
-  if(king && Math.abs(move.z-king.userData.z)+Math.abs(move.y-king.userData.y)+Math.abs(move.x-king.userData.x) < 3) score += 5;
-  if(moveHistory.length < 20 && piece.userData.type !== 'pawn' && !piece.userData.hasMoved) score += 8;
+  let score = 0; const t = find(move.z, move.y, move.x);
+  if (t && t.userData.color !== piece.userData.color) { const tv = pieceValues[t.userData.type] || 0, pv = pieceValues[piece.userData.type] || 0; score += tv * 12; if (tv < pv) score -= (pv - tv) * 6; }
+  if (piece.userData.type === 'pawn') { if (isBlackMove && move.z < piece.userData.z) score += (8 - move.z) * 3; if (!isBlackMove && move.z > piece.userData.z) score += move.z * 3; }
+  score += (14 - (Math.abs(move.y - 4.5) + Math.abs(move.x - 4.5))) * 0.8;
+  const k = getKing(piece.userData.color); if (k && Math.abs(move.z - k.userData.z) + Math.abs(move.y - k.userData.y) + Math.abs(move.x - k.userData.x) < 3) score += 5;
   return score;
 }
-
-function minimax(depth, isMax, alpha, beta) {
-  if(depth === 0) return evaluateBoard();
-  const color = isMax ? 'black' : 'white';
-  const all = [];
-  pieces.filter(p => p.userData.color === color).forEach(p => getAllMoves(p).forEach(m => all.push({piece:p, move:m})));
-  if(all.length === 0) { const k = getKing(color); return (k && isSquareAttacked(k.userData.z,k.userData.y,k.userData.x,color)) ? (isMax ? -10000+depth : 10000-depth) : 0; }
-  if(isMax) {
-    let maxE = -Infinity;
-    for(const {piece,move} of all) {
-      const tgt = find(move.z,move.y,move.x), old = {z:piece.userData.z,y:piece.userData.y,x:piece.userData.x}; let rem=null;
-      if(tgt && tgt.userData.color!==color) { rem=tgt; pieces=pieces.filter(p=>p!==tgt); }
-      piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x;
-      const val = minimax(depth-1, false, alpha, beta);
-      piece.userData.z=old.z; piece.userData.y=old.y; piece.userData.x=old.x;
-      if(rem) pieces.push(rem);
-      maxE = Math.max(maxE, val); alpha = Math.max(alpha, val); if(beta<=alpha) break;
-    } return maxE;
-  } else {
-    let minE = Infinity;
-    for(const {piece,move} of all) {
-      const tgt = find(move.z,move.y,move.x), old = {z:piece.userData.z,y:piece.userData.y,x:piece.userData.x}; let rem=null;
-      if(tgt && tgt.userData.color!==color) { rem=tgt; pieces=pieces.filter(p=>p!==tgt); }
-      piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x;
-      const val = minimax(depth-1, true, alpha, beta);
-      piece.userData.z=old.z; piece.userData.y=old.y; piece.userData.x=old.x;
-      if(rem) pieces.push(rem);
-      minE = Math.min(minE, val); beta = Math.min(beta, val); if(beta<=alpha) break;
-    } return minE;
+function aiMove() {
+  if (aiThinking || gameMode !== 'ai' || turn !== 'black' || gameEnded || isUndoMode) return;
+  aiThinking = true; document.getElementById('ai-status').textContent = `🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`;
+  aiTimeoutId = setTimeout(() => {
+    const all = [];
+    for (const p of pieces.filter(p => p.userData.color === 'black')) for (const m of getAllMoves(p)) all.push({ piece: p, move: m, score: evaluateMove(p, m, true) });
+    if (all.length) { const best = selectBestMove(all); makeMove(best.piece, best.move); }
+    aiThinking = false; document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+  }, 800);
+}
+function saveState() {
+  const state = { pieces: pieces.map(p => ({ type: p.userData.type, color: p.userData.color, z: p.userData.z, y: p.userData.y, x: p.userData.x, hasMoved: p.userData.hasMoved, pos: p.position.clone() })), turn, moveNumber };
+  if (historyIndex < gameHistory.length - 1) gameHistory = gameHistory.slice(0, historyIndex + 1);
+  gameHistory.push(state); historyIndex++; isUndoMode = false; updateContinueButton();
+}
+function restoreState(state) {
+  pieces.forEach(p => scene.remove(p)); pieces = [];
+  state.pieces.forEach(pData => { const p = createPiece(pData.type, pData.color, pData.z, pData.y, pData.x); p.userData.hasMoved = pData.hasMoved; p.position.copy(pData.pos); scene.add(p); pieces.push(p); });
+  turn = state.turn; moveNumber = state.moveNumber || 1; updateTurnDisplay();
+}
+function undoMove() {
+  if (!canUndo()) { alert('❌ Отмена ходов доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД и 3 РАЗРЯД.'); return; }
+  if (historyIndex > 0) {
+    if (aiTimeoutId) clearTimeout(aiTimeoutId); aiThinking = false;
+    historyIndex--; restoreState(gameHistory[historyIndex]);
+    isUndoMode = true; clearHL(); selected = null; updateContinueButton();
+    document.getElementById('info').textContent = '↩️ Ход отменён. Нажмите "Продолжить"';
   }
 }
-
-function evaluateBoard() {
-  let s = 0;
-  pieces.forEach(p => { const v = pieceValues[p.userData.type]||0; const c = (4.5-Math.abs(p.userData.z-4.5))*0.1+(4.5-Math.abs(p.userData.y-4.5))*0.1; s += (p.userData.color==='black'?1:-1)*(v+c); });
-  return s;
+function continueGame() { isUndoMode = false; updateContinueButton(); if (gameMode === 'ai' && turn === 'black' && !gameEnded) aiMove(); }
+function updateContinueButton() { document.getElementById('continue-btn').style.display = isUndoMode ? 'block' : 'none'; }
+function highlightLastMove() {
+  if (!lastMoveCoords) return;
+  clearHL();
+  const { fromZ, fromY, fromX, toZ, toY, toX } = lastMoveCoords;
+  const m1 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.6 }));
+  m1.position.copy(pos(fromZ, fromY, fromX)); hl.add(m1);
+  const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 }));
+  m2.position.copy(pos(toZ, toY, toX)); hl.add(m2);
+  setTimeout(clearHL, 3000);
 }
-
-function updateTurnDisplay() { document.getElementById('turn').textContent = turn === 'white' ? '⚪ ХОД БЕЛЫХ' : '⚫ ХОД ЧЁРНЫХ'; }
+function clearHL() { while (hl.children.length) hl.remove(hl.children[0]); }
+function addHL(m) {
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshStandardMaterial({ color: m.castling ? 0xffaa44 : 0x44ff44, emissive: m.castling ? 0xffaa44 : 0x44ff44, emissiveIntensity: 0.4, transparent: true, opacity: 0.8 }));
+  s.position.copy(pos(m.z, m.y, m.x)); s.userData = m; hl.add(s);
+}
+function onMouseClick(e) {
+  if (gameEnded || isIntroActive) return;
+  if (isCheckmate(turn) || (gameMode === 'ai' && turn === 'black' && !isUndoMode)) return;
+  const mouse = new THREE.Vector2(); mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  const rc = new THREE.Raycaster(); rc.setFromCamera(mouse, camera);
+  if (selected) {
+    const hit = rc.intersectObjects(hl.children);
+    if (hit.length) { makeMove(selected, hit[0].object.userData); return; }
+  }
+  const hits = rc.intersectObjects(pieces, true);
+  if (hits.length) {
+    let obj = hits[0].object; while (obj.parent && !obj.userData.type) obj = obj.parent;
+    if (obj.userData.color !== turn) return;
+    selected = obj; clearHL(); const moves = getAllMoves(obj); moves.forEach(addHL);
+    const names = { pawn: 'пешка', rook: 'ладья', knight: 'конь', bishop: 'слон', queen: 'ферзь', king: 'король' };
+    document.getElementById('info').textContent = `✅ ${names[obj.userData.type]} ${obj.userData.color === 'white' ? '⚪' : '⚫'} | ${moves.length} ходов`;
+  } else { clearHL(); selected = null; document.getElementById('info').textContent = '🎯 Клик по фигуре → зелёные шары → клик по шару'; }
+}
 function setMode(mode) {
   gameMode = mode;
-  document.getElementById('mode-pvp').classList.toggle('active', mode==='pvp');
-  document.getElementById('mode-ai').classList.toggle('active', mode==='ai');
-  document.getElementById('ai-status').textContent = mode==='pvp' ? '👥 PvP' : `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
-  if(mode==='ai' && turn==='black' && !gameEnded) setTimeout(aiMove, 500);
+  document.getElementById('mode-pvp').classList.toggle('active', mode === 'pvp');
+  document.getElementById('mode-ai').classList.toggle('active', mode === 'ai');
+  document.getElementById('ai-status').textContent = mode === 'pvp' ? '👥 PvP' : `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+  if (mode === 'ai' && turn === 'black' && !gameEnded) aiMove();
 }
 function updateLevel() {
   aiLevel = parseInt(document.getElementById('difficulty-slider').value);
   document.getElementById('difficulty-value').textContent = levelNames[aiLevel];
-  if(gameMode==='ai') document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
-}
-function clearHL() { while(hl.children.length) hl.remove(hl.children[0]); }
-function addHL(m) {
-  const s = new THREE.Mesh(new THREE.SphereGeometry(0.35,24,24), new THREE.MeshStandardMaterial({color: m.castling?0xffaa44:0x44ff44, emissive: m.castling?0xffaa44:0x44ff44, emissiveIntensity:0.5, transparent:true, opacity:0.85}));
-  s.position.copy(pos(m.z,m.y,m.x)); s.userData=m; hl.add(s);
-}
-
-const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2();
-function onMouseClick(e) {
-  if(gameEnded || isIntroActive) return;
-  if(isCheckmate(turn) || (gameMode==='ai' && turn==='black')) return;
-  mouse.x = (e.clientX/window.innerWidth)*2-1; mouse.y = -(e.clientY/window.innerHeight)*2+1;
-  ray.setFromCamera(mouse, camera);
-  if(selected) {
-    const hits = ray.intersectObjects(hl.children);
-    if(hits.length) { makeMove(selected, hits[0].object.userData); return; }
+  if (isPremiumLevel() && !hasSubscription) {
+    alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nУстановлен уровень 2 РАЗРЯД.`);
+    aiLevel = 5; document.getElementById('difficulty-slider').value = 5; document.getElementById('difficulty-value').textContent = levelNames[5];
   }
-  const hits = ray.intersectObjects(pieces, true);
-  if(hits.length) {
-    let obj = hits[0].object;
-    while(obj.parent && !obj.userData.type) obj = obj.parent;
-    if(obj.userData.color !== turn) return;
-    selected = obj; clearHL();
-    const mv = getAllMoves(obj); mv.forEach(addHL);
-    const names = {pawn:'пешка', rook:'ладья', knight:'конь', bishop:'слон', queen:'ферзь', king:'король'};
-    document.getElementById('info').textContent = `✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':''} | ${mv.length} ходов`;
-  } else { clearHL(); selected=null; document.getElementById('info').textContent = '🎯 Клик по фигуре → шары → ход'; }
+  updateUndoButton();
+  if (gameMode === 'ai') document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
 }
-
-function showResult(type, msg) {
-  gameEnded = true;
-  document.getElementById('result-modal').style.display = 'flex';
-  const icons = {win:'🏆', loss:'🌑', draw:'🌌'}, titles = {win:'ПОБЕДА!', loss:'ПОРАЖЕНИЕ', draw:'НИЧЬЯ'}, colors = {win:'#4CAF50', loss:'#f44336', draw:'#ff9800'};
-  document.getElementById('result-icon').textContent = icons[type];
-  document.getElementById('result-title').textContent = titles[type];
-  document.getElementById('result-title').style.color = colors[type];
-  document.getElementById('result-message').innerHTML = msg;
-  document.getElementById('result-level').textContent = `Уровень противника: ${levelNames[aiLevel]}`;
-}
-
+function updateTurnDisplay() { document.getElementById('turn').textContent = turn === 'white' ? '⚪ ХОД БЕЛЫХ' : '⚫ ХОД ЧЁРНЫХ'; }
 function savePGN() {
-  const d = new Date().toISOString().slice(0,19).replace('T',' ');
-  let p = `[Event "BEZDNA 3D CHESS ULTIMATE"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`;
-  let m = '';
-  moveHistory.forEach(mv => { if(mv.white!=='-') m+=`${mv.number}. ${mv.white} `; if(mv.black) m+=`${mv.black} `; });
-  p += m.trim();
-  const b = new Blob([p],{type:'text/plain'}); const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='chess.pgn'; a.click(); URL.revokeObjectURL(a.href);
+  const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  let p = `[Event "BEZDNA 3D CHESS"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`;
+  let m = ''; moveHistory.forEach(mv => { if (mv.white !== '-') m += `${mv.number}. ${mv.white} `; if (mv.black) m += `${mv.black} `; });
+  p += m.trim(); const blob = new Blob([p], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);
 }
 function saveTXT() {
-  const d = new Date().toISOString().slice(0,19).replace('T',' ');
-  let t = `BEZDNA 3D CHESS ULTIMATE\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`;
-  moveHistory.forEach(mv => { if(mv.white!=='-') t+=`${mv.number}. ${mv.white} `; if(mv.black) t+=`${mv.black}\n`; });
-  const b = new Blob([t],{type:'text/plain'}); const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='chess.txt'; a.click(); URL.revokeObjectURL(a.href);
+  const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  let t = `BEZDNA 3D CHESS\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`;
+  moveHistory.forEach(mv => { if (mv.white !== '-') t += `${mv.number}. ${mv.white} `; if (mv.black) t += `${mv.black}\n`; });
+  const blob = new Blob([t], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`; a.click(); URL.revokeObjectURL(a.href);
 }
-
 function animate() {
   requestAnimationFrame(animate);
-  if(cinematicMode) {
-    const elapsed = (Date.now() - cinematicStartTime) / 1000;
-    const progress = Math.min(1, elapsed / 8.0);
-    const spiralAngle = progress * Math.PI * 4;
-    const spiralRadius = 12 * (1 - progress * 0.8);
-    const spiralHeight = Math.sin(progress * Math.PI * 4) * 6;
-    camera.position.x = Math.cos(spiralAngle) * spiralRadius;
-    camera.position.z = Math.sin(spiralAngle) * spiralRadius;
-    camera.position.y = spiralHeight + (1 - progress) * 20;
-    camera.lookAt(0, 0, 0);
+  if (cinematicMode) {
+    const el = (Date.now() - cinematicStartTime) / 1000, p = Math.min(1, el / 8), a = p * Math.PI * 4, r = 12 * (1 - p * 0.8), h = Math.sin(p * Math.PI * 4) * 6;
+    camera.position.x = Math.cos(a) * r; camera.position.z = Math.sin(a) * r; camera.position.y = h + (1 - p) * 20; camera.lookAt(0, 0, 0);
     starField.rotation.y += 0.02; starField.rotation.x += 0.01;
-  } else if(isIntroActive) {
-    const progress = Math.min(1, (Date.now() % 4000) / 4000);
-    const ease = progress < 0.5 ? 4*progress*progress*progress : 1 - Math.pow(-2*progress + 2, 3)/2;
-    camera.position.lerpVectors(new THREE.Vector3(0,0,25), new THREE.Vector3(12,12,12), ease);
-    camera.lookAt(0, 0, 0);
-    if(starField) starField.rotation.y += 0.002;
-  } else {
-    if(controls) controls.update();
-    if(starField) starField.rotation.y += 0.0005;
-  }
+  } else if (isIntroActive) {
+    const p = Math.min(1, (Date.now() % 4000) / 4000), e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+    camera.position.lerpVectors(new THREE.Vector3(0, 0, 25), new THREE.Vector3(12, 12, 12), e); camera.lookAt(0, 0, 0);
+    if (starField) starField.rotation.y += 0.002;
+  } else { controls.update(); if (starField) starField.rotation.y += 0.0005; }
   renderer.render(scene, camera);
 }
-
-window.addEventListener('resize', () => {
-  if(camera && renderer) { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
-});
+window.addEventListener('load', () => { loadTheme(); loadSubscription(); loadVisitorCount(); initIntro(); init(); updateUndoButton(); });
+window.addEventListener('resize', () => { if (camera && renderer) { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); } });
 document.addEventListener('click', onMouseClick);
-window.addEventListener('load', () => { initIntro(); init(); });
 </script>
 </body>
 </html>
