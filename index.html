@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <title>БЕЗДНА — 3D Шахматы</title>
 
+<!-- Yandex.Metrica -->
+<script type="text/javascript">
+  (function(m,e,t,r,i,k,a){
+    m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+  })(window, document,'script','https://mc.webvisor.org/metrika/tag_ww.js?id=108673327', 'ym');
+  
+  ym(108673327, 'init', {
+    ssr:true, webvisor:true, trackHash:true, clickmap:true, 
+    ecommerce:"dataLayer", referrer: document.referrer, url: location.href, 
+    accurateTrackBounce:true, trackLinks:true
+  });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/108673327" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrica -->
+
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q183Y4K613"></script>
 <script>
@@ -12,13 +30,16 @@
   gtag('js', new Date());
   gtag('config', 'G-Q183Y4K613');
 </script>
+<!-- /Google Analytics -->
 
 <!-- Counter.dev -->
 <script src="https://cdn.counter.dev/script.js" data-id="55535d28-be7e-43c3-8290-cf0181f5acc6" data-utcoffset="3"></script>
+<!-- /Counter.dev -->
 
 <style>
 /* Базовые стили */
-body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #000; color: #0f0; transition: background 0.3s, color 0.3s; }
+* { -webkit-tap-highlight-color: transparent; touch-action: none; }
+body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #000; color: #0f0; transition: background 0.3s, color 0.3s; user-select: none; -webkit-user-select: none; }
 
 /* ТЕМЫ ОФОРМЛЕНИЯ */
 body.theme-matrix { background: #000; color: #0f0; }
@@ -52,12 +73,27 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   background: transparent; color: #0f0; border: 1px solid #0f0; padding: 4px 12px;
   font-family: 'Courier New', monospace; font-size: 13px; cursor: pointer;
   text-shadow: 0 0 3px #0f0; transition: all 0.3s;
-  white-space: nowrap;
+  white-space: nowrap; touch-action: manipulation;
 }
 .menu-btn:hover, .menu-btn.active { background: #0f0; color: #000; box-shadow: 0 0 8px rgba(0,255,0,0.6); }
 
+/* Language Selector */
+.language-selector {
+  position: fixed; top: 10px; right: 10px; z-index: 6000;
+  display: flex; gap: 5px; background: rgba(0,0,0,0.9);
+  padding: 5px 10px; border-radius: 5px; border: 2px solid #0f0;
+}
+.lang-btn {
+  background: transparent; color: #0f0; border: 1px solid #0f0;
+  padding: 3px 12px; font-family: 'Courier New', monospace;
+  font-size: 12px; cursor: pointer; font-weight: bold;
+  transition: all 0.3s; touch-action: manipulation;
+}
+.lang-btn.active { background: #0f0; color: #000; }
+.lang-btn:hover { background: #0f0; color: #000; transform: scale(1.05); }
+
 #theme-selector {
-  position: fixed; top: 45px; right: 10px;
+  position: fixed; top: 55px; right: 10px;
   background: rgba(0,0,0,0.7); padding: 3px 8px; border-radius: 4px;
   z-index: 5000; font-size: 10px;
 }
@@ -66,11 +102,11 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   font-family: monospace; padding: 2px 5px; margin-left: 5px; font-size: 10px;
 }
 
-/* Счётчик посещений — короткий и в правом нижнем углу */
+/* Счётчик посещений — ЛЕВЫЙ НИЖНИЙ УГОЛ */
 #stats-panel {
   position: absolute;
   bottom: 10px;
-  right: 10px;
+  left: 10px;
   background: rgba(0,0,0,0.7);
   color: #f5d742;
   padding: 6px 12px;
@@ -93,7 +129,7 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
   display: flex; justify-content: center; align-items: center;
-  z-index: 6000; flex-direction: column;
+  z-index: 6000; flex-direction: column; cursor: pointer;
 }
 #intro-text {
   font-size: 14px; color: #0f0; text-shadow: 0 0 5px #0f0;
@@ -106,9 +142,11 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   background: transparent; color: #0f0; border: 2px solid #0f0; padding: 8px 20px;
   font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer;
   text-shadow: 0 0 3px #0f0; box-shadow: 0 0 8px rgba(0,255,0,0.3); transition: all 0.3s;
+  touch-action: manipulation;
 }
 .intro-btn:hover { background: #0f0; color: #000; box-shadow: 0 0 15px rgba(0,255,0,0.6); transform: scale(1.02); }
 #intro-subtitle { margin-top: 30px; font-size: 9px; color: #335533; letter-spacing: 2px; }
+#skip-hint { margin-top: 15px; font-size: 10px; color: #444; animation: blink 2s infinite; }
 
 .game-ui {
   position: absolute; background: rgba(0,0,0,0.8); color: #0f0; padding: 6px 10px;
@@ -178,6 +216,7 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   font-weight: bold;
   transition: all 0.3s;
   margin: 0 8px;
+  touch-action: manipulation;
 }
 .gift-btn { border-color: #0f0; color: #0f0; }
 .donation-btn { border-color: #ffaa44; color: #ffaa44; }
@@ -208,14 +247,14 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
   word-break: break-all;
 }
 
-.mode-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; margin: 0 2px 3px 0; transition: 0.2s; }
+.mode-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; margin: 0 2px 3px 0; transition: 0.2s; touch-action: manipulation; }
 .mode-btn.active { background: #0f0; color: #000; }
 #difficulty-panel { margin-top: 6px; padding-top: 5px; border-top: 1px solid #333; }
 #difficulty-slider { width: 100%; margin: 5px 0; cursor: pointer; }
 #difficulty-value { font-size: 10px; font-weight: bold; color: #f5d742; }
 #ai-status { font-size: 8px; color: #666; margin-top: 5px; }
 
-.control-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; transition: 0.2s; width: 100%; }
+.control-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 10px; transition: 0.2s; width: 100%; touch-action: manipulation; }
 .control-btn:hover { background: #0f0; color: #000; }
 .control-btn.disabled { opacity: 0.5; cursor: not-allowed; border-color: #666; color: #666; }
 .control-btn.disabled:hover { background: #111; color: #666; }
@@ -229,7 +268,7 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 .history-black { color: #88aaff; }
 .move-piece { color: #ffaa66; font-weight: bold; }
 #history-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
-.history-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 9px; transition: 0.2s; }
+.history-btn { background: #111; color: #0f0; border: 1px solid #0f0; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 9px; transition: 0.2s; touch-action: manipulation; }
 .history-btn:hover { background: #0f0; color: #000; }
 
 #promotion-modal {
@@ -239,7 +278,7 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 #promotion-content { background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%); border: 3px solid #0f0; border-radius: 12px; padding: 25px; text-align: center; box-shadow: 0 0 30px rgba(0,255,0,0.4); }
 #promotion-title { font-size: 18px; color: #0f0; margin-bottom: 20px; text-shadow: 0 0 5px #0f0; }
 .promotion-pieces { display: flex; gap: 15px; justify-content: center; }
-.promo-btn { width: 60px; height: 60px; background: #111; border: 2px solid #0f0; border-radius: 8px; cursor: pointer; font-size: 30px; transition: all 0.3s; }
+.promo-btn { width: 60px; height: 60px; background: #111; border: 2px solid #0f0; border-radius: 8px; cursor: pointer; font-size: 30px; transition: all 0.3s; touch-action: manipulation; }
 .promo-btn:hover { background: #0f0; transform: scale(1.05); box-shadow: 0 0 15px rgba(0,255,0,0.6); }
 
 #result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 3000; }
@@ -251,11 +290,29 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 #result-message { font-size: 14px; color: #aaa; margin-bottom: 15px; line-height: 1.5; }
 #result-level { font-size: 16px; color: #f5d742; margin-bottom: 20px; font-weight: bold; text-shadow: 0 0 5px #f5d742; }
 #result-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-.result-btn { background: #111; color: #0f0; border: 2px solid #0f0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; transition: all 0.3s; }
+.result-btn { background: #111; color: #0f0; border: 2px solid #0f0; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; transition: all 0.3s; touch-action: manipulation; }
 .result-btn:hover { background: #0f0; color: #000; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,255,0,0.3); }
+
+@media (max-width: 768px) {
+  #main-menu { overflow-x: auto; flex-wrap: nowrap; padding: 4px 8px; }
+  .menu-btn { font-size: 11px; padding: 3px 8px; white-space: nowrap; }
+  #stats-panel { bottom: 5px; left: 5px; font-size: 11px; padding: 4px 8px; }
+  #history-panel { width: 150px; left: 5px; top: 5px; }
+  #info { left: 5px; bottom: 40px; font-size: 9px; }
+  #camera-control { left: 5px; bottom: 5px; font-size: 7px; }
+  #mode-panel { right: 5px; top: 40px; min-width: 120px; }
+  #undo-panel { right: 5px; top: 150px; }
+  .game-ui { font-size: 9px; padding: 4px 6px; }
+}
 </style>
 </head>
 <body>
+
+<!-- Language Selector -->
+<div class="language-selector">
+  <button class="lang-btn active" id="lang-ru" onclick="setLanguage('ru')">RU</button>
+  <button class="lang-btn" id="lang-en" onclick="setLanguage('en')">EN</button>
+</div>
 
 <div id="theme-selector">
   🎨 ТЕМА:
@@ -268,15 +325,15 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 </div>
 
 <div id="main-menu">
-  <button class="menu-btn active" onclick="showPage('game')">🎮 Главная</button>
-  <button class="menu-btn" onclick="showPage('tutorial')">📖 Обучение</button>
-  <button class="menu-btn" onclick="showPage('rules')">📜 Правила</button>
-  <button class="menu-btn" onclick="showPage('about')">ℹ️ О проекте</button>
-  <button class="menu-btn" onclick="showSubscription()">💎 ПОДПИСКА</button>
-  <button class="menu-btn" onclick="showGift()">🎁 ПОДАРИТЬ</button>
-  <button class="menu-btn" onclick="showNetwork()">🌐 СЕТЕВАЯ ИГРА</button>
-  <button class="menu-btn" onclick="showDonation()">❤️ ПОДДЕРЖАТЬ</button>
-  <button class="menu-btn" onclick="showFeedback()">💬 ОТЗЫВ</button>
+  <button class="menu-btn active" onclick="showPage('game')" data-ru="🎮 Главная" data-en="🎮 Main">🎮 Главная</button>
+  <button class="menu-btn" onclick="showPage('tutorial')" data-ru="📖 Обучение" data-en="📖 Tutorial">📖 Обучение</button>
+  <button class="menu-btn" onclick="showPage('rules')" data-ru="📜 Правила" data-en="📜 Rules">📜 Правила</button>
+  <button class="menu-btn" onclick="showPage('about')" data-ru="ℹ️ О проекте" data-en="ℹ️ About">ℹ️ О проекте</button>
+  <button class="menu-btn" onclick="showSubscription()" data-ru="💎 ПОДПИСКА" data-en="💎 SUBSCRIPTION">💎 ПОДПИСКА</button>
+  <button class="menu-btn" onclick="showGift()" data-ru="🎁 ПОДАРИТЬ" data-en="🎁 GIFT">🎁 ПОДАРИТЬ</button>
+  <button class="menu-btn" onclick="showNetwork()" data-ru="🌐 СЕТЕВАЯ ИГРА" data-en="🌐 NETWORK">🌐 СЕТЕВАЯ ИГРА</button>
+  <button class="menu-btn" onclick="showDonation()" data-ru="❤️ ПОДДЕРЖАТЬ" data-en="❤️ DONATE">❤️ ПОДДЕРЖАТЬ</button>
+  <button class="menu-btn" onclick="showFeedback()" data-ru="💬 ОТЗЫВ" data-en="💬 FEEDBACK">💬 ОТЗЫВ</button>
 </div>
 
 <div id="stats-panel">
@@ -288,51 +345,51 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 <div id="intro-overlay">
   <div id="intro-text"></div>
   <div id="intro-actions">
-    <button class="intro-btn" id="btn-yes">[ ДА ]</button>
-    <button class="intro-btn" id="btn-no">[ НЕТ ]</button>
+    <button class="intro-btn" id="btn-yes" data-ru="[ ДА ]" data-en="[ YES ]">[ ДА ]</button>
+    <button class="intro-btn" id="btn-no" data-ru="[ НЕТ ]" data-en="[ NO ]">[ НЕТ ]</button>
   </div>
   <div id="intro-subtitle">3D CHESS ENGINE // BEZDNA MODULE</div>
+  <div id="skip-hint" data-ru="Нажмите ПРОБЕЛ или кликните чтобы пропустить" data-en="Press SPACE or click to skip">Нажмите ПРОБЕЛ или кликните чтобы пропустить</div>
 </div>
 
 <div id="history-panel" class="game-ui">
-  <div id="history-title">📜 ИСТОРИЯ ПАРТИИ</div>
+  <div id="history-title" data-ru="📜 ИСТОРИЯ ПАРТИИ" data-en="📜 GAME HISTORY">📜 ИСТОРИЯ ПАРТИИ</div>
   <div id="history-list"></div>
   <div id="history-buttons">
     <button class="history-btn" onclick="savePGN()">💾 PGN</button>
     <button class="history-btn" onclick="saveTXT()">📄 TXT</button>
-    <button class="history-btn" onclick="clearHistory()">🗑</button>
+    <button class="history-btn" onclick="clearHistory()" data-ru="🗑" data-en="🗑">🗑</button>
   </div>
 </div>
 
 <div id="mode-panel" class="game-ui">
-  <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')">👥 PvP</button>
-  <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">🤖 PvAI</button>
+  <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')" data-ru="👥 PvP" data-en="👥 PvP">👥 PvP</button>
+  <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')" data-ru="🤖 PvAI" data-en="🤖 PvAI">🤖 PvAI</button>
   <div id="difficulty-panel">
-    <div>🏆 РАЗРЯД AI</div>
+    <div data-ru="🏆 РАЗРЯД AI" data-en="🏆 AI RANK">🏆 РАЗРЯД AI</div>
     <input type="range" id="difficulty-slider" min="1" max="10" step="1" value="5" oninput="updateLevel()">
     <div id="difficulty-value">2 РАЗРЯД</div>
   </div>
-  <div id="ai-status">🤖 AI: ЧЁРНЫЕ (ждёт хода)</div>
+  <div id="ai-status" data-ru="🤖 AI: ЧЁРНЫЕ (ждёт хода)" data-en="🤖 AI: BLACK (waiting)">🤖 AI: ЧЁРНЫЕ (ждёт хода)</div>
 </div>
 
 <div id="undo-panel" class="game-ui">
-  <button class="control-btn" id="undo-btn" onclick="undoMove()">↩️ Отменить ход</button>
-  <button class="control-btn" id="continue-btn" onclick="continueGame()">▶️ Продолжить</button>
-  <button class="control-btn" id="highlightBtn" onclick="highlightLastMove()">🔦 Подсветка</button>
+  <button class="control-btn" id="undo-btn" onclick="undoMove()" data-ru="↩️ Отменить ход" data-en="↩️ Undo move">↩️ Отменить ход</button>
+  <button class="control-btn" id="continue-btn" onclick="continueGame()" data-ru="▶️ Продолжить" data-en="▶️ Continue">▶️ Продолжить</button>
+  <button class="control-btn" id="highlightBtn" onclick="highlightLastMove()" data-ru="🔦 Подсветка" data-en="🔦 Highlight"> Подсветка</button>
 </div>
 
 <div id="camera-control" class="game-ui">
-  🔄 ПКМ + drag: камера<br>
-  🖱️ ЛКМ + drag: вращение
+  <span data-ru="🔄 ПКМ + drag: камера<br>🖱️ ЛКМ + drag: вращение" data-en="🔄 RMB + drag: camera<br>🖱️ LMB + drag: rotate">🔄 ПКМ + drag: камера<br>🖱️ ЛКМ + drag: вращение</span>
 </div>
 
 <div id="turn" class="game-ui">⚪ ХОД БЕЛЫХ</div>
 <div id="check" class="game-ui">⚠️ ШАХ! ⚠️</div>
-<div id="info" class="game-ui">🎯 Клик по фигуре → зелёные шары → клик по шару</div>
+<div id="info" class="game-ui" data-ru="🎯 Клик по фигуре → зелёные шары → клик по шару" data-en="🎯 Click piece → green spheres → click sphere">🎯 Клик по фигуре → зелёные шары → клик по шару</div>
 
 <div id="promotion-modal">
   <div id="promotion-content">
-    <div id="promotion-title">ВЫБЕРИТЕ ФИГУРУ</div>
+    <div id="promotion-title" data-ru="ВЫБЕРИТЕ ФИГУРУ" data-en="CHOOSE PIECE">ВЫБЕРИТЕ ФИГУРУ</div>
     <div class="promotion-pieces">
       <button class="promo-btn" onclick="promoteTo('queen')">♕</button>
       <button class="promo-btn" onclick="promoteTo('rook')">♖</button>
@@ -345,64 +402,57 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 <div id="result-modal">
   <div id="result-content">
     <div id="result-icon">🏆</div>
-    <div id="result-title">ПОБЕДА!</div>
+    <div id="result-title" data-ru="ПОБЕДА!" data-en="VICTORY!">ПОБЕДА!</div>
     <div id="result-message">МАТ!<br>Победили БЕЛЫЕ</div>
-    <div id="result-level">Уровень противника: 2 РАЗРЯД</div>
+    <div id="result-level" data-ru="Уровень противника: 2 РАЗРЯД" data-en="Opponent level: 2nd RANK">Уровень противника: 2 РАЗРЯД</div>
     <div id="result-buttons">
-      <button class="result-btn" onclick="location.reload()">🔄 Новая партия</button>
-      <button class="result-btn" onclick="savePGN()">💾 Сохранить PGN</button>
+      <button class="result-btn" onclick="location.reload()" data-ru="🔄 Новая партия" data-en="🔄 New game">🔄 Новая партия</button>
+      <button class="result-btn" onclick="savePGN()" data-ru="💾 Сохранить PGN" data-en="💾 Save PGN">💾 Сохранить PGN</button>
     </div>
   </div>
 </div>
 
 <div id="subscription-modal">
   <div id="subscription-content">
-    <div id="subscription-title">💎 ПРЕМИУМ ПОДПИСКА</div>
+    <div id="subscription-title" data-ru="💎 ПРЕМИУМ ПОДПИСКА" data-en="💎 PREMIUM SUBSCRIPTION">💎 ПРЕМИУМ ПОДПИСКА</div>
     <div id="subscription-message">
-      Доступ к уровням КМС, МС, ГРОССМЕЙСТЕР и БОГ<br>
-      Сетевая игра (скоро)<br>
-      Турниры с призовым фондом $1,000,000
+      <span data-ru="Доступ к уровням КМС, МС, ГРОССМЕЙСТЕР и БОГ<br>Сетевая игра (скоро)<br>Турниры с призовым фондом $1,000,000" data-en="Access to CM, IM, GM and GOD levels<br>Network game (coming soon)<br>Tournaments with $1,000,000 prize pool">Доступ к уровням КМС, МС, ГРОССМЕЙСТЕР и БОГ<br>Сетевая игра (скоро)<br>Турниры с призовым фондом $1,000,000</span>
     </div>
     <div id="subscription-price">10 000 ₽ / год</div>
-    <button class="subscription-btn" onclick="buySubscription()">КУПИТЬ</button>
-    <button class="subscription-btn" onclick="closeSubscription()">ОТМЕНА</button>
+    <button class="subscription-btn" onclick="buySubscription()" data-ru="КУПИТЬ" data-en="BUY">КУПИТЬ</button>
+    <button class="subscription-btn" onclick="closeSubscription()" data-ru="ОТМЕНА" data-en="CANCEL">ОТМЕНА</button>
   </div>
 </div>
 
 <div id="gift-modal">
   <div id="gift-content">
-    <div id="subscription-title">🎁 ПОДАРИТЬ ПОДПИСКУ</div>
-    <div id="subscription-message">Введите никнейм друга, чтобы подарить ему годовую подписку</div>
+    <div id="subscription-title" data-ru="🎁 ПОДАРИТЬ ПОДПИСКУ" data-en="🎁 GIFT SUBSCRIPTION">🎁 ПОДАРИТЬ ПОДПИСКУ</div>
+    <div id="subscription-message" data-ru="Введите никнейм друга, чтобы подарить ему годовую подписку" data-en="Enter friend's nickname to gift annual subscription">Введите никнейм друга, чтобы подарить ему годовую подписку</div>
     <input type="text" id="gift-input" placeholder="НИКНЕЙМ ДРУГА">
-    <button class="gift-btn" onclick="sendGift()">ПОДАРИТЬ</button>
-    <button class="gift-btn" onclick="closeGift()">ОТМЕНА</button>
+    <button class="gift-btn" onclick="sendGift()" data-ru="ПОДАРИТЬ" data-en="GIFT">ПОДАРИТЬ</button>
+    <button class="gift-btn" onclick="closeGift()" data-ru="ОТМЕНА" data-en="CANCEL">ОТМЕНА</button>
   </div>
 </div>
 
 <div id="network-modal">
   <div id="network-content">
-    <div id="subscription-title">🌐 СЕТЕВАЯ ИГРА</div>
+    <div id="subscription-title" data-ru="🌐 СЕТЕВАЯ ИГРА" data-en="🌐 NETWORK GAME">🌐 СЕТЕВАЯ ИГРА</div>
     <div id="subscription-message">
-      ⚡ В РАЗРАБОТКЕ ⚡<br><br>
-      В будущем здесь будет:<br>
-      • Игра с друзьями по ссылке<br>
-      • Рейтинговая система<br>
-      • Турниры с призовым фондом $1,000,000
+      <span data-ru="⚡ В РАЗРАБОТКЕ ⚡<br><br>В будущем здесь будет:<br>• Игра с друзьями по ссылке<br>• Рейтинговая система<br>• Турниры с призовым фондом $1,000,000" data-en="⚡ IN DEVELOPMENT ⚡<br><br>Coming soon:<br>• Play with friends via link<br>• Rating system<br>• Tournaments with $1,000,000 prize pool">⚡ В РАЗРАБОТКЕ ⚡<br><br>В будущем здесь будет:<br>• Игра с друзьями по ссылке<br>• Рейтинговая система<br>• Турниры с призовым фондом $1,000,000</span>
     </div>
-    <button class="subscription-btn" onclick="closeNetwork()">ЗАКРЫТЬ</button>
+    <button class="subscription-btn" onclick="closeNetwork()" data-ru="ЗАКРЫТЬ" data-en="CLOSE">ЗАКРЫТЬ</button>
   </div>
 </div>
 
 <div id="donation-modal">
   <div id="donation-content">
-    <div id="subscription-title">❤️ ПОДДЕРЖАТЬ ПРОЕКТ</div>
+    <div id="subscription-title" data-ru="❤️ ПОДДЕРЖАТЬ ПРОЕКТ" data-en="❤️ SUPPORT PROJECT">❤️ ПОДДЕРЖАТЬ ПРОЕКТ</div>
     <div id="subscription-message">
-      БЕЗДНА развивается благодаря вам.<br>
-      Любая сумма помогает серверам, разработке и новым уровням AI.
+      <span data-ru="БЕЗДНА развивается благодаря вам.<br>Любая сумма помогает серверам, разработке и новым уровням AI." data-en="BEZDNA grows thanks to you.<br>Any amount helps servers, development and new AI levels.">БЕЗДНА развивается благодаря вам.<br>Любая сумма помогает серверам, разработке и новым уровням AI.</span>
     </div>
     <div id="donation-link"></div>
-    <button class="donation-btn" onclick="openDonationLink()">ОТКРЫТЬ ССЫЛКУ</button>
-    <button class="donation-btn" onclick="closeDonation()">ЗАКРЫТЬ</button>
+    <button class="donation-btn" onclick="openDonationLink()" data-ru="ОТКРЫТЬ ССЫЛКУ" data-en="OPEN LINK">ОТКРЫТЬ ССЫЛКУ</button>
+    <button class="donation-btn" onclick="closeDonation()" data-ru="ЗАКРЫТЬ" data-en="CLOSE">ЗАКРЫТЬ</button>
   </div>
 </div>
 
@@ -410,31 +460,31 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 
 <div id="tutorial-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
-    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📖 ОБУЧЕНИЕ</h1>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🎯 Цель игры</h3><p style="font-size:13px;">Объявить мат королю противника.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📐 Трёхмерное поле</h3><p style="font-size:13px;">Поле 8×8×8: 8 по X (горизонталь), 8 по Y (вертикаль), 8 по Z (глубина).</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♟️ Как ходят фигуры</h3><p style="font-size:13px;">Пешки ходят вперёд по Z и Y, бьют по диагонали. Остальные фигуры ходят как в обычных шахматах, но в 3D.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🏰 Рокировка</h3><p style="font-size:13px;">Король перемещается на две клетки к ладье, ладья перепрыгивает.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">💎 Подписка</h3><p style="font-size:13px;">Уровни КМС, МС, Гроссмейстер и Бог доступны только по подписке (10 000 ₽/год).</p></div>
-    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← Вернуться к игре</button>
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;" data-ru="📖 ОБУЧЕНИЕ" data-en="📖 TUTORIAL">📖 ОБУЧЕНИЕ</h1>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="🎯 Цель игры" data-en="🎯 Game objective">🎯 Цель игры</h3><p style="font-size:13px;" data-ru="Объявить мат королю противника." data-en="Checkmate the opponent's king.">Объявить мат королю противника.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="📐 Трёхмерное поле" data-en="📐 3D board">📐 Трёхмерное поле</h3><p style="font-size:13px;" data-ru="Поле 8×8×8: 8 по X (горизонталь), 8 по Y (вертикаль), 8 по Z (глубина)." data-en="8×8×8 board: 8 by X (horizontal), 8 by Y (vertical), 8 by Z (depth).">Поле 8×8×8: 8 по X (горизонталь), 8 по Y (вертикаль), 8 по Z (глубина).</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="♟️ Как ходят фигуры" data-en="♟️ Piece movement">♟️ Как ходят фигуры</h3><p style="font-size:13px;" data-ru="Пешки ходят вперёд по Z и Y, бьют по диагонали. Остальные фигуры ходят как в обычных шахматах, но в 3D." data-en="Pawns move forward on Z and Y, capture diagonally. Other pieces move like regular chess but in 3D.">Пешки ходят вперёд по Z и Y, бьют по диагонали. Остальные фигуры ходят как в обычных шахматах, но в 3D.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="🏰 Рокировка" data-en="🏰 Castling">🏰 Рокировка</h3><p style="font-size:13px;" data-ru="Король перемещается на две клетки к ладье, ладья перепрыгивает." data-en="King moves two squares toward rook, rook jumps over.">Король перемещается на две клетки к ладье, ладья перепрыгивает.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="💎 Подписка" data-en="💎 Subscription"> Подписка</h3><p style="font-size:13px;" data-ru="Уровни КМС, МС, Гроссмейстер и Бог доступны только по подписке (10 000 ₽/год)." data-en="CM, IM, Grandmaster and GOD levels available by subscription only (10,000 ₽/year).">Уровни КМС, МС, Гроссмейстер и Бог доступны только по подписке (10 000 ₽/год).</p></div>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;" data-ru="← Вернуться к игре" data-en="← Back to game">← Вернуться к игре</button>
   </div>
 </div>
 
 <div id="rules-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
-    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📜 ПРАВИЛА</h1>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">Основные правила</h3><p style="font-size:13px;">Аналогичны классическим шахматам, но адаптированы для 3D-пространства.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">Отмена ходов</h3><p style="font-size:13px;">Доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД, 3 РАЗРЯД.</p></div>
-    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← Вернуться к игре</button>
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;" data-ru="📜 ПРАВИЛА" data-en="📜 RULES">📜 ПРАВИЛА</h1>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="Основные правила" data-en="Basic rules">Основные правила</h3><p style="font-size:13px;" data-ru="Аналогичны классическим шахматам, но адаптированы для 3D-пространства." data-en="Similar to classical chess but adapted for 3D space.">Аналогичны классическим шахматам, но адаптированы для 3D-пространства.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;" data-ru="Отмена ходов" data-en="Undo moves">Отмена ходов</h3><p style="font-size:13px;" data-ru="Доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД, 3 РАЗРЯД." data-en="Available only on BEGINNER, AMATEUR, 4th RANK, 3rd RANK levels.">Доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД, 3 РАЗРЯД.</p></div>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;" data-ru="← Вернуться к игре" data-en="← Back to game">← Вернуться к игре</button>
   </div>
 </div>
 
 <div id="about-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;text-align:center;">
-    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">ℹ️ О ПРОЕКТЕ</h1>
-    <p style="font-size:14px;line-height:1.6;margin-bottom:15px;"><strong>БЕЗДНА</strong> — трёхмерные шахматы 8×8×8<br>с искусственным интеллектом.</p>
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;" data-ru="ℹ️ О ПРОЕКТЕ" data-en="ℹ️ ABOUT">ℹ️ О ПРОЕКТЕ</h1>
+    <p style="font-size:14px;line-height:1.6;margin-bottom:15px;" data-ru="<strong>БЕЗДНА</strong> — трёхмерные шахматы 8×8×8<br>с искусственным интеллектом." data-en="<strong>BEZDNA</strong> — 8×8×8 3D chess<br>with artificial intelligence."><strong>БЕЗДНА</strong> — трёхмерные шахматы 8×8×8<br>с искусственным интеллектом.</p>
     <p style="font-size:12px;color:#888;margin-top:30px;">Three.js<br>© 2026</p>
-    <button class="menu-btn" onclick="showPage('game')" style="margin-top:30px;">← Вернуться к игре</button>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:30px;" data-ru="← Вернуться к игре" data-en="← Back to game">← Вернуться к игре</button>
   </div>
 </div>
 
@@ -443,21 +493,51 @@ body.theme-gold .menu-btn:hover { background: #ffd700; color: #1a1a0a; }
 
 <script>
 // ============================================================
-// БЕЗДНА — 3D ШАХМАТЫ (ЧЕСТНЫЙ СЧЁТЧИК + ОБРАТНАЯ СВЯЗЬ)
+// ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ
 // ============================================================
+let currentLang = 'ru';
 
-// ------------------- ОБРАТНАЯ СВЯЗЬ (TELEGRAM) -------------------
-function showFeedback() {
-  // Замените 'ВАШ_НИК' на ваш реальный Telegram username (без @)
-  const tgLink = "https://t.me/bezdnachess.com";
-  window.open(tgLink, '_blank');
+function setLanguage(lang) {
+  currentLang = lang;
+  document.getElementById('lang-ru').classList.toggle('active', lang === 'ru');
+  document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+  
+  // Update all elements with data-ru and data-en attributes
+  document.querySelectorAll('[data-ru][data-en]').forEach(el => {
+    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+      el.placeholder = el.getAttribute(`data-${lang}-placeholder`) || el.placeholder;
+    } else {
+      el.innerHTML = el.getAttribute(`data-${lang}`);
+    }
+  });
+  
+  localStorage.setItem('bezna_lang', lang);
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'language_change', {lang});
 }
 
-// ------------------- ЧЕСТНЫЙ СЧЁТЧИК УНИКАЛЬНЫХ ПОСЕТИТЕЛЕЙ -------------------
+function loadLanguage() {
+  const saved = localStorage.getItem('bezna_lang');
+  if (saved && ['ru', 'en'].includes(saved)) {
+    setLanguage(saved);
+  }
+}
+
+// ============================================================
+// ОБРАТНАЯ СВЯЗЬ (TELEGRAM)
+// ============================================================
+function showFeedback() {
+  const tgLink = "https://t.me/bezdnachess.com";
+  window.open(tgLink, '_blank');
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'feedback_click');
+}
+
+// ============================================================
+// ЧЕСТНЫЙ СЧЁТЧИК УНИКАЛЬНЫХ ПОСЕТИТЕЛЕЙ
+// ============================================================
 (function() {
   let currentCount = parseInt(localStorage.getItem('bezna_visitor_count'));
   if (isNaN(currentCount)) {
-    currentCount = 17;  // СТАРТ С РЕАЛЬНЫХ 17 ПОСЕТИТЕЛЕЙ!
+    currentCount = 17;
     localStorage.setItem('bezna_visitor_count', currentCount);
   }
 
@@ -476,12 +556,15 @@ function showFeedback() {
   updateCounterDisplay();
 })();
 
-// ------------------- ДОНАТ -------------------
+// ============================================================
+// ДОНАТ
+// ============================================================
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
 
 function showDonation() {
   document.getElementById('donation-link').innerText = DONATION_LINK;
   document.getElementById('donation-modal').style.display = 'flex';
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'donation_modal');
 }
 
 function closeDonation() {
@@ -490,42 +573,49 @@ function closeDonation() {
 
 function openDonationLink() {
   window.open(DONATION_LINK, '_blank');
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'donation_click');
 }
 
-// ------------------- КНОПКА ПОДЕЛИТЬСЯ -------------------
+// ============================================================
+// КНОПКА ПОДЕЛИТЬСЯ
+// ============================================================
 function shareGame() {
   const count = document.getElementById('stats-total')?.innerText || '???';
-  const text = `Я сыграл партию в 3D-шахматы БЕЗДНА! Я ${count}-й игрок в истории. Ты можешь быть следующим → bezdnachess.com`;
+  const text = currentLang === 'ru' 
+    ? `Я сыграл партию в 3D-шахматы БЕЗДНА! Я ${count}-й игрок в истории. Ты можешь быть следующим → bezdnachess.com`
+    : `I played a game in BEZDNA 3D chess! I'm player #${count} in history. You can be next → bezdnachess.com`;
   
   if (navigator.share) {
     navigator.share({
-      title: 'БЕЗДНА — 3D шахматы',
+      title: currentLang === 'ru' ? 'БЕЗДНА — 3D шахматы' : 'BEZDNA - 3D Chess',
       text: text,
       url: 'https://bezdnachess.com'
-    }).catch(e => console.log('Поделиться не удалось', e));
+    }).catch(e => console.log('Share failed', e));
   } else {
     navigator.clipboard.writeText(text).then(() => {
-      alert('✅ Текст скопирован! Отправь другу.');
+      alert(currentLang === 'ru' ? '✅ Текст скопирован! Отправь другу.' : '✅ Text copied! Send to friend.');
     }).catch(() => {
-      alert('❌ Не удалось скопировать. Вот текст:\n' + text);
+      alert(text);
     });
   }
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'share_click');
 }
 
-// Добавляем кнопку "Поделиться" в окно результата
 function addShareButtonToResult() {
   const resultButtons = document.getElementById('result-buttons');
   if (resultButtons && !document.getElementById('share-result-btn')) {
     const shareBtn = document.createElement('button');
     shareBtn.id = 'share-result-btn';
     shareBtn.className = 'result-btn';
-    shareBtn.innerHTML = '📤 Поделиться';
+    shareBtn.innerHTML = currentLang === 'ru' ? '📤 Поделиться' : '📤 Share';
     shareBtn.onclick = shareGame;
     resultButtons.appendChild(shareBtn);
   }
 }
 
-// ------------------- ТЕМЫ ОФОРМЛЕНИЯ -------------------
+// ============================================================
+// ТЕМЫ ОФОРМЛЕНИЯ
+// ============================================================
 function changeTheme(theme) {
   document.body.classList.remove('theme-matrix', 'theme-classic', 'theme-cosmos', 'theme-gold');
   document.body.classList.add(`theme-${theme}`);
@@ -539,7 +629,9 @@ function loadTheme() {
   }
 }
 
-// ------------------- ПОДПИСКА -------------------
+// ============================================================
+// ПОДПИСКА
+// ============================================================
 let hasSubscription = false;
 function loadSubscription() {
   const saved = localStorage.getItem('bezna_subscription');
@@ -550,26 +642,31 @@ function loadSubscription() {
   }
 }
 function buySubscription() {
-  alert('💎 Демо-режим: подписка активирована!\nВ реальной версии здесь будет платёжный шлюз.');
+  alert(currentLang === 'ru' 
+    ? '💎 Демо-режим: подписка активирована!\nВ реальной версии здесь будет платёжный шлюз.' 
+    : '💎 Demo mode: subscription activated!\nPayment gateway in full version.');
   hasSubscription = true;
   localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 }));
   closeSubscription();
   updateUndoButton();
   updateLevel();
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'buy_subscription');
 }
-function showSubscription() { document.getElementById('subscription-modal').style.display = 'flex'; }
+function showSubscription() { document.getElementById('subscription-modal').style.display = 'flex'; if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'subscription_modal'); }
 function closeSubscription() { document.getElementById('subscription-modal').style.display = 'none'; }
-function showGift() { document.getElementById('gift-modal').style.display = 'flex'; }
+function showGift() { document.getElementById('gift-modal').style.display = 'flex'; if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'gift_modal'); }
 function closeGift() { document.getElementById('gift-modal').style.display = 'none'; }
 function sendGift() {
   const friend = document.getElementById('gift-input').value.trim();
   if (friend) {
-    alert(`🎁 Подарок отправлен пользователю ${friend}!\nВ реальной версии здесь будет отправка подписки.`);
+    alert((currentLang === 'ru' ? `🎁 Подарок отправлен пользователю ${friend}!` : `🎁 Gift sent to ${friend}!`) + 
+          (currentLang === 'ru' ? '\nВ реальной версии здесь будет отправка подписки.' : '\nSending in full version.'));
     document.getElementById('gift-input').value = '';
     closeGift();
-  } else alert('Введите никнейм друга');
+    if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'send_gift');
+  } else alert(currentLang === 'ru' ? 'Введите никнейм друга' : 'Enter friend nickname');
 }
-function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; }
+function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'network_modal'); }
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 
 function canUndo() { return aiLevel <= 4; }
@@ -580,7 +677,9 @@ function updateUndoButton() {
 }
 function isPremiumLevel() { return aiLevel >= 7; }
 
-// ------------------- QR-КОД ДЛЯ ДОНАТОВ -------------------
+// ============================================================
+// QR-КОД ДЛЯ ДОНАТОВ
+// ============================================================
 function addDonationQR() {
   const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3";
   const myLink = atob(encodedLink);
@@ -596,7 +695,9 @@ function addDonationQR() {
   });
 }
 
-// ------------------- AI С ГЛУБИНОЙ ПОИСКА (МИНИМАКС) -------------------
+// ============================================================
+// AI С ГЛУБИНОЙ ПОИСКА (МИНИМАКС)
+// ============================================================
 function evaluateBoardForColor(color) {
   let score = 0;
   for (const p of pieces) {
@@ -701,7 +802,9 @@ function selectBestMove(moves) {
   return selectBestMoveMinimax(moves, depth);
 }
 
-// ------------------- ЗВУК -------------------
+// ============================================================
+// ЗВУК
+// ============================================================
 let audioContext = null, audioEnabled = false;
 function playTypeSound() {
   if (!audioEnabled || !audioContext) return;
@@ -724,7 +827,9 @@ function playMajesticChord() {
   freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); });
 }
 
-// ------------------- ИНТРО -------------------
+// ============================================================
+// ИНТРО С ПРОПУСКОМ (ПРОБЕЛ + КЛИК)
+// ============================================================
 function typeText(el, txt, withSound, cb) {
   el.innerHTML = '<span class="cursor"></span>';
   let i = 0;
@@ -738,17 +843,30 @@ function typeText(el, txt, withSound, cb) {
   }
   type();
 }
+
+function skipIntro() {
+  if (!isIntroActive) return;
+  const btn = document.querySelector('#intro-overlay button');
+  if (btn) btn.click();
+}
+
 function initIntro() {
   const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions');
-  const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."];
+  const texts = currentLang === 'ru' 
+    ? ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."]
+    : ["SYSTEM: Initializing BEZDNA module...\nLoading spatial coordinates...\nReady.", "ARE YOU READY TO ENTER THE ABYSS AND PLAY A GAME?", "YOU'VE MADE YOUR CHOICE.\nTHE GATES ARE OPEN."];
+  
   const btn = document.createElement('button');
-  btn.textContent = 'ВХОД'; btn.className = 'intro-btn';
+  btn.textContent = currentLang === 'ru' ? 'ВХОД' : 'ENTER'; 
+  btn.className = 'intro-btn';
   btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`;
   btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; };
   btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; };
   document.getElementById('intro-overlay').appendChild(btn);
+  
   btn.onclick = async () => {
-    await enableAudio(); btn.remove();
+    await enableAudio(); 
+    btn.remove();
     typeText(textEl, texts[0], true, () => {
       setTimeout(() => {
         typeText(textEl, texts[1], true, () => {
@@ -756,39 +874,63 @@ function initIntro() {
           document.getElementById('btn-yes').onclick = () => {
             actionsEl.style.display = 'none';
             typeText(textEl, texts[2], true, () => {
-              playMajesticChord(); cinematicMode = true; cinematicStartTime = Date.now();
+              playMajesticChord(); 
+              cinematicMode = true; 
+              cinematicStartTime = Date.now();
               setTimeout(() => {
                 document.getElementById('intro-overlay').style.opacity = '0';
                 setTimeout(() => {
                   document.getElementById('intro-overlay').style.display = 'none';
-                  isIntroActive = false; cinematicMode = false;
+                  isIntroActive = false; 
+                  cinematicMode = false;
                   document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
                   if (controls) controls.enabled = true;
                   addDonationQR();
+                  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'intro_complete');
                 }, 2000);
               }, 1000);
             });
           };
           document.getElementById('btn-no').onclick = () => {
             actionsEl.style.display = 'none';
-            typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", true, () => setTimeout(() => location.reload(), 1500));
+            const denyText = currentLang === 'ru' ? "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс..." : "ACCESS DENIED.\nSystem terminating session...";
+            typeText(textEl, denyText, true, () => setTimeout(() => location.reload(), 1500));
           };
         });
       }, 800);
     });
   };
+  
+  // Клик по оверлею для пропуска
+  document.getElementById('intro-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'intro-overlay') skipIntro();
+  });
+  
+  // Пробел для пропуска
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && isIntroActive) {
+      e.preventDefault();
+      skipIntro();
+    }
+  });
 }
 
-// ------------------- НАВИГАЦИЯ -------------------
+// ============================================================
+// НАВИГАЦИЯ
+// ============================================================
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(pageName + '-page').classList.add('active');
   event.target.classList.add('active');
   if (pageName === 'game' && scene) document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
+  if (typeof ym !== 'undefined') ym(108673327, 'hit', '/'+pageName, {title: pageName});
+  if (typeof gtag !== 'undefined') gtag('event', 'page_view', {page_path: '/'+pageName});
 }
 
-// ------------------- ТРЁХМЕРНАЯ СЦЕНА -------------------
+// ============================================================
+// ТРЁХМЕРНАЯ СЦЕНА
+// ============================================================
 let scene, camera, renderer, controls;
 let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1, gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false, isIntroActive = true, hl, starField, cinematicMode = false, cinematicStartTime = 0, aiTimeoutId = null;
 let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null;
@@ -797,7 +939,7 @@ const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 10
 
 function init() {
   try {
-    if (typeof THREE === 'undefined') throw new Error("Three.js не загружен.");
+    if (typeof THREE === 'undefined') throw new Error("Three.js not loaded.");
     scene = new THREE.Scene(); scene.background = new THREE.Color(0x000010); scene.fog = new THREE.FogExp2(0x000010, 0.02);
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 0, 30);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
@@ -818,7 +960,7 @@ function init() {
     }
     hl = new THREE.Group(); scene.add(hl);
     setupPieces(); saveState(); animate();
-  } catch (e) { alert("Ошибка: " + e.message); console.error(e); }
+  } catch (e) { alert("Error: " + e.message); console.error(e); }
 }
 
 function createPiece(type, color, z, y, x) {
@@ -875,20 +1017,50 @@ function pos(z, y, x) { return new THREE.Vector3(x - 4.5, z - 4.5, y - 4.5); }
 function find(z, y, x) { return pieces.find(p => p.userData && p.userData.z === z && p.userData.y === y && p.userData.x === x); }
 function getKing(color) { return pieces.find(p => p.userData.type === 'king' && p.userData.color === color); }
 
+// СЛОН: 12 ДИАГОНАЛЕЙ (4 в XY + 4 в XZ + 4 в YZ)
+// ФЕРЗЬ: 12 диагоналей слона + 6 осей ладьи = 18 направлений
 function getRawMoves(p) {
   const res = []; const { z, y, x, type, color, hasMoved } = p.userData;
   const push = (nz, ny, nx) => { if (nz < 1 || ny < 1 || nx < 1 || nz > 8 || ny > 8 || nx > 8) return false; const t = find(nz, ny, nx); if (!t) { res.push({ z: nz, y: ny, x: nx }); return true; } if (t.userData.color !== color) { res.push({ z: nz, y: ny, x: nx }); return false; } return false; };
   const ray = (dz, dy, dx) => { let nz = z, ny = y, nx = x; while (true) { nz += dz; ny += dy; nx += dx; if (!push(nz, ny, nx)) break; } };
+  
+  // ЛАДЬЯ: 6 направлений (оси X, Y, Z)
   if (type === 'rook' || type === 'queen') [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].forEach(d => ray(...d));
-  if (type === 'bishop' || type === 'queen') { const dirs = [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0], [1, 0, 1], [1, 0, -1], [-1, 0, 1], [-1, 0, -1], [0, 1, 1], [0, 1, -1], [0, -1, 1], [0, -1, -1]]; dirs.forEach(d => ray(...d)); }
+  
+  // СЛОН: 12 диагональных направлений
+  if (type === 'bishop' || type === 'queen') {
+    // 4 диагонали в плоскости XY
+    [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0],
+     // 4 диагонали в плоскости XZ
+     [1, 0, 1], [1, 0, -1], [-1, 0, 1], [-1, 0, -1],
+     // 4 диагонали в плоскости YZ
+     [0, 1, 1], [0, 1, -1], [0, -1, 1], [0, -1, -1]
+    ].forEach(d => ray(...d));
+  }
+  
+  // КОРОЛЬ: один шаг в любом направлении (26 направлений)
   if (type === 'king') for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dz || dy || dx) push(z + dz, y + dy, x + dx);
-  if (type === 'knight') { const off = [[2, 1, 0], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [0, 1, 2]]; off.forEach(([a, b, c]) => { [[a, b, c], [-a, b, c], [a, -b, c], [a, b, -c], [-a, -b, c], [-a, b, -c], [a, -b, -c], [-a, -b, -c]].forEach(([dz, dy, dx]) => push(z + dz, y + dy, x + dx)); }); }
+  
+  // КОНЬ: L-образные ходы в 3D (48 направлений)
+  if (type === 'knight') { 
+    const off = [[2, 1, 0], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [0, 1, 2]]; 
+    off.forEach(([a, b, c]) => { 
+      [[a, b, c], [-a, b, c], [a, -b, c], [a, b, -c], [-a, -b, c], [-a, b, -c], [a, -b, -c], [-a, -b, -c]]
+        .forEach(([dz, dy, dx]) => push(z + dz, y + dy, x + dx)); 
+    }); 
+  }
+  
+  // ПЕШКА: движение вперёд по Z и Y, взятие по диагонали
   if (type === 'pawn') {
     const dz = color === 'white' ? 1 : -1, dy = color === 'white' ? 1 : -1;
     if (!find(z + dz, y, x)) { push(z + dz, y, x); if (!hasMoved && !find(z + dz * 2, y, x)) push(z + dz * 2, y, x); }
     if (!find(z, y + dy, x)) { push(z, y + dy, x); if (!hasMoved && !find(z, y + dy * 2, x)) push(z, y + dy * 2, x); }
     if (!find(z + dz, y + dy, x)) { push(z + dz, y + dy, x); if (!hasMoved && !find(z + dz * 2, y + dy * 2, x)) push(z + dz * 2, y + dy * 2, x); }
-    for (let cy = -1; cy <= 1; cy++) for (let cx = -1; cx <= 1; cx++) if (cy || cx) { const t1 = find(z + dz, y + cy, x + cx); if (t1 && t1.userData.color !== color) push(z + dz, y + cy, x + cx); const t2 = find(z + cy, y + dy, x + cx); if (t2 && t2.userData.color !== color) push(z + cy, y + dy, x + cx); const t3 = find(z + dz, y + dy, x + cx); if (t3 && t3.userData.color !== color) push(z + dz, y + dy, x + cx); }
+    for (let cy = -1; cy <= 1; cy++) for (let cx = -1; cx <= 1; cx++) if (cy || cx) { 
+      const t1 = find(z + dz, y + cy, x + cx); if (t1 && t1.userData.color !== color) push(z + dz, y + cy, x + cx); 
+      const t2 = find(z + cy, y + dy, x + cx); if (t2 && t2.userData.color !== color) push(z + cy, y + dy, x + cx); 
+      const t3 = find(z + dz, y + dy, x + cx); if (t3 && t3.userData.color !== color) push(z + dz, y + dy, x + cx); 
+    }
   }
   return res;
 }
@@ -948,9 +1120,27 @@ function finishMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture) {
   turn = turn === 'white' ? 'black' : 'white';
   updateTurnDisplay();
   const king = getKing(turn);
-  if (king && isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, turn)) { document.getElementById('check').innerHTML = `⚠️ ШАХ ${turn === 'white' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}! ⚠️`; document.getElementById('check').style.display = 'block'; setTimeout(() => document.getElementById('check').style.display = 'none', 1500); }
-  if (isCheckmate(turn)) { const winner = turn === 'white' ? 'ЧЁРНЫЕ' : 'БЕЛЫЕ'; document.getElementById('info').innerHTML = `🏆 МАТ! ПОБЕДА ${winner}! 🏆`; gameEnded = true; document.getElementById('result-message').innerHTML = `МАТ!<br>Победили ${winner}`; document.getElementById('result-modal').style.display = 'flex'; addShareButtonToResult(); }
-  else if (isStalemate(turn)) { document.getElementById('info').innerHTML = `🌌 ПАТ! НИЧЬЯ! 🌌`; gameEnded = true; document.getElementById('result-message').innerHTML = `ПАТ!<br>Ничья`; document.getElementById('result-modal').style.display = 'flex'; addShareButtonToResult(); }
+  if (king && isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, turn)) { 
+    document.getElementById('check').innerHTML = currentLang === 'ru' ? `⚠️ ШАХ ${turn === 'white' ? 'БЕЛЫМ' : 'ЧЁРНЫМ'}! ⚠️` : `⚠️ CHECK to ${turn === 'white' ? 'WHITE' : 'BLACK'}! ⚠️`; 
+    document.getElementById('check').style.display = 'block'; 
+    setTimeout(() => document.getElementById('check').style.display = 'none', 1500); 
+  }
+  if (isCheckmate(turn)) { 
+    const winner = turn === 'white' ? 'ЧЁРНЫЕ' : 'БЕЛЫЕ'; 
+    const winnerEn = turn === 'white' ? 'BLACK' : 'WHITE';
+    document.getElementById('info').innerHTML = currentLang === 'ru' ? `🏆 МАТ! ПОБЕДА ${winner}! 🏆` : `🏆 CHECKMATE! ${winnerEn} WIN! 🏆`; 
+    gameEnded = true; 
+    document.getElementById('result-message').innerHTML = currentLang === 'ru' ? `МАТ!<br>Победили ${winner}` : `CHECKMATE!<br>${winnerEn} win`; 
+    document.getElementById('result-modal').style.display = 'flex'; 
+    addShareButtonToResult(); 
+  }
+  else if (isStalemate(turn)) { 
+    document.getElementById('info').innerHTML = currentLang === 'ru' ? `🌌 ПАТ! НИЧЬЯ! 🌌` : `🌌 STALEMATE! DRAW! 🌌`; 
+    gameEnded = true; 
+    document.getElementById('result-message').innerHTML = currentLang === 'ru' ? `ПАТ!<br>Ничья` : `STALEMATE!<br>Draw`; 
+    document.getElementById('result-modal').style.display = 'flex'; 
+    addShareButtonToResult(); 
+  }
   clearHL(); selected = null;
   if (gameMode === 'ai' && turn === 'black' && !gameEnded && !isUndoMode) aiTimeoutId = setTimeout(() => aiMove(), 500);
 }
@@ -984,12 +1174,18 @@ function evaluateMove(piece, move, isBlackMove) {
 }
 function aiMove() {
   if (aiThinking || gameMode !== 'ai' || turn !== 'black' || gameEnded || isUndoMode) return;
-  aiThinking = true; document.getElementById('ai-status').textContent = `🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`;
+  aiThinking = true; 
+  document.getElementById('ai-status').textContent = currentLang === 'ru' 
+    ? `🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...` 
+    : `🤖 AI (${levelNames[aiLevel]}) THINKING...`;
   aiTimeoutId = setTimeout(() => {
     const all = [];
     for (const p of pieces.filter(p => p.userData.color === 'black')) for (const m of getAllMoves(p)) all.push({ piece: p, move: m, score: evaluateMove(p, m, true) });
     if (all.length) { const best = selectBestMove(all); makeMove(best.piece, best.move); }
-    aiThinking = false; document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+    aiThinking = false; 
+    document.getElementById('ai-status').textContent = currentLang === 'ru' 
+      ? `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})` 
+      : `🤖 AI: BLACK (${levelNames[aiLevel]})`;
   }, 800);
 }
 function saveState() {
@@ -1003,12 +1199,17 @@ function restoreState(state) {
   turn = state.turn; moveNumber = state.moveNumber || 1; updateTurnDisplay();
 }
 function undoMove() {
-  if (!canUndo()) { alert('❌ Отмена ходов доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД и 3 РАЗРЯД.'); return; }
+  if (!canUndo()) { 
+    alert(currentLang === 'ru' 
+      ? '❌ Отмена ходов доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД и 3 РАЗРЯД.' 
+      : '❌ Undo available only on BEGINNER, AMATEUR, 4th RANK and 3rd RANK levels.'); 
+    return; 
+  }
   if (historyIndex > 0) {
     if (aiTimeoutId) clearTimeout(aiTimeoutId); aiThinking = false;
     historyIndex--; restoreState(gameHistory[historyIndex]);
     isUndoMode = true; clearHL(); selected = null; updateContinueButton();
-    document.getElementById('info').textContent = '↩️ Ход отменён. Нажмите "Продолжить"';
+    document.getElementById('info').textContent = currentLang === 'ru' ? '↩️ Ход отменён. Нажмите "Продолжить"' : '↩️ Move undone. Click "Continue"';
   }
 }
 function continueGame() { isUndoMode = false; updateContinueButton(); if (gameMode === 'ai' && turn === 'black' && !gameEnded) aiMove(); }
@@ -1028,10 +1229,24 @@ function addHL(m) {
   const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshStandardMaterial({ color: m.castling ? 0xffaa44 : 0x44ff44, emissive: m.castling ? 0xffaa44 : 0x44ff44, emissiveIntensity: 0.4, transparent: true, opacity: 0.8 }));
   s.position.copy(pos(m.z, m.y, m.x)); s.userData = m; hl.add(s);
 }
+
+// ОБРАБОТКА КЛИКОВ И TOUCH-СОБЫТИЙ
+function getEventCoords(e) {
+  if (e.touches && e.touches.length > 0) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  return { x: e.clientX, y: e.clientY };
+}
+
 function onMouseClick(e) {
   if (gameEnded || isIntroActive) return;
   if (isCheckmate(turn) || (gameMode === 'ai' && turn === 'black' && !isUndoMode)) return;
-  const mouse = new THREE.Vector2(); mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  
+  const coords = getEventCoords(e);
+  const mouse = new THREE.Vector2(); 
+  mouse.x = (coords.x / window.innerWidth) * 2 - 1; 
+  mouse.y = -(coords.y / window.innerHeight) * 2 + 1;
+  
   const rc = new THREE.Raycaster(); rc.setFromCamera(mouse, camera);
   if (selected) {
     const hit = rc.intersectObjects(hl.children);
@@ -1042,39 +1257,72 @@ function onMouseClick(e) {
     let obj = hits[0].object; while (obj.parent && !obj.userData.type) obj = obj.parent;
     if (obj.userData.color !== turn) return;
     selected = obj; clearHL(); const moves = getAllMoves(obj); moves.forEach(addHL);
-    const names = { pawn: 'пешка', rook: 'ладья', knight: 'конь', bishop: 'слон', queen: 'ферзь', king: 'король' };
-    document.getElementById('info').textContent = `✅ ${names[obj.userData.type]} ${obj.userData.color === 'white' ? '⚪' : '⚫'} | ${moves.length} ходов`;
-  } else { clearHL(); selected = null; document.getElementById('info').textContent = '🎯 Клик по фигуре → зелёные шары → клик по шару'; }
+    const names = { pawn: 'pawn', rook: 'rook', knight: 'knight', bishop: 'bishop', queen: 'queen', king: 'king' };
+    const namesRu = { pawn: 'пешка', rook: 'ладья', knight: 'конь', bishop: 'слон', queen: 'ферзь', king: 'король' };
+    const name = currentLang === 'ru' ? namesRu[obj.userData.type] : names[obj.userData.type];
+    document.getElementById('info').textContent = currentLang === 'ru' 
+      ? `✅ ${name} ${obj.userData.color === 'white' ? '⚪' : '⚫'} | ${moves.length} ходов` 
+      : `✅ ${name} ${obj.userData.color === 'white' ? '⚪' : '⚫'} | ${moves.length} moves`;
+  } else { clearHL(); selected = null; document.getElementById('info').textContent = currentLang === 'ru' ? '🎯 Клик по фигуре → зелёные шары → клик по шару' : '🎯 Click piece → green spheres → click sphere'; }
 }
+
+// Touch события для мобильных
+let touchStartTime = 0;
+function onTouchStart(e) {
+  if (isIntroActive) return;
+  touchStartTime = Date.now();
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    onMouseClick(e);
+  }
+}
+
+function onTouchMove(e) {
+  if (isIntroActive) return;
+  e.preventDefault();
+}
+
+function onTouchEnd(e) {
+  if (isIntroActive) return;
+  e.preventDefault();
+}
+
 function setMode(mode) {
   gameMode = mode;
   document.getElementById('mode-pvp').classList.toggle('active', mode === 'pvp');
   document.getElementById('mode-ai').classList.toggle('active', mode === 'ai');
-  document.getElementById('ai-status').textContent = mode === 'pvp' ? '👥 PvP' : `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+  document.getElementById('ai-status').textContent = mode === 'pvp' 
+    ? (currentLang === 'ru' ? '👥 PvP' : '👥 PvP') 
+    : (currentLang === 'ru' ? `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})` : `🤖 AI: BLACK (${levelNames[aiLevel]})`);
   if (mode === 'ai' && turn === 'black' && !gameEnded) aiMove();
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'mode_change', {mode});
 }
 function updateLevel() {
   aiLevel = parseInt(document.getElementById('difficulty-slider').value);
   document.getElementById('difficulty-value').textContent = levelNames[aiLevel];
   if (isPremiumLevel() && !hasSubscription) {
-    alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nУстановлен уровень 2 РАЗРЯД.`);
+    alert(currentLang === 'ru' 
+      ? `⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nУстановлен уровень 2 РАЗРЯД.` 
+      : `⚠️ Level ${levelNames[aiLevel]} requires subscription!\nSet to 2nd RANK.`);
     aiLevel = 5; document.getElementById('difficulty-slider').value = 5; document.getElementById('difficulty-value').textContent = levelNames[5];
   }
   updateUndoButton();
-  if (gameMode === 'ai') document.getElementById('ai-status').textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+  if (gameMode === 'ai') document.getElementById('ai-status').textContent = currentLang === 'ru' ? `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})` : `🤖 AI: BLACK (${levelNames[aiLevel]})`;
 }
-function updateTurnDisplay() { document.getElementById('turn').textContent = turn === 'white' ? '⚪ ХОД БЕЛЫХ' : '⚫ ХОД ЧЁРНЫХ'; }
+function updateTurnDisplay() { document.getElementById('turn').textContent = turn === 'white' ? (currentLang === 'ru' ? '⚪ ХОД БЕЛЫХ' : '⚪ WHITE TO MOVE') : (currentLang === 'ru' ? '⚫ ХОД ЧЁРНЫХ' : '⚫ BLACK TO MOVE'); }
 function savePGN() {
   const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
   let p = `[Event "BEZDNA 3D CHESS"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`;
   let m = ''; moveHistory.forEach(mv => { if (mv.white !== '-') m += `${mv.number}. ${mv.white} `; if (mv.black) m += `${mv.black} `; });
   p += m.trim(); const blob = new Blob([p], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'save_pgn');
 }
 function saveTXT() {
   const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
   let t = `BEZDNA 3D CHESS\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`;
   moveHistory.forEach(mv => { if (mv.white !== '-') t += `${mv.number}. ${mv.white} `; if (mv.black) t += `${mv.black}\n`; });
   const blob = new Blob([t], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`; a.click(); URL.revokeObjectURL(a.href);
+  if (typeof ym !== 'undefined') ym(108673327, 'reachGoal', 'save_txt');
 }
 function animate() {
   requestAnimationFrame(animate);
@@ -1089,7 +1337,26 @@ function animate() {
   } else { controls.update(); if (starField) starField.rotation.y += 0.0005; }
   renderer.render(scene, camera);
 }
-window.addEventListener('load', () => { loadTheme(); loadSubscription(); initIntro(); init(); updateUndoButton(); addShareButtonToResult(); });
+
+// Инициализация
+window.addEventListener('load', () => { 
+  loadTheme(); 
+  loadSubscription(); 
+  loadLanguage();
+  initIntro(); 
+  init(); 
+  updateUndoButton(); 
+  addShareButtonToResult(); 
+  
+  // Добавляем touch-события для мобильных
+  const canvas = renderer ? renderer.domElement : null;
+  if (canvas) {
+    canvas.addEventListener('touchstart', onTouchStart, {passive: false});
+    canvas.addEventListener('touchmove', onTouchMove, {passive: false});
+    canvas.addEventListener('touchend', onTouchEnd, {passive: false});
+  }
+});
+
 window.addEventListener('resize', () => { if (camera && renderer) { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); } });
 document.addEventListener('click', onMouseClick);
 </script>
