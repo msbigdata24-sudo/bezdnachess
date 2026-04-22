@@ -112,6 +112,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
   .game-ui{font-size:9px;padding:4px 6px}
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -404,24 +405,53 @@ function showFeedback() {
   window.open("https://t.me/bezdnachess", '_blank');
 }
 
-(function() {
-  let currentCount = parseInt(localStorage.getItem('bezna_visitor_count'));
-  if (isNaN(currentCount)) {
-    currentCount = 17;
-    localStorage.setItem('bezna_visitor_count', currentCount);
+// ============================================
+// РЕАЛЬНЫЙ ОБЩИЙ СЧЁТЧИК — CounterAPI.dev
+// ============================================
+// 1. Зарегистрируйся: https://counterapi.dev
+// 2. Замени YOUR_API_TOKEN_HERE на свой токен из раздела API Tokens
+// 3. Счётчик стартует с 90 и растёт для ВСЕХ игроков
+
+const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team-3853/bezdna-game';
+const COUNTER_API_TOKEN = 'ut_RaPqVH7nWWheabvI3xEKqiXWfg5DrUcrrnSTfNNn'; 
+
+function initRealCounter() {
+  const span = document.getElementById('stats-total');
+
+  // Если токен не заменён — fallback на локальный счётчик
+  if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
+    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+    fb++;
+    localStorage.setItem('bezna_fallback', fb);
+    if (span) span.textContent = fb.toLocaleString();
+    return;
   }
-  function updateCounterDisplay() {
-    const span = document.getElementById('stats-total');
-    if (span) span.textContent = currentCount.toLocaleString();
-  }
-  const hasCounted = localStorage.getItem('bezna_has_counted');
-  if (!hasCounted) {
-    currentCount++;
-    localStorage.setItem('bezna_visitor_count', currentCount);
-    localStorage.setItem('bezna_has_counted', 'true');
-  }
-  updateCounterDisplay();
-})();
+
+  // Увеличиваем счётчик на 1 через API
+  fetch(COUNTER_API_URL + '/up', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + COUNTER_API_TOKEN,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(data => {
+    const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
+    const displayCount = apiCount + 90; // База 90 + реальные посетители
+    if (span) span.textContent = displayCount.toLocaleString();
+  })
+  .catch(err => {
+    console.error('CounterAPI error:', err);
+    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+    fb++;
+    localStorage.setItem('bezna_fallback', fb);
+    if (span) span.textContent = fb.toLocaleString();
+  });
+}
 
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
 
@@ -1415,7 +1445,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-window.addEventListener('load', () => { loadSubscription(); initIntro(); init(); updateUndoButton(); addShareButtonToResult(); });
+window.addEventListener('load', () => { loadSubscription(); initIntro(); init(); updateUndoButton(); addShareButtonToResult(); initRealCounter(); });
 window.addEventListener('resize', () => { if (camera && renderer) { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); } });
 document.addEventListener('click', onMouseClick);
 
