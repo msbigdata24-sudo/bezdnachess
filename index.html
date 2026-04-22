@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>БЕЗДНА — 3D Шахматы</title>
+<title>БЕЗДНА — 3D Шахматы 8×8×8</title>
 <style>
 *{-webkit-tap-highlight-color:transparent;touch-action:none}
 body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#000;color:#0f0;user-select:none;-webkit-user-select:none;text-transform:uppercase}
@@ -32,9 +32,9 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 #turn{top:10px;right:10px;color:gold;font-size:13px;font-weight:bold}
 #mode-panel{top:50px;right:10px;text-align:center;min-width:150px;padding:6px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
 #undo-panel{top:180px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
-#history-panel{top:10px;left:10px;width:200px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px}
-#info{bottom:10px;left:210px;font-size:10px}
-#check{top:80px;left:210px;background:#aa0000;color:#fff;font-weight:bold;display:none;padding:4px 10px;font-size:11px}
+#history-panel{top:10px;left:10px;width:220px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px}
+#info{bottom:10px;left:230px;font-size:10px}
+#check{top:80px;left:230px;background:#aa0000;color:#fff;font-weight:bold;display:none;padding:4px 10px;font-size:11px}
 #camera-control{bottom:10px;left:10px;font-size:8px;color:#555;text-align:left}
 
 #stats-panel{position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.85);color:#f5d742;padding:8px 15px;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;z-index:1000;border:2px solid #f5d742;pointer-events:none}
@@ -104,7 +104,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
   #main-menu{overflow-x:auto;flex-wrap:nowrap;padding:4px 8px}
   .menu-btn{font-size:11px;padding:3px 8px;white-space:nowrap}
   #stats-panel{bottom:5px;right:5px;font-size:11px;padding:6px 12px}
-  #history-panel{width:150px;left:5px;top:5px}
+  #history-panel{width:180px;left:5px;top:5px}
   #info{left:5px;bottom:40px;font-size:9px}
   #camera-control{left:5px;bottom:5px;font-size:7px}
   #mode-panel{right:5px;top:40px;min-width:120px}
@@ -142,7 +142,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 </div>
 
 <div id="history-panel" class="game-ui">
-  <div id="history-title">📜 ИСТОРИЯ ПАРТИИ</div>
+  <div id="history-title">📜 ИСТОРИЯ ПАРТИИ (3D НОТАЦИЯ ZYX)</div>
   <div id="history-list"></div>
   <div id="history-buttons">
     <button class="history-btn" onclick="savePGN()">💾 PGN</button>
@@ -321,6 +321,13 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
     </div>
     
     <div style="margin-bottom:15px;">
+      <h3 style="color:#0f0;font-size:16px;">📝 3D НОТАЦИЯ ZYX</h3>
+      <p style="font-size:13px;">ФОРМАТ: [УРОВЕНЬ Z][ВЕРТИКАЛЬ Y a-h][ГОРИЗОНТАЛЬ X 1-8]<br>
+      ПРИМЕР: "2E4" — УРОВЕНЬ 2, ВЕРТИКАЛЬ E, ГОРИЗОНТАЛЬ 4.<br>
+      ПРИ НЕОДНОЗНАЧНОСТИ УКАЗЫВАЕТСЯ ПОЛНАЯ КООРДИНАТА ОТКУДА: "N1G1-3E3"</p>
+    </div>
+    
+    <div style="margin-bottom:15px;">
       <h3 style="color:#0f0;font-size:16px;">💎 ПОДПИСКА</h3>
       <p style="font-size:13px;">УРОВНИ КМС, МС, ГРОССМЕЙСТЕР И БОГ ДОСТУПНЫ ТОЛЬКО ПО ПОДПИСКЕ (10 000 ₽/ГОД).</p>
     </div>
@@ -389,7 +396,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <script>
 // ============================================================
-// БЕЗДНА — 3D ШАХМАТЫ 8×8×8 (ФИНАЛЬНАЯ СБОРКА v2.0)
+// БЕЗДНА — 3D ШАХМАТЫ 8×8×8 (ФИНАЛЬНАЯ СБОРКА v3.0)
+// С ПРАВИЛЬНОЙ 3D НОТАЦИЕЙ ZYX И ОБРАБОТКОЙ НЕОДНОЗНАЧНЫХ ХОДОВ
 // ============================================================
 
 function showFeedback() {
@@ -701,6 +709,81 @@ let threatLines = null;
 const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
 const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
 
+// ========== 3D НОТАЦИЯ ZYX ==========
+function yToLetter(y) {
+  return String.fromCharCode(96 + y);
+}
+
+function letterToY(letter) {
+  return letter.charCodeAt(0) - 96;
+}
+
+function formatCoord(z, y, x) {
+  return `${z}${yToLetter(y)}${x}`;
+}
+
+function parseCoord(coord) {
+  const z = parseInt(coord[0]);
+  const y = letterToY(coord[1]);
+  const x = parseInt(coord[2]);
+  return { z, y, x };
+}
+
+// Проверка на неоднозначность хода (две одинаковые фигуры могут пойти на ту же клетку)
+function isAmbiguousMove(piece, toZ, toY, toX) {
+  const sameTypePieces = pieces.filter(p => 
+    p !== piece &&
+    p.userData.type === piece.userData.type &&
+    p.userData.color === piece.userData.color
+  );
+  
+  for (const other of sameTypePieces) {
+    const moves = getAllMoves(other);
+    if (moves.some(m => m.z === toZ && m.y === toY && m.x === toX)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Форматирование хода в 3D нотации ZYX с обработкой неоднозначности
+function formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
+  const sym = {
+    king:   { white: '♔', black: '♚', letter: 'K' },
+    queen:  { white: '♕', black: '♛', letter: 'Q' },
+    rook:   { white: '♖', black: '♜', letter: 'R' },
+    bishop: { white: '♗', black: '♝', letter: 'B' },
+    knight: { white: '♘', black: '♞', letter: 'N' },
+    pawn:   { white: '♙', black: '♟', letter: '' }
+  };
+  
+  const d = sym[piece.userData.type];
+  const icon = piece.userData.color === 'white' ? d.white : d.black;
+  const pieceLetter = piece.userData.type === 'pawn' ? '' : d.letter;
+  
+  const toCoord = formatCoord(toZ, toY, toX);
+  
+  let move;
+  const ambiguous = isAmbiguousMove(piece, toZ, toY, toX);
+  
+  if (ambiguous && piece.userData.type !== 'pawn') {
+    // При неоднозначности указываем полную координату откуда
+    const fromCoord = formatCoord(fromZ, fromY, fromX);
+    move = pieceLetter + fromCoord + (wasCapture ? 'x' : '') + toCoord;
+  } else {
+    move = pieceLetter + (wasCapture ? 'x' : '') + toCoord;
+  }
+  
+  if (isCheck) move += '+';
+  
+  return {
+    html: `<span class="move-piece">${icon}</span> ${move}`,
+    text: move
+  };
+}
+
+// ========== ОСНОВНАЯ ЛОГИКА ==========
+
 function init() {
   try {
     if (typeof THREE === 'undefined') throw new Error("Three.js не загружен.");
@@ -953,13 +1036,6 @@ function finishMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture) {
   if (gameMode === 'ai' && turn === 'black' && !gameEnded && !isUndoMode) aiTimeoutId = setTimeout(() => aiMove(), 75);
 }
 
-function formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
-  const sym = { king: { white: '♔', black: '♚', letter: 'K' }, queen: { white: '♕', black: '♛', letter: 'Q' }, rook: { white: '♖', black: '♜', letter: 'R' }, bishop: { white: '♗', black: '♝', letter: 'B' }, knight: { white: '♘', black: '♞', letter: 'N' }, pawn: { white: '♙', black: '♟', letter: '' } };
-  const d = sym[piece.userData.type]; const icon = piece.userData.color === 'white' ? d.white : d.black; const toCoord = `${toZ}${String.fromCharCode(96 + toY)}${toX}`;
-  let move = (piece.userData.type === 'pawn' ? '' : d.letter) + (wasCapture ? 'x' : '') + toCoord; if (isCheck) move += '+';
-  return { html: `<span class="move-piece">${icon}</span> ${move}`, text: move };
-}
-
 function addToHistory(fmt, isWhite) {
   const div = document.getElementById('history-list');
   if (isWhite) {
@@ -1145,14 +1221,22 @@ function aiMove() {
 }
 
 function saveState() {
-  const state = { pieces: pieces.map(p => ({ type: p.userData.type, color: p.userData.color, z: p.userData.z, y: p.userData.y, x: p.userData.x, hasMoved: p.userData.hasMoved, pos: p.position.clone() })), turn, moveNumber };
+  const state = { pieces: pieces.map(p => ({ type: p.userData.type, color: p.userData.color, z: p.userData.z, y: p.userData.y, x: p.userData.x, hasMoved: p.userData.hasMoved, pos: p.position.clone() })), turn, moveNumber, moveHistory: JSON.parse(JSON.stringify(moveHistory)) };
   if (historyIndex < gameHistory.length - 1) gameHistory = gameHistory.slice(0, historyIndex + 1);
   gameHistory.push(state); historyIndex++; isUndoMode = false; updateContinueButton();
 }
 function restoreState(state) {
   pieces.forEach(p => scene.remove(p)); pieces = [];
   state.pieces.forEach(pData => { const p = createPiece(pData.type, pData.color, pData.z, pData.y, pData.x); p.userData.hasMoved = pData.hasMoved; p.position.copy(pData.pos); scene.add(p); pieces.push(p); });
-  turn = state.turn; moveNumber = state.moveNumber || 1; updateTurnDisplay();
+  turn = state.turn; moveNumber = state.moveNumber; moveHistory = state.moveHistory || [];
+  document.getElementById('history-list').innerHTML = '';
+  moveHistory.forEach(mv => {
+    const div = document.getElementById('history-list');
+    if (mv.white && mv.black) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span> <span class="history-black">${mv.black}</span></div>`;
+    else if (mv.white) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span></div>`;
+    else if (mv.black) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-black">${mv.black}</span></div>`;
+  });
+  updateTurnDisplay();
   enPassantTarget = null; enPassantVictim = null;
   updateThreatHighlights();
 }
@@ -1269,15 +1353,45 @@ function updateTurnDisplay() { document.getElementById('turn').textContent = tur
 
 function savePGN() {
   const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  let p = `[Event "BEZDNA 3D CHESS"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`;
-  let m = ''; moveHistory.forEach(mv => { if (mv.white !== '-') m += `${mv.number}. ${mv.white} `; if (mv.black) m += `${mv.black} `; });
-  p += m.trim(); const blob = new Blob([p], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);
+  let pgn = `[Event "BEZDNA 3D CHESS"]\n`;
+  pgn += `[Variant "3D Chess 8x8x8 (ZYX notation)"]\n`;
+  pgn += `[Date "${d}"]\n`;
+  pgn += `[White "Player"]\n`;
+  pgn += `[Black "AI (${levelNames[aiLevel]})"]\n`;
+  pgn += `[Result "*"]\n\n`;
+  
+  let moves = '';
+  moveHistory.forEach(mv => {
+    if (mv.white !== '-') moves += `${mv.number}. ${mv.white} `;
+    if (mv.black) moves += `${mv.black} `;
+  });
+  pgn += moves.trim();
+  
+  const blob = new Blob([pgn], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bezdna_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pgn`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 function saveTXT() {
   const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  let t = `BEZDNA 3D CHESS\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`;
-  moveHistory.forEach(mv => { if (mv.white !== '-') t += `${mv.number}. ${mv.white} `; if (mv.black) t += `${mv.black}\n`; });
-  const blob = new Blob([t], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `chess_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`; a.click(); URL.revokeObjectURL(a.href);
+  let txt = `BEZDNA 3D CHESS\n`;
+  txt += `Variant: 3D Chess 8x8x8 (ZYX notation)\n`;
+  txt += `Date: ${d}\n`;
+  txt += `White: Player\n`;
+  txt += `Black: AI (${levelNames[aiLevel]})\n\n`;
+  txt += `Moves:\n`;
+  moveHistory.forEach(mv => {
+    if (mv.white !== '-') txt += `${mv.number}. ${mv.white} `;
+    if (mv.black) txt += `${mv.black}\n`;
+  });
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bezdna_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function animate() {
