@@ -406,13 +406,40 @@ const COUNTER_API_TOKEN = 'ut_RaPqVH7nWWheabvI3xEKqiXWfg5DrUcrrnSTfNNn';
 
 function initRealCounter() {
   const span = document.getElementById('stats-total');
+  const HAS_COUNTED_KEY = 'bezdna_has_counted';
+  const FALLBACK_KEY = 'bezna_fallback';
+
+  // Fallback режим (без токена) — тоже считаем 1 раз
   if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
-    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
-    fb++;
-    localStorage.setItem('bezna_fallback', fb);
+    let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
+    if (!localStorage.getItem(HAS_COUNTED_KEY)) {
+      fb++;
+      localStorage.setItem(FALLBACK_KEY, fb);
+      localStorage.setItem(HAS_COUNTED_KEY, 'true');
+    }
     if (span) span.textContent = fb.toLocaleString();
     return;
   }
+
+  // Если этот игрок уже считался — просто получаем текущее значение без инкремента
+  if (localStorage.getItem(HAS_COUNTED_KEY)) {
+    fetch(COUNTER_API_URL, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + COUNTER_API_TOKEN }
+    })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
+      if (span) span.textContent = (apiCount + 90).toLocaleString();
+    })
+    .catch(() => {
+      let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
+      if (span) span.textContent = fb.toLocaleString();
+    });
+    return;
+  }
+
+  // Первый визит — увеличиваем счётчик
   fetch(COUNTER_API_URL + '/up', {
     method: 'POST',
     headers: {
@@ -425,15 +452,18 @@ function initRealCounter() {
     return r.json();
   })
   .then(data => {
+    localStorage.setItem(HAS_COUNTED_KEY, 'true');
     const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
-    const displayCount = apiCount + 90;
-    if (span) span.textContent = displayCount.toLocaleString();
+    if (span) span.textContent = (apiCount + 90).toLocaleString();
   })
   .catch(err => {
     console.error('CounterAPI error:', err);
-    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
-    fb++;
-    localStorage.setItem('bezna_fallback', fb);
+    let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
+    if (!localStorage.getItem(HAS_COUNTED_KEY)) {
+      fb++;
+      localStorage.setItem(FALLBACK_KEY, fb);
+      localStorage.setItem(HAS_COUNTED_KEY, 'true');
+    }
     if (span) span.textContent = fb.toLocaleString();
   });
 }
