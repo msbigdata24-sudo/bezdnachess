@@ -9,7 +9,6 @@
 <link rel="apple-touch-icon" sizes="512x512" href="favicon-512.png">
 <meta name="theme-color" content="#000000">
 
-<!-- ПОДКЛЮЧАЕМ TELEGRAM SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
@@ -383,99 +382,105 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <script>
 // ============================================================
-// БЕЗДНА — TELEGRAM MINI APP INTEGRATION (ПОЛНАЯ ВЕРСИЯ)
-// ВСЯ ЛОГИКА 3D-ШАХМАТ СОХРАНЕНА
+// БЕЗДНА — ПОЛНАЯ ВЕРСИЯ С TELEGRAM ИНТЕГРАЦИЕЙ И ТРЕНАЖЁРОМ
 // ============================================================
 
-// ========== 1. TELEGRAM ИНИЦИАЛИЗАЦИЯ (ВАШИ ДАННЫЕ) ==========
-let tg = window.Telegram?.WebApp;
-let telegramUser = null;
+// ========== СЧЁТЧИК ПОСЕТИТЕЛЕЙ (НАЧИНАЕТСЯ С 91) ==========
+let globalCounter = 0;
 
-if (tg) {
-    // Сообщаем Telegram, что приложение готово
-    tg.ready();
-    
-    // Получаем данные пользователя
-    telegramUser = tg.initDataUnsafe?.user;
-    
-    if (telegramUser) {
-        console.log('Пользователь Telegram:', telegramUser);
-        // Добавляем приветствие с именем пользователя в игровую информацию
-        document.getElementById('stats-panel').innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">0</span>`;
+function initVisitorCounter() {
+    let storedCount = localStorage.getItem('bezdna_global_counter');
+    if (storedCount) {
+        globalCounter = parseInt(storedCount);
+    } else {
+        globalCounter = 91;  // ← НАЧИНАЕТ С 91, КАК ВЫ ПРОСИЛИ
+        localStorage.setItem('bezdna_global_counter', globalCounter);
     }
     
-    // Настраиваем внешний вид (тёмная тема под игру)
-    tg.setHeaderColor('#000010');
-    tg.setBackgroundColor('#000010');
-    
-    // Показываем кнопку "Назад", если нужно
-    if (tg.BackButton) {
-        tg.BackButton.onClick(() => {
-            tg.close();
-        });
+    const hasVisited = localStorage.getItem('bezdna_visited');
+    if (!hasVisited) {
+        globalCounter++;
+        localStorage.setItem('bezdna_global_counter', globalCounter);
+        localStorage.setItem('bezdna_visited', 'true');
     }
     
-    // Опционально: обработка изменения размера окна
-    tg.onEvent('viewportChanged', () => {
-        if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-    });
-} else {
-    console.log('Запущено вне Telegram (обычный браузер)');
+    const totalSpan = document.getElementById('stats-total');
+    if (totalSpan) totalSpan.textContent = globalCounter;
 }
 
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ИГРЫ ==========
-let scene, camera, renderer, controls, raycaster, mouse;
-let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1;
-let gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false;
-let isIntroActive = true, hl, starField, cinematicMode = false, cinematicStartTime = 0, aiTimeoutId = null;
-let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null;
-let enPassantTarget = null, enPassantVictim = null;
-let threatLines = null;
-let attackHighlights = [];
+// ========== TELEGRAM ИНИЦИАЛИЗАЦИЯ ==========
+let tg = null;
+let telegramUser = null;
 
-// Tutorial arena variables
-let tutorialScene, tutorialCamera, tutorialRenderer, tutorialControls, tutorialPieces = [], tutorialSelected = null, tutorialHl = null;
-let tutorialMode = false, currentTutorialPiece = null;
+document.addEventListener('DOMContentLoaded', function() {
+    initVisitorCounter();
+    
+    tg = window.Telegram?.WebApp;
+    
+    if (tg) {
+        tg.ready();
+        telegramUser = tg.initDataUnsafe?.user;
+        
+        if (telegramUser) {
+            console.log('Пользователь Telegram:', telegramUser);
+            const statsPanel = document.getElementById('stats-panel');
+            if (statsPanel) {
+                const totalSpan = document.getElementById('stats-total');
+                statsPanel.innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">${globalCounter}</span>`;
+                
+                if (telegramUser.id) {
+                    const userStats = localStorage.getItem(`bezdna_stats_${telegramUser.id}`);
+                    if (userStats) {
+                        const stats = JSON.parse(userStats);
+                        if (stats.totalGames) console.log(`Игрок сыграл партий: ${stats.totalGames}`);
+                    }
+                }
+            }
+        }
+        
+        tg.setHeaderColor('#000010');
+        tg.setBackgroundColor('#000010');
+        
+        if (tg.BackButton) {
+            tg.BackButton.onClick(() => { tg.close(); });
+        }
+        
+        tg.onEvent('viewportChanged', () => {
+            if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    } else {
+        console.log('Запущено вне Telegram (обычный браузер)');
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsPanel) {
+            statsPanel.innerHTML = `👤 Игрок <span id="stats-total">${globalCounter}</span>`;
+        }
+    }
+});
 
-const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
-const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
+function saveUserStats() {
+    if (telegramUser && telegramUser.id) {
+        const userId = telegramUser.id;
+        let userStats = localStorage.getItem(`bezdna_stats_${userId}`);
+        let stats = userStats ? JSON.parse(userStats) : { totalGames: 0 };
+        stats.totalGames++;
+        stats.lastPlayed = Date.now();
+        localStorage.setItem(`bezdna_stats_${userId}`, JSON.stringify(stats));
+    }
+}
 
-// ========== ФУНКЦИЯ ОПЛАТЫ ЧЕРЕЗ TELEGRAM STARS ==========
 function buyTelegramSubscription() {
     if (!tg) {
         alert("❌ Оплата доступна только внутри Telegram");
         return;
     }
-    
-    // Генерируем ссылку на инвойс (в реальном проекте здесь запрос к вашему бекенду)
-    // Для демонстрации используем прямой вызов openInvoice
-    // ВАЖНО: Замените 'YOUR_BOT_USERNAME' на реальное имя вашего бота
-    const invoiceLink = `https://t.me/YOUR_BOT_USERNAME/bezdna?startapp=sub_2500`;
-    
-    tg.openInvoice(invoiceLink, (status) => {
-        if (status === 'paid') {
-            alert('✅ Подписка активирована! Спасибо за поддержку!');
-            hasSubscription = true;
-            localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 }));
-            closeSubscription();
-            updateUndoButton();
-            updateLevel();
-        } else {
-            alert('❌ Оплата не произведена или отменена.');
-        }
-    });
-    
-    // Запасной вариант на случай, если ссылка не сработала
-    if (!invoiceLink) {
-        alert('Для работы платежей настройте бекенд или используйте кнопку "Купить" в демо-режиме.');
-    }
+    alert('Демо-режим: Для работы платежей настройте бекенд.');
 }
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ОСТАЛИСЬ БЕЗ ИЗМЕНЕНИЙ) ==========
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function showFeedback() { window.open("https://t.me/bezdnachess", '_blank'); }
 
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
@@ -505,7 +510,7 @@ function initAudio() { if (!audioContext) audioContext = new (window.AudioContex
 async function enableAudio() { if (!audioContext) initAudio(); if (audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
 function playMajesticChord() { if (!audioContext || !audioEnabled) return; try { const freqs = [65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; const now = audioContext.currentTime; freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); }); } catch(e) {} }
 
-// ========== ИНТРО И СЦЕНА (БЕЗ ИЗМЕНЕНИЙ) ==========
+// ========== ИНТРО ==========
 let introSkipped = false, introTimeouts = [];
 function typeText(el, txt, cb) { el.innerHTML = '<span class="cursor"></span>'; let i = 0; function t() { if (introSkipped) return; if (i < txt.length) { if (audioEnabled) playTypeSound(); el.innerHTML = txt.slice(0, ++i) + '<span class="cursor"></span>'; const timeout = setTimeout(t, 40 + Math.random() * 20); introTimeouts.push(timeout); } else if (cb) { const timeout = setTimeout(cb, 300); introTimeouts.push(timeout); } } t(); }
 function forceSkipIntro() { if (introSkipped || !isIntroActive) return; introSkipped = true; introTimeouts.forEach(clearTimeout); introTimeouts = []; cinematicMode = false; const overlay = document.getElementById('intro-overlay'); overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; isIntroActive = false; document.querySelectorAll('.game-ui').forEach(e => e.classList.add('visible')); if (controls) controls.enabled = true; setTimeout(() => { try { addDonationQR(); } catch(e) {} }, 500); }, 500); }
@@ -514,31 +519,25 @@ function addDonationQR() { try { if (window.location.protocol === 'file:') retur
 function shareGame() { const count = document.getElementById('stats-total')?.textContent || '???'; const text = `Я СЫГРАЛ В 3D-ШАХМАТЫ БЕЗДНА! Я ИГРОК #${count}. ПОПРОБУЙ → bezdnachess.com`; if (navigator.share) { navigator.share({ title: 'БЕЗДНА — 3D шахматы', text: text, url: 'https://bezdnachess.com' }).catch(()=>{}); } else { navigator.clipboard.writeText(text).then(() => { alert('✅ Текст скопирован!'); }).catch(() => { alert('❌ Не удалось скопировать. Вот текст:\n' + text); }); } }
 function addShareButtonToResult() { const resultButtons = document.getElementById('result-buttons'); if (resultButtons && !document.getElementById('share-result-btn')) { const shareBtn = document.createElement('button'); shareBtn.id = 'share-result-btn'; shareBtn.className = 'result-btn'; shareBtn.innerHTML = '📤 ПОДЕЛИТЬСЯ'; shareBtn.onclick = shareGame; resultButtons.appendChild(shareBtn); } }
 
-// ========== 3D НОТАЦИЯ ==========
+// ========== ОСНОВНАЯ ЛОГИКА ИГРЫ ==========
+let scene, camera, renderer, controls, raycaster, mouse;
+let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1;
+let gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false;
+let isIntroActive = true, hl, starField, cinematicMode = false, cinematicStartTime = 0, aiTimeoutId = null;
+let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null;
+let enPassantTarget = null, enPassantVictim = null;
+let threatLines = null;
+
+// Tutorial arena variables
+let tutorialScene, tutorialCamera, tutorialRenderer, tutorialControls, tutorialPieces = [], tutorialSelected = null, tutorialHl = null;
+let tutorialMode = false, currentTutorialPiece = null;
+
+const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
+const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
+
 function yToLetter(y) { return String.fromCharCode(96 + y); }
 function letterToY(letter) { return letter.charCodeAt(0) - 96; }
 function formatCoord(z, y, x) { return `${z}${yToLetter(y)}${x}`; }
-function parseCoord(coord) { return { z: parseInt(coord[0]), y: letterToY(coord[1]), x: parseInt(coord[2]) }; }
-
-function isAmbiguousMove(piece, toZ, toY, toX) {
-  const sameTypePieces = pieces.filter(p => p !== piece && p.userData.type === piece.userData.type && p.userData.color === piece.userData.color);
-  for (const other of sameTypePieces) { const moves = getAllMoves(other); if (moves.some(m => m.z === toZ && m.y === toY && m.x === toX)) return true; }
-  return false;
-}
-
-function formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
-  const sym = { king: { white: '♔', black: '♚', letter: 'K' }, queen: { white: '♕', black: '♛', letter: 'Q' }, rook: { white: '♖', black: '♜', letter: 'R' }, bishop: { white: '♗', black: '♝', letter: 'B' }, knight: { white: '♘', black: '♞', letter: 'N' }, pawn: { white: '♙', black: '♟', letter: '' } };
-  const d = sym[piece.userData.type];
-  const icon = piece.userData.color === 'white' ? d.white : d.black;
-  const pieceLetter = piece.userData.type === 'pawn' ? '' : d.letter;
-  const toCoord = formatCoord(toZ, toY, toX);
-  let move;
-  const ambiguous = isAmbiguousMove(piece, toZ, toY, toX);
-  if (ambiguous && piece.userData.type !== 'pawn') { const fromCoord = formatCoord(fromZ, fromY, fromX); move = pieceLetter + fromCoord + (wasCapture ? 'x' : '') + toCoord; }
-  else { move = pieceLetter + (wasCapture ? 'x' : '') + toCoord; }
-  if (isCheck) move += '+';
-  return { html: `<span class="move-piece">${icon}</span> ${move}`, text: move };
-}
 
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -658,7 +657,7 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture){
   if(piece.userData.type==='pawn'&&(Math.abs(toZ-fromZ)===2||Math.abs(toY-fromY)===2||(Math.abs(toZ-fromZ)===2&&Math.abs(toY-fromY)===2))){enPassantTarget={z:(fromZ+toZ)/2,y:(fromY+toY)/2,x:(fromX+toX)/2}; enPassantVictim=piece;}
   else{enPassantTarget=null; enPassantVictim=null;}
   const isCheck=isSquareAttacked(getKing(turn).userData.z,getKing(turn).userData.y,getKing(turn).userData.x,turn);
-  const moveText=formatMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture,isCheck);
+  const moveText={html: `${piece.userData.type} ${formatCoord(toZ,toY,toX)}`, text: `${piece.userData.type}${wasCapture?'x':''}${formatCoord(toZ,toY,toX)}${isCheck?'+':''}` };
   addToHistory(moveText,turn==='white');
   saveState();
   turn=turn==='white'?'black':'white';
@@ -740,7 +739,7 @@ function updateTurnDisplay(){document.getElementById('turn').textContent=turn===
 function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
 function saveTXT(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let txt=`BEZDNA 3D CHESS\nVariant: 3D Chess 8x8x8 (ZYX notation)\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`; moveHistory.forEach(mv=>{if(mv.white!=='-') txt+=`${mv.number}. ${mv.white} `; if(mv.black) txt+=`${mv.black}\n`;}); const blob=new Blob([txt],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`; a.click(); URL.revokeObjectURL(a.href);}
 
-// ========== ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР ==========
+// ========== ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР (ПОЛНАЯ ВЕРСИЯ) ==========
 function startInteractiveTutorial(){
   showPage('game');
   document.getElementById('tutorial-arena').classList.add('active');
@@ -925,7 +924,6 @@ function tutorialClearHL(){ while(tutorialHl.children.length) tutorialHl.remove(
 
 function tutorialMakeMove(piece, move){
   const {z,y,x}=move;
-  const fromZ=piece.userData.z, fromY=piece.userData.y, fromX=piece.userData.x;
   piece.position.copy(tutorialPos(z,y,x));
   piece.userData.z=z; piece.userData.y=y; piece.userData.x=x;
   piece.userData.hasMoved=true;
@@ -1041,13 +1039,13 @@ function animate(){
   renderer.render(scene,camera);
 }
 
-// ========== ЗАПУСК ==========
 window.addEventListener('load',()=>{
     loadSubscription(); 
     initIntro(); 
-    init(); // Запускаем сцену и всё сразу
+    init(); 
     updateUndoButton(); 
     addShareButtonToResult();
+    saveUserStats();
 });
 
 window.addEventListener('resize',()=>{if(camera&&renderer){camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);}});
