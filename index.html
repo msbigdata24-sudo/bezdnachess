@@ -11,42 +11,6 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- Yandex.Metrica -->
-<script type="text/javascript">
-  (function(m,e,t,r,i,k,a){
-    m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-    m[i].l=1*new Date();
-    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-  })(window, document, 'script', 'https://mc.webvisor.org/metrika/tag_ww.js', 'ym');
-  
-  ym(108673327, 'init', {
-    ssr:true, 
-    webvisor:true, 
-    trackHash:true, 
-    clickmap:true, 
-    ecommerce:"dataLayer", 
-    accurateTrackBounce:true, 
-    trackLinks:true
-  });
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/108673327" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-<!-- /Yandex.Metrica -->
-
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q183Y4K613"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-Q183Y4K613');
-</script>
-<!-- /Google Analytics -->
-
-<!-- Counter.dev -->
-<script src="https://cdn.counter.dev/script.js" data-id="55535d28-be7e-43c3-8290-cf0181f5acc6" data-utcoffset="3"></script>
-<!-- /Counter.dev -->
-
 <style>
 *{-webkit-tap-highlight-color:transparent;touch-action:none}
 body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#000;color:#0f0;user-select:none;-webkit-user-select:none;text-transform:uppercase}
@@ -75,7 +39,16 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 #turn{top:10px;right:10px;color:gold;font-size:13px;font-weight:bold}
 #mode-panel{top:50px;right:10px;text-align:center;min-width:150px;padding:6px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
 #undo-panel{top:180px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
-#history-panel{top:10px;left:10px;width:260px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px}
+
+/* History Panel с возможностью сворачивания (z-index увеличен) */
+#history-panel{top:10px;left:10px;width:260px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px;transition:all 0.3s ease;z-index:6000}
+#history-panel.collapsed{width:36px;overflow:hidden;padding:6px 3px}
+#history-panel.collapsed #history-title span,
+#history-panel.collapsed #history-list,
+#history-panel.collapsed #history-buttons{display:none}
+#history-panel.collapsed #collapse-history-btn{writing-mode:vertical-rl;text-orientation:mixed;margin:10px auto;display:block;background:transparent;border:none;color:#0f0;font-size:14px;cursor:pointer}
+#history-panel:not(.collapsed) #collapse-history-btn{float:right;background:transparent;border:none;color:#0f0;cursor:pointer;font-size:14px;margin-left:5px}
+
 #info{bottom:10px;left:270px;font-size:10px}
 #check{top:80px;left:270px;background:#aa0000;color:#fff;font-weight:bold;display:none;padding:4px 10px;font-size:11px}
 #camera-control{bottom:10px;left:10px;font-size:8px;color:#555;text-align:left}
@@ -111,6 +84,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 .control-btn:hover{background:#0f0;color:#000}
 .control-btn.disabled{opacity:0.5;cursor:not-allowed;border-color:#666;color:#666}
 .control-btn.disabled:hover{background:#111;color:#666}
+.recording-active{animation:recPulse 1s infinite; background:#8b0000 !important; border-color:#ff4444 !important; color:#fff !important;}
+@keyframes recPulse{0%{box-shadow:0 0 0 0 rgba(255,0,0,0.7)}100%{box-shadow:0 0 0 8px rgba(255,0,0,0)}}
 
 #continue-btn{display:none;background:#0f0;color:#000;font-weight:bold}
 
@@ -152,12 +127,14 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 .tutorial-arena-btn:hover{background:#0f0;color:#000}
 #tutorial-status{color:#0f0;font-size:12px;margin-left:auto;padding:8px}
 #tutorial-message{position:absolute;bottom:90px;left:20px;background:rgba(0,0,0,0.85);border:1px solid #0f0;padding:10px 15px;border-radius:8px;font-size:12px;z-index:10;pointer-events:none}
+.rec-indicator{background:#ff0000; color:#fff; padding:2px 6px; border-radius:4px; font-size:9px; margin-left:5px; display:none;}
 
 @media(max-width:768px){
   #main-menu{overflow-x:auto;flex-wrap:nowrap;padding:4px 8px}
   .menu-btn{font-size:11px;padding:3px 8px;white-space:nowrap}
   #stats-panel{bottom:5px;right:5px;font-size:11px;padding:6px 12px}
   #history-panel{width:220px;left:5px;top:5px}
+  #history-panel.collapsed{width:30px}
   #info{left:5px;bottom:40px;font-size:9px}
   #camera-control{left:5px;bottom:5px;font-size:7px}
   #mode-panel{right:5px;top:40px;min-width:120px}
@@ -190,12 +167,15 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
     <button class="intro-btn" id="btn-yes">[ ДА ]</button>
     <button class="intro-btn" id="btn-no">[ НЕТ ]</button>
   </div>
-  <div id="intro-subtitle">3D CHESS ENGINE // BEZDNA MODULE</div>
+  <div id="intro-subtitle">3D CHESS ENGINE // BEZDNA MODULE // VIDEO REC</div>
   <div id="skip-hint">НАЖМИТЕ ПРОБЕЛ ИЛИ КЛИКНИТЕ ЧТОБЫ ПРОПУСТИТЬ</div>
 </div>
 
 <div id="history-panel" class="game-ui">
-  <div id="history-title">📜 ИСТОРИЯ (ФОРМАТ: ZYX)</div>
+  <div id="history-title">
+    <span>📜 ИСТОРИЯ ПАРТИИ</span>
+    <button id="collapse-history-btn" onclick="toggleHistoryPanel()">[−]</button>
+  </div>
   <div id="history-list"></div>
   <div id="history-buttons">
     <button class="history-btn" onclick="savePGN()">💾 PGN</button>
@@ -220,6 +200,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
   <button class="control-btn" id="continue-btn" onclick="continueGame()">▶️ ПРОДОЛЖИТЬ</button>
   <button class="control-btn" onclick="highlightLastMove()">🔦 ПОДСВЕТКА</button>
   <button class="control-btn" onclick="startInteractiveTutorial()">❓ ДЕМО ХОДОВ</button>
+  <button class="control-btn" id="record-video-btn" onclick="startVideoRecording()">🎥 ЗАПИСЬ ВИДЕО</button>
+  <button class="control-btn" id="short-clip-btn" onclick="recordShortClip()">⏱️ 5 СЕК КЛИП</button>
 </div>
 
 <div id="camera-control" class="game-ui">🔄 ПКМ + DRAG: КАМЕРА<br>🖱️ ЛКМ + DRAG: ВРАЩЕНИЕ</div>
@@ -260,8 +242,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
       СЕТЕВАЯ ИГРА (СКОРО)<br>
       ТУРНИРЫ С ПРИЗОВЫМ ФОНДОМ $1,000,000
     </div>
-    <div id="subscription-price">2500 Stars / ГОД</div>
-    <button class="subscription-btn" onclick="buyTelegramSubscription()">КУПИТЬ ЧЕРЕЗ TELEGRAM</button>
+    <div id="subscription-price">10 000 ₽ / ГОД</div>
+    <button class="subscription-btn" onclick="buySubscription()">КУПИТЬ</button>
     <button class="subscription-btn" onclick="closeSubscription()">ОТМЕНА</button>
   </div>
 </div>
@@ -325,57 +307,15 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 <div id="tutorial-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
     <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📖 ОБУЧЕНИЕ</h1>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">🎯 ЦЕЛЬ ИГРЫ</h3>
-      <p style="font-size:13px;">ОБЪЯВИТЬ МАТ КОРОЛЮ ПРОТИВНИКА. В 3D-ШАХМАТАХ КОРОЛЬ МОЖЕТ УЙТИ НА 26 НАПРАВЛЕНИЙ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">📐 ТРЁХМЕРНОЕ ПОЛЕ 8×8×8</h3>
-      <p style="font-size:13px;">ОСИ: X (ГОРИЗОНТАЛЬ, 1-8), Y (ВЕРТИКАЛЬ, 1-8), Z (ГЛУБИНА/УРОВЕНЬ, 1-8). БЕЛЫЕ НАЧИНАЮТ НА Z=1, ЧЁРНЫЕ НА Z=8.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">📝 3D НОТАЦИЯ ZYX (СТАНДАРТ)</h3>
-      <p style="font-size:13px;">
-        <strong>ФОРМАТ: [УРОВЕНЬ Z][ВЕРТИКАЛЬ Y a-h][ГОРИЗОНТАЛЬ X 1-8]</strong><br>
-        ПРИМЕР: "1E4" — УРОВЕНЬ 1, ВЕРТИКАЛЬ E, ГОРИЗОНТАЛЬ 4<br>
-        ПРИМЕР: "8A1" — УРОВЕНЬ 8, ВЕРТИКАЛЬ A, ГОРИЗОНТАЛЬ 1 (ЧЁРНАЯ ЛАДЬЯ)<br>
-        ПРИ НЕОДНОЗНАЧНОСТИ: "N1G1-3E3" (КОНЬ С 1G1 НА 3E3)
-      </p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">♟️ ПЕШКА — 24 ХОДА</h3>
-      <p style="font-size:13px;">ХОДИТ ПРЯМО ПО Z, ПО Y ИЛИ ПО ДИАГОНАЛИ Z-Y. БЬЁТ ПО ВСЕМ ДИАГОНАЛЯМ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">♞ КОНЬ — 24 ХОДА</h3>
-      <p style="font-size:13px;">ХОДИТ «БУКВОЙ Г» В ЛЮБОЙ ПЛОСКОСТИ. ПЕРЕПРЫГИВАЕТ ЧЕРЕЗ ФИГУРЫ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">♝ СЛОН — 20 НАПРАВЛЕНИЙ</h3>
-      <p style="font-size:13px;">12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ ДИАГОНАЛЕЙ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">♛ ФЕРЗЬ — 26 НАПРАВЛЕНИЙ</h3>
-      <p style="font-size:13px;">6 ЛАДЕЙНЫХ + 12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">♚ КОРОЛЬ — 26 НАПРАВЛЕНИЙ</h3>
-      <p style="font-size:13px;">ХОДИТ НА 1 КЛЕТКУ В ЛЮБОМ НАПРАВЛЕНИИ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">🏰 РОКИРОВКА</h3>
-      <p style="font-size:13px;">КОРОЛЬ ИДЁТ НА 2 КЛЕТКИ К ЛАДЬЕ, ЛАДЬЯ ПЕРЕПРЫГИВАЕТ.</p>
-    </div>
-    
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🎯 ЦЕЛЬ ИГРЫ</h3><p style="font-size:13px;">ОБЪЯВИТЬ МАТ КОРОЛЮ ПРОТИВНИКА. В 3D-ШАХМАТАХ КОРОЛЬ МОЖЕТ УЙТИ НА 26 НАПРАВЛЕНИЙ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📐 ТРЁХМЕРНОЕ ПОЛЕ 8×8×8</h3><p style="font-size:13px;">ОСИ: X (ГОРИЗОНТАЛЬ, 1-8), Y (ВЕРТИКАЛЬ, 1-8), Z (ГЛУБИНА/УРОВЕНЬ, 1-8). БЕЛЫЕ НАЧИНАЮТ НА Z=1, ЧЁРНЫЕ НА Z=8.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📝 3D НОТАЦИЯ ZYX (СТАНДАРТ)</h3><p style="font-size:13px;"><strong>ФОРМАТ: [УРОВЕНЬ Z][ВЕРТИКАЛЬ Y a-h][ГОРИЗОНТАЛЬ X 1-8]</strong><br>ПРИМЕР: "1E4" — УРОВЕНЬ 1, ВЕРТИКАЛЬ E, ГОРИЗОНТАЛЬ 4<br>ПРИМЕР: "8A1" — УРОВЕНЬ 8, ВЕРТИКАЛЬ A, ГОРИЗОНТАЛЬ 1 (ЧЁРНАЯ ЛАДЬЯ)<br>ПРИ НЕОДНОЗНАЧНОСТИ: "N1G1-3E3" (КОНЬ С 1G1 НА 3E3)</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♟️ ПЕШКА — 24 ХОДА</h3><p style="font-size:13px;">ХОДИТ ПРЯМО ПО Z, ПО Y ИЛИ ПО ДИАГОНАЛИ Z-Y. БЬЁТ ПО ВСЕМ ДИАГОНАЛЯМ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♞ КОНЬ — 24 ХОДА</h3><p style="font-size:13px;">ХОДИТ «БУКВОЙ Г» В ЛЮБОЙ ПЛОСКОСТИ. ПЕРЕПРЫГИВАЕТ ЧЕРЕЗ ФИГУРЫ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♝ СЛОН — 20 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ ДИАГОНАЛЕЙ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♛ ФЕРЗЬ — 26 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">6 ЛАДЕЙНЫХ + 12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♚ КОРОЛЬ — 26 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">ХОДИТ НА 1 КЛЕТКУ В ЛЮБОМ НАПРАВЛЕНИИ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🏰 РОКИРОВКА</h3><p style="font-size:13px;">КОРОЛЬ ИДЁТ НА 2 КЛЕТКИ К ЛАДЬЕ, ЛАДЬЯ ПЕРЕПРЫГИВАЕТ.</p></div>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
     <button class="menu-btn" onclick="startInteractiveTutorial()" style="margin-top:20px;margin-left:10px;">🎮 ЗАПУСТИТЬ ТРЕНАЖЁР</button>
   </div>
@@ -384,22 +324,9 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 <div id="rules-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
     <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">🧩 ЗАДАЧИ И РАЗБОР</h1>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 1: МИНИМАЛЬНЫЙ МАТ</h3>
-      <p style="font-size:13px;"><strong>ОТВЕТ:</strong> 2 ФЕРЗЯ + КОРОЛЬ. ОДИН ФЕРЗЬ НЕ МОЖЕТ ПЕРЕКРЫТЬ ВСЕ 26 НАПРАВЛЕНИЙ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 2: МОГУТ ЛИ 2 ЛАДЬИ?</h3>
-      <p style="font-size:13px;"><strong>ОТВЕТ:</strong> НЕТ. ЛАДЬЯ ПЕРЕКРЫВАЕТ 6 НАПРАВЛЕНИЙ, ДВЕ — 12, НУЖНА ТРЕТЬЯ.</p>
-    </div>
-    
-    <div style="margin-bottom:15px;">
-      <h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 3: СЛОН VS ФЕРЗЬ</h3>
-      <p style="font-size:13px;"><strong>ОТВЕТ:</strong> 20 НАПРАВЛЕНИЙ У СЛОНА, 26 У ФЕРЗЯ.</p>
-    </div>
-    
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 1: МИНИМАЛЬНЫЙ МАТ</h3><p style="font-size:13px;"><strong>ОТВЕТ:</strong> 2 ФЕРЗЯ + КОРОЛЬ. ОДИН ФЕРЗЬ НЕ МОЖЕТ ПЕРЕКРЫТЬ ВСЕ 26 НАПРАВЛЕНИЙ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 2: МОГУТ ЛИ 2 ЛАДЬИ?</h3><p style="font-size:13px;"><strong>ОТВЕТ:</strong> НЕТ. ЛАДЬЯ ПЕРЕКРЫВАЕТ 6 НАПРАВЛЕНИЙ, ДВЕ — 12, НУЖНА ТРЕТЬЯ.</p></div>
+    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">ЗАДАЧА 3: СЛОН VS ФЕРЗЬ</h3><p style="font-size:13px;"><strong>ОТВЕТ:</strong> 20 НАПРАВЛЕНИЙ У СЛОНА, 26 У ФЕРЗЯ.</p></div>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
   </div>
 </div>
@@ -418,69 +345,76 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <script>
 // ============================================================
-// БЕЗДНА — ПОЛНАЯ ВЕРСИЯ С TELEGRAM ИНТЕГРАЦИЕЙ И ТРЕНАЖЁРОМ
+// БЕЗДНА — ФИНАЛЬНАЯ СБОРКА
 // ============================================================
 
-// ========== СЧЁТЧИК ПОСЕТИТЕЛЕЙ (НАЧИНАЕТСЯ С 91) ==========
-let globalCounter = 0;
-
-function initVisitorCounter() {
-    let storedCount = localStorage.getItem('bezdna_global_counter');
-    if (storedCount) {
-        globalCounter = parseInt(storedCount);
+// ========== СВОРАЧИВАНИЕ ПАНЕЛИ ИСТОРИИ ==========
+function toggleHistoryPanel() {
+    const panel = document.getElementById('history-panel');
+    const btn = document.getElementById('collapse-history-btn');
+    if (panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed');
+        if (btn) btn.innerHTML = '[−]';
     } else {
-        globalCounter = 91;  // ← НАЧИНАЕТ С 91, КАК ВЫ ПРОСИЛИ
-        localStorage.setItem('bezdna_global_counter', globalCounter);
+        panel.classList.add('collapsed');
+        if (btn) btn.innerHTML = '[+]';
     }
-    
-    const hasVisited = localStorage.getItem('bezdna_visited');
-    if (!hasVisited) {
-        globalCounter++;
-        localStorage.setItem('bezdna_global_counter', globalCounter);
-        localStorage.setItem('bezdna_visited', 'true');
-    }
-    
-    const totalSpan = document.getElementById('stats-total');
-    if (totalSpan) totalSpan.textContent = globalCounter;
 }
 
-// ========== TELEGRAM ИНИЦИАЛИЗАЦИЯ ==========
+// ========== REAL COUNTER (CounterAPI.dev) ==========
+const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team-3853/bezdna-game';
+const COUNTER_API_TOKEN = 'ut_RaPqVH7nWWheabvI3xEKqiXWfg5DrUcrrnSTfNNn';
+
+function initRealCounter() {
+  const span = document.getElementById('stats-total');
+  if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
+    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+    fb++;
+    localStorage.setItem('bezna_fallback', fb);
+    if (span) span.textContent = fb.toLocaleString();
+    return;
+  }
+  fetch(COUNTER_API_URL + '/up', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + COUNTER_API_TOKEN,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(data => {
+    const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
+    const displayCount = apiCount + 90;
+    if (span) span.textContent = displayCount.toLocaleString();
+  })
+  .catch(err => {
+    console.error('CounterAPI error:', err);
+    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+    fb++;
+    localStorage.setItem('bezna_fallback', fb);
+    if (span) span.textContent = fb.toLocaleString();
+  });
+}
+
+// ========== TELEGRAM ==========
 let tg = null;
 let telegramUser = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    initVisitorCounter();
-    
+    initRealCounter();
     tg = window.Telegram?.WebApp;
-    
     if (tg) {
         tg.ready();
         telegramUser = tg.initDataUnsafe?.user;
-        
         if (telegramUser) {
-            console.log('Пользователь Telegram:', telegramUser);
             const statsPanel = document.getElementById('stats-panel');
-            if (statsPanel) {
-                const totalSpan = document.getElementById('stats-total');
-                statsPanel.innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">${globalCounter}</span>`;
-                
-                if (telegramUser.id) {
-                    const userStats = localStorage.getItem(`bezdna_stats_${telegramUser.id}`);
-                    if (userStats) {
-                        const stats = JSON.parse(userStats);
-                        if (stats.totalGames) console.log(`Игрок сыграл партий: ${stats.totalGames}`);
-                    }
-                }
-            }
+            if (statsPanel) statsPanel.innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">${document.getElementById('stats-total').textContent}</span>`;
         }
-        
         tg.setHeaderColor('#000010');
         tg.setBackgroundColor('#000010');
-        
-        if (tg.BackButton) {
-            tg.BackButton.onClick(() => { tg.close(); });
-        }
-        
         tg.onEvent('viewportChanged', () => {
             if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -489,11 +423,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else {
-        console.log('Запущено вне Telegram (обычный браузер)');
         const statsPanel = document.getElementById('stats-panel');
-        if (statsPanel) {
-            statsPanel.innerHTML = `👤 Игрок <span id="stats-total">${globalCounter}</span>`;
-        }
+        if (statsPanel) statsPanel.innerHTML = `👤 Игрок <span id="stats-total">${document.getElementById('stats-total').textContent}</span>`;
     }
 });
 
@@ -508,17 +439,8 @@ function saveUserStats() {
     }
 }
 
-function buyTelegramSubscription() {
-    if (!tg) {
-        alert("❌ Оплата доступна только внутри Telegram");
-        return;
-    }
-    alert('Демо-режим: Для работы платежей настройте бекенд.');
-}
-
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+// ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 function showFeedback() { window.open("https://t.me/bezdnachess", '_blank'); }
-
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
 function showDonation() { document.getElementById('donation-link').innerText = DONATION_LINK; document.getElementById('donation-modal').style.display = 'flex'; }
 function closeDonation() { document.getElementById('donation-modal').style.display = 'none'; }
@@ -567,6 +489,7 @@ let threatLines = null;
 // Tutorial arena variables
 let tutorialScene, tutorialCamera, tutorialRenderer, tutorialControls, tutorialPieces = [], tutorialSelected = null, tutorialHl = null;
 let tutorialMode = false, currentTutorialPiece = null;
+let tutorialMoveHistory = [], tutorialMoveNumber = 1;
 
 const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
 const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
@@ -745,9 +668,9 @@ function evaluateMove(piece,move,isBlackMove){let score=0; const t=find(move.z,m
 function evaluateBoardForColor(color){let score=0; for(const p of pieces){const val=pieceValues[p.userData.type]||0; const multiplier=p.userData.color===color?1:-1; const posBonus=(4.5-Math.abs(p.userData.z-4.5))*0.1+(4.5-Math.abs(p.userData.y-4.5))*0.1; score+=multiplier*(val+posBonus);} return score;}
 function minimax(depth,isMax,alpha,beta){if(depth===0) return evaluateBoardForColor('black'); const color=isMax?'black':'white'; const allMoves=[]; for(const p of pieces.filter(p=>p.userData.color===color)){for(const m of getAllMoves(p)) allMoves.push({piece:p,move:m});} if(allMoves.length===0){const king=getKing(color); if(king&&isSquareAttacked(king.userData.z,king.userData.y,king.userData.x,color)) return isMax?-10000+depth:10000-depth; return 0;} if(isMax){let maxEval=-Infinity; for(const {piece,move} of allMoves){const target=find(move.z,move.y,move.x); const oldZ=piece.userData.z,oldY=piece.userData.y,oldX=piece.userData.x; let removed=null; if(target&&target.userData.color!==color){removed=target; pieces=pieces.filter(p=>p!==target);} if(move.enPassant&&enPassantVictim){removed=enPassantVictim; pieces=pieces.filter(p=>p!==enPassantVictim);} piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x; const eval=minimax(depth-1,false,alpha,beta); piece.userData.z=oldZ; piece.userData.y=oldY; piece.userData.x=oldX; if(removed) pieces.push(removed); maxEval=Math.max(maxEval,eval); alpha=Math.max(alpha,eval); if(beta<=alpha) break;} return maxEval;}else{let minEval=Infinity; for(const {piece,move} of allMoves){const target=find(move.z,move.y,move.x); const oldZ=piece.userData.z,oldY=piece.userData.y,oldX=piece.userData.x; let removed=null; if(target&&target.userData.color!==color){removed=target; pieces=pieces.filter(p=>p!==target);} if(move.enPassant&&enPassantVictim){removed=enPassantVictim; pieces=pieces.filter(p=>p!==enPassantVictim);} piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x; const eval=minimax(depth-1,true,alpha,beta); piece.userData.z=oldZ; piece.userData.y=oldY; piece.userData.x=oldX; if(removed) pieces.push(removed); minEval=Math.min(minEval,eval); beta=Math.min(beta,eval); if(beta<=alpha) break;} return minEval;}}
 function selectBestMoveMinimax(moves,depth){let bestScore=-Infinity; let bestMove=moves[0]; for(const mv of moves){const target=find(mv.move.z,mv.move.y,mv.move.x); const oldZ=mv.piece.userData.z,oldY=mv.piece.userData.y,oldX=mv.piece.userData.x; let removed=null; if(target&&target.userData.color!=='black'){removed=target; pieces=pieces.filter(p=>p!==target);} if(mv.move.enPassant&&enPassantVictim){removed=enPassantVictim; pieces=pieces.filter(p=>p!==enPassantVictim);} mv.piece.userData.z=mv.move.z; mv.piece.userData.y=mv.move.y; mv.piece.userData.x=mv.move.x; const score=minimax(depth-1,false,-Infinity,Infinity); mv.piece.userData.z=oldZ; mv.piece.userData.y=oldY; mv.piece.userData.x=oldX; if(removed) pieces.push(removed); if(score>bestScore){bestScore=score; bestMove=mv;}} return bestMove;}
-function getAIDepth(){if(aiLevel<=4) return 1; if(aiLevel===5) return 2; if(aiLevel===6) return 2; if(aiLevel===7) return 3; if(aiLevel===8) return 3; if(aiLevel===9) return 4; if(aiLevel===10) return 5; return 1;}
-function selectBestMove(moves){if(aiLevel<=4){moves.sort((a,b)=>b.score-a.score); if(aiLevel===1) return moves[Math.floor(Math.random()*moves.length)]; if(aiLevel===2) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.5)))]; if(aiLevel===3) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.3)))]; if(aiLevel===4) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.2)))];} const depth=getAIDepth(); return selectBestMoveMinimax(moves,depth);}
-function aiMove(){if(aiThinking||gameMode!=='ai'||turn!=='black'||gameEnded||isUndoMode) return; aiThinking=true; document.getElementById('ai-status').textContent=`🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`; aiTimeoutId=setTimeout(()=>{try{const all=[]; for(const p of pieces.filter(p=>p.userData.color==='black')) for(const m of getAllMoves(p)) all.push({piece:p,move:m,score:evaluateMove(p,m,true)}); if(all.length){const best=selectBestMove(all); makeMove(best.piece,best.move);}}catch(e){console.error('AI ERROR:',e);} finally{aiThinking=false; document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}},75);}
+function getAIDepth(){if(aiLevel===5) return 1; if(aiLevel===6) return 1; if(aiLevel===7) return 2; if(aiLevel===8) return 2; if(aiLevel===9) return 2; if(aiLevel===10) return 3; return 0;}
+function selectBestMove(moves){if(aiLevel<=4){moves.sort((a,b)=>b.score-a.score); if(aiLevel===1) return moves[Math.floor(Math.random()*moves.length)]; if(aiLevel===2) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.5)))]; if(aiLevel===3) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.3)))]; if(aiLevel===4) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.2)))];} const depth=getAIDepth(); if(depth===0) return moves[0]; return selectBestMoveMinimax(moves,depth);}
+function aiMove(){if(aiThinking||gameMode!=='ai'||turn!=='black'||gameEnded||isUndoMode) return; aiThinking=true; document.getElementById('ai-status').textContent=`🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`; aiTimeoutId=setTimeout(()=>{try{const all=[]; for(const p of pieces.filter(p=>p.userData.color==='black')) for(const m of getAllMoves(p)) all.push({piece:p,move:m,score:evaluateMove(p,m,true)}); if(all.length){const best=selectBestMove(all); makeMove(best.piece,best.move);}}catch(e){console.error('AI ERROR:',e);} finally{aiThinking=false; document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}},15);}
 
 function saveState(){const state={pieces:pieces.map(p=>({type:p.userData.type,color:p.userData.color,z:p.userData.z,y:p.userData.y,x:p.userData.x,hasMoved:p.userData.hasMoved,pos:p.position.clone()})),turn,moveNumber,moveHistory:JSON.parse(JSON.stringify(moveHistory))}; if(historyIndex<gameHistory.length-1) gameHistory=gameHistory.slice(0,historyIndex+1); gameHistory.push(state); historyIndex++; isUndoMode=false; updateContinueButton();}
 function restoreState(state){pieces.forEach(p=>scene.remove(p)); pieces=[]; state.pieces.forEach(pData=>{const p=createPiece(pData.type,pData.color,pData.z,pData.y,pData.x); p.userData.hasMoved=pData.hasMoved; p.position.copy(pData.pos); scene.add(p); pieces.push(p);}); turn=state.turn; moveNumber=state.moveNumber; moveHistory=state.moveHistory||[]; document.getElementById('history-list').innerHTML=''; moveHistory.forEach(mv=>{const div=document.getElementById('history-list'); if(mv.white&&mv.black) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span> <span class="history-black">${mv.black}</span></div>`; else if(mv.white) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span></div>`; else if(mv.black) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-black">${mv.black}</span></div>`;}); updateTurnDisplay(); enPassantTarget=null; enPassantVictim=null; updateThreatHighlights();}
@@ -775,10 +698,42 @@ function updateTurnDisplay(){document.getElementById('turn').textContent=turn===
 function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
 function saveTXT(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let txt=`BEZDNA 3D CHESS\nVariant: 3D Chess 8x8x8 (ZYX notation)\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`; moveHistory.forEach(mv=>{if(mv.white!=='-') txt+=`${mv.number}. ${mv.white} `; if(mv.black) txt+=`${mv.black}\n`;}); const blob=new Blob([txt],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`; a.click(); URL.revokeObjectURL(a.href);}
 
-// ========== ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР (ПОЛНАЯ ВЕРСИЯ) ==========
+// ========== ФУНКЦИИ ЗАПИСИ ХОДОВ ДЛЯ ТРЕНАЖЁРА ==========
+function tutorialAddToHistory(fmt, isWhite) {
+    const div = document.getElementById('history-list');
+    if (isWhite) {
+        div.innerHTML += `<div><span style="color:#888">${tutorialMoveNumber}.</span> <span class="history-white">${fmt.html}</span></div>`;
+        tutorialMoveHistory.push({ number: tutorialMoveNumber, white: fmt.text, black: null });
+    } else {
+        const last = tutorialMoveHistory[tutorialMoveHistory.length - 1];
+        if (last && last.black === null) {
+            div.lastChild.innerHTML += ` <span class="history-black">${fmt.html}</span>`;
+            last.black = fmt.text;
+        } else {
+            div.innerHTML += `<div><span style="color:#888">${tutorialMoveNumber}.</span> <span class="history-white">-</span> <span class="history-black">${fmt.html}</span></div>`;
+            tutorialMoveHistory.push({ number: tutorialMoveNumber, white: '-', black: fmt.text });
+        }
+        tutorialMoveNumber++;
+    }
+    div.scrollTop = div.scrollHeight;
+}
+
+function tutorialFormatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
+    const sym = { king: 'K', queen: 'Q', rook: 'R', bishop: 'B', knight: 'N', pawn: '' };
+    const letter = sym[piece.userData.type] || '';
+    const toCoord = formatCoord(toZ, toY, toX);
+    let move = letter + (wasCapture ? 'x' : '') + toCoord;
+    if (isCheck) move += '+';
+    return { html: `<span class="move-piece">${piece.userData.type === 'pawn' ? '♙' : letter}</span> ${move}`, text: move };
+}
+
+// ========== ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР ==========
 function startInteractiveTutorial(){
   showPage('game');
   document.getElementById('tutorial-arena').classList.add('active');
+  tutorialMoveHistory = [];
+  tutorialMoveNumber = 1;
+  document.getElementById('history-list').innerHTML = '';
   initTutorialArena();
 }
 
@@ -796,7 +751,6 @@ function closeTutorialArena(){
 function initTutorialArena(){
   const container = document.getElementById('tutorial-canvas-container');
   if(!container) return;
-  
   while(container.firstChild) container.removeChild(container.firstChild);
   
   tutorialScene = new THREE.Scene();
@@ -960,9 +914,16 @@ function tutorialClearHL(){ while(tutorialHl.children.length) tutorialHl.remove(
 
 function tutorialMakeMove(piece, move){
   const {z,y,x}=move;
+  const fromZ=piece.userData.z, fromY=piece.userData.y, fromX=piece.userData.x;
+  const wasCapture = !!tutorialFind(z,y,x);
   piece.position.copy(tutorialPos(z,y,x));
   piece.userData.z=z; piece.userData.y=y; piece.userData.x=x;
   piece.userData.hasMoved=true;
+  
+  const moveText = tutorialFormatMove(piece, fromZ, fromY, fromX, z, y, x, wasCapture, false);
+  const isWhite = piece.userData.color === 'white';
+  tutorialAddToHistory(moveText, isWhite);
+  
   tutorialClearHL();
   tutorialSelected=null;
   document.getElementById('tutorial-status').innerHTML=`ХОД СДЕЛАН! МОЖЕТЕ ПРОДОЛЖИТЬ`;
@@ -1026,6 +987,105 @@ function animateTutorial(){
   tutorialRenderer.render(tutorialScene, tutorialCamera);
 }
 
+// ========== ВИДЕОЗАПИСЬ ==========
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+let captureCanvas = null;
+let captureCtx = null;
+
+function initVideoCapture() {
+    if (!captureCanvas) {
+        captureCanvas = document.createElement('canvas');
+        captureCanvas.width = renderer.domElement.clientWidth;
+        captureCanvas.height = renderer.domElement.clientHeight;
+        captureCtx = captureCanvas.getContext('2d');
+    }
+}
+
+function captureFrame() {
+    if (!isRecording || !captureCanvas) return;
+    if (captureCanvas.width !== renderer.domElement.clientWidth || captureCanvas.height !== renderer.domElement.clientHeight) {
+        captureCanvas.width = renderer.domElement.clientWidth;
+        captureCanvas.height = renderer.domElement.clientHeight;
+    }
+    captureCtx.drawImage(renderer.domElement, 0, 0);
+}
+
+async function startVideoRecording() {
+    if (isRecording) { stopVideoRecording(); return; }
+    if (!renderer) { alert("Ошибка: 3D сцена не инициализирована"); return; }
+    
+    initVideoCapture();
+    try {
+        const stream = captureCanvas.captureStream(30);
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        recordedChunks = [];
+        
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bezdna_game_${Date.now()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+            isRecording = false;
+            const btn = document.getElementById('record-video-btn');
+            if (btn) btn.textContent = '🎥 ЗАПИСЬ ВИДЕО';
+            btn?.classList.remove('recording-active');
+            document.getElementById('info').innerHTML = '✅ Видео сохранено!';
+            setTimeout(() => {
+                if (document.getElementById('info').innerHTML.includes('Видео сохранено')) 
+                    document.getElementById('info').innerHTML = '🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ';
+            }, 2000);
+        };
+        
+        mediaRecorder.start(100);
+        isRecording = true;
+        const btn = document.getElementById('record-video-btn');
+        if (btn) {
+            btn.textContent = '⏹️ ОСТАНОВИТЬ (🔴 REC)';
+            btn.classList.add('recording-active');
+        }
+        document.getElementById('info').innerHTML = '🔴 ИДЁТ ЗАПИСЬ ВИДЕО!';
+        
+        setTimeout(() => {
+            if (isRecording) {
+                document.getElementById('info').innerHTML = '🔴 ЗАПИСЬ АКТИВНА... Нажмите кнопку для остановки.';
+            }
+        }, 2000);
+        
+    } catch(e) {
+        console.error("Video capture error:", e);
+        alert("Ошибка записи: " + e.message);
+        isRecording = false;
+    }
+}
+
+function stopVideoRecording() {
+    if (mediaRecorder && isRecording && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    } else {
+        isRecording = false;
+        const btn = document.getElementById('record-video-btn');
+        if (btn) btn.textContent = '🎥 ЗАПИСЬ ВИДЕО';
+        btn?.classList.remove('recording-active');
+    }
+}
+
+function recordShortClip() {
+    if (isRecording) {
+        stopVideoRecording();
+        return;
+    }
+    startVideoRecording();
+    setTimeout(() => {
+        if (isRecording) stopVideoRecording();
+    }, 5000);
+}
+
 // ========== ОСНОВНАЯ СЦЕНА ==========
 function init(){
   try{
@@ -1073,6 +1133,7 @@ function animate(){
     if(starField) starField.rotation.y+=0.0005;
   }
   renderer.render(scene,camera);
+  if (isRecording) captureFrame();
 }
 
 window.addEventListener('load',()=>{
@@ -1082,6 +1143,13 @@ window.addEventListener('load',()=>{
     updateUndoButton(); 
     addShareButtonToResult();
     saveUserStats();
+    initVideoCapture();
+    
+    setInterval(() => {
+        if (isRecording && captureCanvas) {
+            captureFrame();
+        }
+    }, 100);
 });
 
 window.addEventListener('resize',()=>{if(camera&&renderer){camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);}});
@@ -1089,6 +1157,17 @@ document.addEventListener('click',onMouseClick);
 window.addEventListener('touchstart',onTouchStart,{passive:false});
 window.addEventListener('touchmove',onTouchMove,{passive:false});
 window.addEventListener('touchend',onTouchEnd,{passive:false});
+
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.code === 'KeyR') {
+        e.preventDefault();
+        startVideoRecording();
+    }
+    if (e.ctrlKey && e.code === 'KeyG') {
+        e.preventDefault();
+        recordShortClip();
+    }
+});
 </script>
 </body>
 </html>
