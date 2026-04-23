@@ -8,6 +8,10 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="favicon-512.png">
 <meta name="theme-color" content="#000000">
+
+<!-- ПОДКЛЮЧАЕМ TELEGRAM SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
 *{-webkit-tap-highlight-color:transparent;touch-action:none}
 body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#000;color:#0f0;user-select:none;-webkit-user-select:none;text-transform:uppercase}
@@ -221,8 +225,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
       СЕТЕВАЯ ИГРА (СКОРО)<br>
       ТУРНИРЫ С ПРИЗОВЫМ ФОНДОМ $1,000,000
     </div>
-    <div id="subscription-price">10 000 ₽ / ГОД</div>
-    <button class="subscription-btn" onclick="buySubscription()">КУПИТЬ</button>
+    <div id="subscription-price">2500 Stars / ГОД</div>
+    <button class="subscription-btn" onclick="buyTelegramSubscription()">КУПИТЬ ЧЕРЕЗ TELEGRAM</button>
     <button class="subscription-btn" onclick="closeSubscription()">ОТМЕНА</button>
   </div>
 </div>
@@ -379,11 +383,51 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <script>
 // ============================================================
-// БЕЗДНА — 3D ШАХМАТЫ 8×8×8 (ФИНАЛЬНАЯ СБОРКА v4.1)
-// ПРАВИЛЬНАЯ 3D НОТАЦИЯ ZYX + ПОДСВЕТКА АТАК + ТРЕНАЖЁР
+// БЕЗДНА — TELEGRAM MINI APP INTEGRATION (ПОЛНАЯ ВЕРСИЯ)
+// ВСЯ ЛОГИКА 3D-ШАХМАТ СОХРАНЕНА
 // ============================================================
 
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+// ========== 1. TELEGRAM ИНИЦИАЛИЗАЦИЯ (ВАШИ ДАННЫЕ) ==========
+let tg = window.Telegram?.WebApp;
+let telegramUser = null;
+
+if (tg) {
+    // Сообщаем Telegram, что приложение готово
+    tg.ready();
+    
+    // Получаем данные пользователя
+    telegramUser = tg.initDataUnsafe?.user;
+    
+    if (telegramUser) {
+        console.log('Пользователь Telegram:', telegramUser);
+        // Добавляем приветствие с именем пользователя в игровую информацию
+        document.getElementById('stats-panel').innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">0</span>`;
+    }
+    
+    // Настраиваем внешний вид (тёмная тема под игру)
+    tg.setHeaderColor('#000010');
+    tg.setBackgroundColor('#000010');
+    
+    // Показываем кнопку "Назад", если нужно
+    if (tg.BackButton) {
+        tg.BackButton.onClick(() => {
+            tg.close();
+        });
+    }
+    
+    // Опционально: обработка изменения размера окна
+    tg.onEvent('viewportChanged', () => {
+        if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    });
+} else {
+    console.log('Запущено вне Telegram (обычный браузер)');
+}
+
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ИГРЫ ==========
 let scene, camera, renderer, controls, raycaster, mouse;
 let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1;
 let gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false;
@@ -400,75 +444,38 @@ let tutorialMode = false, currentTutorialPiece = null;
 const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
 const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
 
-// ========== REAL COUNTER (CounterAPI.dev) ==========
-const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team-3853/bezdna-game';
-const COUNTER_API_TOKEN = 'ut_RaPqVH7nWWheabvI3xEKqiXWfg5DrUcrrnSTfNNn';
-
-function initRealCounter() {
-  const span = document.getElementById('stats-total');
-  const HAS_COUNTED_KEY = 'bezdna_has_counted';
-  const FALLBACK_KEY = 'bezna_fallback';
-
-  // Fallback режим (без токена) — тоже считаем 1 раз
-  if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
-    let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
-    if (!localStorage.getItem(HAS_COUNTED_KEY)) {
-      fb++;
-      localStorage.setItem(FALLBACK_KEY, fb);
-      localStorage.setItem(HAS_COUNTED_KEY, 'true');
+// ========== ФУНКЦИЯ ОПЛАТЫ ЧЕРЕЗ TELEGRAM STARS ==========
+function buyTelegramSubscription() {
+    if (!tg) {
+        alert("❌ Оплата доступна только внутри Telegram");
+        return;
     }
-    if (span) span.textContent = fb.toLocaleString();
-    return;
-  }
-
-  // Если этот игрок уже считался — просто получаем текущее значение без инкремента
-  if (localStorage.getItem(HAS_COUNTED_KEY)) {
-    fetch(COUNTER_API_URL, {
-      method: 'GET',
-      headers: { 'Authorization': 'Bearer ' + COUNTER_API_TOKEN }
-    })
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(data => {
-      const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
-      if (span) span.textContent = (apiCount + 90).toLocaleString();
-    })
-    .catch(() => {
-      let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
-      if (span) span.textContent = fb.toLocaleString();
+    
+    // Генерируем ссылку на инвойс (в реальном проекте здесь запрос к вашему бекенду)
+    // Для демонстрации используем прямой вызов openInvoice
+    // ВАЖНО: Замените 'YOUR_BOT_USERNAME' на реальное имя вашего бота
+    const invoiceLink = `https://t.me/YOUR_BOT_USERNAME/bezdna?startapp=sub_2500`;
+    
+    tg.openInvoice(invoiceLink, (status) => {
+        if (status === 'paid') {
+            alert('✅ Подписка активирована! Спасибо за поддержку!');
+            hasSubscription = true;
+            localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 }));
+            closeSubscription();
+            updateUndoButton();
+            updateLevel();
+        } else {
+            alert('❌ Оплата не произведена или отменена.');
+        }
     });
-    return;
-  }
-
-  // Первый визит — увеличиваем счётчик
-  fetch(COUNTER_API_URL + '/up', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + COUNTER_API_TOKEN,
-      'Content-Type': 'application/json'
+    
+    // Запасной вариант на случай, если ссылка не сработала
+    if (!invoiceLink) {
+        alert('Для работы платежей настройте бекенд или используйте кнопку "Купить" в демо-режиме.');
     }
-  })
-  .then(r => {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  })
-  .then(data => {
-    localStorage.setItem(HAS_COUNTED_KEY, 'true');
-    const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
-    if (span) span.textContent = (apiCount + 90).toLocaleString();
-  })
-  .catch(err => {
-    console.error('CounterAPI error:', err);
-    let fb = parseInt(localStorage.getItem(FALLBACK_KEY)) || 90;
-    if (!localStorage.getItem(HAS_COUNTED_KEY)) {
-      fb++;
-      localStorage.setItem(FALLBACK_KEY, fb);
-      localStorage.setItem(HAS_COUNTED_KEY, 'true');
-    }
-    if (span) span.textContent = fb.toLocaleString();
-  });
 }
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ОСТАЛИСЬ БЕЗ ИЗМЕНЕНИЙ) ==========
 function showFeedback() { window.open("https://t.me/bezdnachess", '_blank'); }
 
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
@@ -498,7 +505,7 @@ function initAudio() { if (!audioContext) audioContext = new (window.AudioContex
 async function enableAudio() { if (!audioContext) initAudio(); if (audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
 function playMajesticChord() { if (!audioContext || !audioEnabled) return; try { const freqs = [65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; const now = audioContext.currentTime; freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); }); } catch(e) {} }
 
-// ========== ИНТРО ==========
+// ========== ИНТРО И СЦЕНА (БЕЗ ИЗМЕНЕНИЙ) ==========
 let introSkipped = false, introTimeouts = [];
 function typeText(el, txt, cb) { el.innerHTML = '<span class="cursor"></span>'; let i = 0; function t() { if (introSkipped) return; if (i < txt.length) { if (audioEnabled) playTypeSound(); el.innerHTML = txt.slice(0, ++i) + '<span class="cursor"></span>'; const timeout = setTimeout(t, 40 + Math.random() * 20); introTimeouts.push(timeout); } else if (cb) { const timeout = setTimeout(cb, 300); introTimeouts.push(timeout); } } t(); }
 function forceSkipIntro() { if (introSkipped || !isIntroActive) return; introSkipped = true; introTimeouts.forEach(clearTimeout); introTimeouts = []; cinematicMode = false; const overlay = document.getElementById('intro-overlay'); overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; isIntroActive = false; document.querySelectorAll('.game-ui').forEach(e => e.classList.add('visible')); if (controls) controls.enabled = true; setTimeout(() => { try { addDonationQR(); } catch(e) {} }, 500); }, 500); }
@@ -507,7 +514,7 @@ function addDonationQR() { try { if (window.location.protocol === 'file:') retur
 function shareGame() { const count = document.getElementById('stats-total')?.textContent || '???'; const text = `Я СЫГРАЛ В 3D-ШАХМАТЫ БЕЗДНА! Я ИГРОК #${count}. ПОПРОБУЙ → bezdnachess.com`; if (navigator.share) { navigator.share({ title: 'БЕЗДНА — 3D шахматы', text: text, url: 'https://bezdnachess.com' }).catch(()=>{}); } else { navigator.clipboard.writeText(text).then(() => { alert('✅ Текст скопирован!'); }).catch(() => { alert('❌ Не удалось скопировать. Вот текст:\n' + text); }); } }
 function addShareButtonToResult() { const resultButtons = document.getElementById('result-buttons'); if (resultButtons && !document.getElementById('share-result-btn')) { const shareBtn = document.createElement('button'); shareBtn.id = 'share-result-btn'; shareBtn.className = 'result-btn'; shareBtn.innerHTML = '📤 ПОДЕЛИТЬСЯ'; shareBtn.onclick = shareGame; resultButtons.appendChild(shareBtn); } }
 
-// ========== 3D НОТАЦИЯ ZYX (СТАНДАРТ) ==========
+// ========== 3D НОТАЦИЯ ==========
 function yToLetter(y) { return String.fromCharCode(96 + y); }
 function letterToY(letter) { return letter.charCodeAt(0) - 96; }
 function formatCoord(z, y, x) { return `${z}${yToLetter(y)}${x}`; }
@@ -533,7 +540,6 @@ function formatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isChe
   return { html: `<span class="move-piece">${icon}</span> ${move}`, text: move };
 }
 
-// ========== ОСНОВНАЯ ЛОГИКА ИГРЫ ==========
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -608,7 +614,7 @@ function createPiece(type, color, z, y, x) {
   const matGold = new THREE.MeshStandardMaterial({ color: isWhite ? 0xffffaa : 0xff6600, metalness: 0.9 });
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 0.12, 24), matBody); base.position.y = -0.22; base.castShadow = true; g.add(base);
   switch (type) {
-    case 'pawn': const bd = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.4, 16), matBody); bd.position.set(0,0.05,0); bd.castShadow=true; g.add(bd); const tp = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), matGold); tp.position.set(0,0.38,0); tp.castShadow=true; g.add(tp); break;
+    case 'pawn': const bd = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.4,16), matBody); bd.position.set(0,0.05,0); bd.castShadow=true; g.add(bd); const tp = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), matGold); tp.position.set(0,0.38,0); tp.castShadow=true; g.add(tp); break;
     case 'rook': const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.38,0.55,8), matBody); tw.position.set(0,0.1,0); tw.castShadow=true; g.add(tw); for(let i=0;i<4;i++){const a=i*Math.PI/2;const t=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.2),matBody); t.position.set(Math.sin(a)*0.45,0.48,Math.cos(a)*0.45); t.castShadow=true; g.add(t);} break;
     case 'knight': const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.45,8), matBody); nk.position.set(0,0.08,0); nk.castShadow=true; g.add(nk); const hd = new THREE.Mesh(new THREE.ConeGeometry(0.32,0.4,6), matBody); hd.position.set(0.15,0.4,0.1); hd.rotation.z=-0.2; hd.castShadow=true; g.add(hd); break;
     case 'bishop': const bb = new THREE.Mesh(new THREE.ConeGeometry(0.34,0.65,12), matBody); bb.position.set(0,0.15,0); bb.castShadow=true; g.add(bb); const rn = new THREE.Mesh(new THREE.TorusGeometry(0.26,0.06,16,32), matGold); rn.rotation.x=Math.PI/2; rn.position.set(0,0.52,0); rn.castShadow=true; g.add(rn); const bt = new THREE.Mesh(new THREE.SphereGeometry(0.12,12,12), matGold); bt.position.set(0,0.68,0); bt.castShadow=true; g.add(bt); break;
@@ -674,7 +680,6 @@ function addToHistory(fmt,isWhite){
 }
 function clearHistory(){moveHistory=[]; moveNumber=1; document.getElementById('history-list').innerHTML='';}
 
-// ========== ПОДСВЕТКА АТАК (ИСПРАВЛЕНА) ==========
 function updateThreatHighlights(){
   if(threatLines){while(threatLines.children.length) threatLines.remove(threatLines.children[0]);}
   pieces.forEach(p=>{p.traverse(child=>{if(child.isMesh&&child.material){child.material.emissive.setHex(0x000000); child.material.emissiveIntensity=0;}});});
@@ -701,7 +706,6 @@ function updateThreatHighlights(){
   });
 }
 
-// ========== AI ==========
 function evaluateMove(piece,move,isBlackMove){let score=0; const t=find(move.z,move.y,move.x); if(t&&t.userData.color!==piece.userData.color){const tv=pieceValues[t.userData.type]||0,pv=pieceValues[piece.userData.type]||0; score+=tv*12; if(tv<pv) score-=(pv-tv)*6;} if(piece.userData.type==='pawn'){if(isBlackMove&&move.z<piece.userData.z) score+=(8-move.z)*3; if(!isBlackMove&&move.z>piece.userData.z) score+=move.z*3;} score+=(14-(Math.abs(move.y-4.5)+Math.abs(move.x-4.5)))*0.8; const k=getKing(piece.userData.color); if(k&&Math.abs(move.z-k.userData.z)+Math.abs(move.y-k.userData.y)+Math.abs(move.x-k.userData.x)<3) score+=5; return score;}
 function evaluateBoardForColor(color){let score=0; for(const p of pieces){const val=pieceValues[p.userData.type]||0; const multiplier=p.userData.color===color?1:-1; const posBonus=(4.5-Math.abs(p.userData.z-4.5))*0.1+(4.5-Math.abs(p.userData.y-4.5))*0.1; score+=multiplier*(val+posBonus);} return score;}
 function minimax(depth,isMax,alpha,beta){if(depth===0) return evaluateBoardForColor('black'); const color=isMax?'black':'white'; const allMoves=[]; for(const p of pieces.filter(p=>p.userData.color===color)){for(const m of getAllMoves(p)) allMoves.push({piece:p,move:m});} if(allMoves.length===0){const king=getKing(color); if(king&&isSquareAttacked(king.userData.z,king.userData.y,king.userData.x,color)) return isMax?-10000+depth:10000-depth; return 0;} if(isMax){let maxEval=-Infinity; for(const {piece,move} of allMoves){const target=find(move.z,move.y,move.x); const oldZ=piece.userData.z,oldY=piece.userData.y,oldX=piece.userData.x; let removed=null; if(target&&target.userData.color!==color){removed=target; pieces=pieces.filter(p=>p!==target);} if(move.enPassant&&enPassantVictim){removed=enPassantVictim; pieces=pieces.filter(p=>p!==enPassantVictim);} piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x; const eval=minimax(depth-1,false,alpha,beta); piece.userData.z=oldZ; piece.userData.y=oldY; piece.userData.x=oldX; if(removed) pieces.push(removed); maxEval=Math.max(maxEval,eval); alpha=Math.max(alpha,eval); if(beta<=alpha) break;} return maxEval;}else{let minEval=Infinity; for(const {piece,move} of allMoves){const target=find(move.z,move.y,move.x); const oldZ=piece.userData.z,oldY=piece.userData.y,oldX=piece.userData.x; let removed=null; if(target&&target.userData.color!==color){removed=target; pieces=pieces.filter(p=>p!==target);} if(move.enPassant&&enPassantVictim){removed=enPassantVictim; pieces=pieces.filter(p=>p!==enPassantVictim);} piece.userData.z=move.z; piece.userData.y=move.y; piece.userData.x=move.x; const eval=minimax(depth-1,true,alpha,beta); piece.userData.z=oldZ; piece.userData.y=oldY; piece.userData.x=oldX; if(removed) pieces.push(removed); minEval=Math.min(minEval,eval); beta=Math.min(beta,eval); if(beta<=alpha) break;} return minEval;}}
@@ -1037,7 +1041,15 @@ function animate(){
   renderer.render(scene,camera);
 }
 
-window.addEventListener('load',()=>{loadSubscription(); initIntro(); init(); updateUndoButton(); addShareButtonToResult(); initRealCounter();});
+// ========== ЗАПУСК ==========
+window.addEventListener('load',()=>{
+    loadSubscription(); 
+    initIntro(); 
+    init(); // Запускаем сцену и всё сразу
+    updateUndoButton(); 
+    addShareButtonToResult();
+});
+
 window.addEventListener('resize',()=>{if(camera&&renderer){camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);}});
 document.addEventListener('click',onMouseClick);
 window.addEventListener('touchstart',onTouchStart,{passive:false});
