@@ -40,8 +40,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 #mode-panel{top:50px;right:10px;text-align:center;min-width:150px;padding:6px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
 #undo-panel{top:180px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.85)}
 
-/* History Panel с возможностью сворачивания (z-index увеличен) */
-#history-panel{top:10px;left:10px;width:260px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px;transition:all 0.3s ease;z-index:6000}
+#history-panel{top:45px;left:10px;width:260px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:85vh;overflow-y:auto;padding:6px;transition:all 0.3s ease;z-index:6000}
 #history-panel.collapsed{width:36px;overflow:hidden;padding:6px 3px}
 #history-panel.collapsed #history-title span,
 #history-panel.collapsed #history-list,
@@ -133,7 +132,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
   #main-menu{overflow-x:auto;flex-wrap:nowrap;padding:4px 8px}
   .menu-btn{font-size:11px;padding:3px 8px;white-space:nowrap}
   #stats-panel{bottom:5px;right:5px;font-size:11px;padding:6px 12px}
-  #history-panel{width:220px;left:5px;top:5px}
+  #history-panel{width:220px;left:5px;top:45px}
   #history-panel.collapsed{width:30px}
   #info{left:5px;bottom:40px;font-size:9px}
   #camera-control{left:5px;bottom:5px;font-size:7px}
@@ -173,8 +172,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <div id="history-panel" class="game-ui">
   <div id="history-title">
-    <span>📜 ИСТОРИЯ ПАРТИИ</span>
-    <button id="collapse-history-btn" onclick="toggleHistoryPanel()">[−]</button>
+    <span>📜 ИСТОРИЯ (ФОРМАТ: ZYX)</span>
+    <button id="collapse-history-btn" onclick="toggleHistoryPanel()" ontouchstart="toggleHistoryPanel()">[−]</button>
   </div>
   <div id="history-list"></div>
   <div id="history-buttons">
@@ -345,7 +344,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 
 <script>
 // ============================================================
-// БЕЗДНА — ФИНАЛЬНАЯ СБОРКА
+// БЕЗДНА — ПОЛНАЯ ВЕРСИЯ (СТАБИЛЬНАЯ ДЛЯ CHROME И FILE://)
 // ============================================================
 
 // ========== СВОРАЧИВАНИЕ ПАНЕЛИ ИСТОРИИ ==========
@@ -361,81 +360,121 @@ function toggleHistoryPanel() {
     }
 }
 
-// ========== REAL COUNTER (CounterAPI.dev) ==========
+// ========== REAL COUNTER С ОБРАБОТКОЙ ОШИБОК (БЕЗОПАСНО ДЛЯ CHROME) ==========
 const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team-3853/bezdna-game';
 const COUNTER_API_TOKEN = 'ut_RaPqVH7nWWheabvI3xEKqiXWfg5DrUcrrnSTfNNn';
 
 function initRealCounter() {
   const span = document.getElementById('stats-total');
-  if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
-    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
-    fb++;
-    localStorage.setItem('bezna_fallback', fb);
-    if (span) span.textContent = fb.toLocaleString();
-    return;
-  }
-  fetch(COUNTER_API_URL + '/up', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + COUNTER_API_TOKEN,
-      'Content-Type': 'application/json'
+  try {
+    // Если запущено локально (file://), не делаем запросы к API, чтобы не было ошибки CORS
+    if (window.location.protocol === 'file:') {
+       let fb = 90;
+       try { fb = parseInt(localStorage.getItem('bezna_fallback')) || 90; } catch(e){}
+       if (span) span.textContent = fb.toLocaleString();
+       return;
     }
-  })
-  .then(r => {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  })
-  .then(data => {
-    const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
-    const displayCount = apiCount + 90;
-    if (span) span.textContent = displayCount.toLocaleString();
-  })
-  .catch(err => {
-    console.error('CounterAPI error:', err);
-    let fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
-    fb++;
-    localStorage.setItem('bezna_fallback', fb);
-    if (span) span.textContent = fb.toLocaleString();
-  });
+
+    if (COUNTER_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
+      let fb = 90;
+      try {
+        fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+        fb++;
+        localStorage.setItem('bezna_fallback', fb);
+      } catch(e) {}
+      if (span) span.textContent = fb.toLocaleString();
+      return;
+    }
+    
+    fetch(COUNTER_API_URL + '/up', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + COUNTER_API_TOKEN,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      const apiCount = (data.count !== undefined ? data.count : (data.value !== undefined ? data.value : 0));
+      const displayCount = apiCount + 90;
+      if (span) span.textContent = displayCount.toLocaleString();
+    })
+    .catch(err => {
+      console.error('CounterAPI error:', err);
+      let fb = 90;
+      try {
+        fb = parseInt(localStorage.getItem('bezna_fallback')) || 90;
+        fb++;
+        localStorage.setItem('bezna_fallback', fb);
+      } catch(e) {}
+      if (span) span.textContent = fb.toLocaleString();
+    });
+  } catch(e) {
+    console.error('Init counter error:', e);
+    if (span) span.textContent = '90';
+  }
 }
 
-// ========== TELEGRAM ==========
+// ========== TELEGRAM С ОБРАБОТКОЙ ОШИБОК ==========
 let tg = null;
 let telegramUser = null;
 
+function initTelegram() {
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            telegramUser = tg.initDataUnsafe?.user;
+            
+            let userName = 'Игрок';
+            if (telegramUser && telegramUser.first_name) userName = telegramUser.first_name;
+            else if (telegramUser && telegramUser.username) userName = telegramUser.username;
+            
+            const statsPanel = document.getElementById('stats-panel');
+            const totalSpan = document.getElementById('stats-total');
+            const totalValue = totalSpan ? totalSpan.textContent : '0';
+            if (statsPanel) statsPanel.innerHTML = `👤 ${userName} <span id="stats-total">${totalValue}</span>`;
+            
+            tg.setHeaderColor('#000010');
+            tg.setBackgroundColor('#000010');
+            
+            if (tg.BackButton) {
+                tg.BackButton.onClick(() => { tg.close(); });
+            }
+            
+            tg.onEvent('viewportChanged', () => {
+                if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+        }
+    } catch(e) {
+        console.log('Telegram WebApp не доступен:', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initRealCounter();
-    tg = window.Telegram?.WebApp;
-    if (tg) {
-        tg.ready();
-        telegramUser = tg.initDataUnsafe?.user;
-        if (telegramUser) {
-            const statsPanel = document.getElementById('stats-panel');
-            if (statsPanel) statsPanel.innerHTML = `👤 ${telegramUser.first_name || telegramUser.username || 'Гость'} <span id="stats-total">${document.getElementById('stats-total').textContent}</span>`;
-        }
-        tg.setHeaderColor('#000010');
-        tg.setBackgroundColor('#000010');
-        tg.onEvent('viewportChanged', () => {
-            if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
-    } else {
-        const statsPanel = document.getElementById('stats-panel');
-        if (statsPanel) statsPanel.innerHTML = `👤 Игрок <span id="stats-total">${document.getElementById('stats-total').textContent}</span>`;
-    }
+    initTelegram();
 });
 
 function saveUserStats() {
-    if (telegramUser && telegramUser.id) {
-        const userId = telegramUser.id;
-        let userStats = localStorage.getItem(`bezdna_stats_${userId}`);
-        let stats = userStats ? JSON.parse(userStats) : { totalGames: 0 };
-        stats.totalGames++;
-        stats.lastPlayed = Date.now();
-        localStorage.setItem(`bezdna_stats_${userId}`, JSON.stringify(stats));
+    try {
+        if (telegramUser && telegramUser.id) {
+            const userId = telegramUser.id;
+            let userStats = localStorage.getItem(`bezdna_stats_${userId}`);
+            let stats = userStats ? JSON.parse(userStats) : { totalGames: 0 };
+            stats.totalGames++;
+            stats.lastPlayed = Date.now();
+            localStorage.setItem(`bezdna_stats_${userId}`, JSON.stringify(stats));
+        }
+    } catch(e) {
+        console.log('Не удалось сохранить статистику');
     }
 }
 
@@ -454,8 +493,30 @@ function showNetwork() { document.getElementById('network-modal').style.display 
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 
 let hasSubscription = false;
-function loadSubscription() { const saved = localStorage.getItem('bezna_subscription'); if (saved) { const sub = JSON.parse(saved); if (sub.expiry > Date.now()) hasSubscription = true; else localStorage.removeItem('bezna_subscription'); } }
-function buySubscription() { alert('💎 Демо-режим: подписка активирована!'); hasSubscription = true; localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 })); closeSubscription(); updateUndoButton(); updateLevel(); }
+function loadSubscription() { 
+    try {
+        const saved = localStorage.getItem('bezna_subscription'); 
+        if (saved) { 
+            const sub = JSON.parse(saved); 
+            if (sub.expiry > Date.now()) hasSubscription = true; 
+            else localStorage.removeItem('bezna_subscription'); 
+        } 
+    } catch(e) {
+        console.log('Subscription не загружена');
+    }
+}
+
+function buySubscription() { 
+    alert('💎 Демо-режим: подписка активирована!');
+    hasSubscription = true; 
+    try {
+        localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 })); 
+    } catch(e) {}
+    closeSubscription(); 
+    updateUndoButton(); 
+    updateLevel(); 
+}
+
 function canUndo() { return aiLevel <= 5; }
 function updateUndoButton() { const btn = document.getElementById('undo-btn'); if (canUndo()) { btn.classList.remove('disabled'); btn.disabled = false; } else { btn.classList.add('disabled'); btn.disabled = true; } }
 function isPremiumLevel() { return aiLevel >= 7; }
@@ -464,16 +525,111 @@ function isPremiumLevel() { return aiLevel >= 7; }
 let audioContext = null, audioEnabled = false;
 function playTypeSound() { if (!audioEnabled || !audioContext) return; try { const buffer = audioContext.createBuffer(1, 4096, audioContext.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < 4096; i++) data[i] = (Math.random() - 0.5) * 0.3 * Math.exp(-i / audioContext.sampleRate * 150); const src = audioContext.createBufferSource(); src.buffer = buffer; src.connect(audioContext.destination); src.start(); } catch(e) {} }
 function playClick() { if (!audioEnabled || !audioContext) return; try { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = 1200; g.gain.setValueAtTime(0.05, audioContext.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1); o.connect(g); g.connect(audioContext.destination); o.start(); o.stop(audioContext.currentTime + 0.1); } catch(e) {} }
-function initAudio() { if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
-async function enableAudio() { if (!audioContext) initAudio(); if (audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
+function initAudio() { try { if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+async function enableAudio() { if (!audioContext) initAudio(); if (audioContext && audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
 function playMajesticChord() { if (!audioContext || !audioEnabled) return; try { const freqs = [65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; const now = audioContext.currentTime; freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); }); } catch(e) {} }
 
 // ========== ИНТРО ==========
 let introSkipped = false, introTimeouts = [];
 function typeText(el, txt, cb) { el.innerHTML = '<span class="cursor"></span>'; let i = 0; function t() { if (introSkipped) return; if (i < txt.length) { if (audioEnabled) playTypeSound(); el.innerHTML = txt.slice(0, ++i) + '<span class="cursor"></span>'; const timeout = setTimeout(t, 40 + Math.random() * 20); introTimeouts.push(timeout); } else if (cb) { const timeout = setTimeout(cb, 300); introTimeouts.push(timeout); } } t(); }
 function forceSkipIntro() { if (introSkipped || !isIntroActive) return; introSkipped = true; introTimeouts.forEach(clearTimeout); introTimeouts = []; cinematicMode = false; const overlay = document.getElementById('intro-overlay'); overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; isIntroActive = false; document.querySelectorAll('.game-ui').forEach(e => e.classList.add('visible')); if (controls) controls.enabled = true; setTimeout(() => { try { addDonationQR(); } catch(e) {} }, 500); }, 500); }
-function initIntro() { const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions'); const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."]; const btn = document.createElement('button'); btn.textContent = 'ВХОД'; btn.className = 'intro-btn'; btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`; btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; }; btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; }; document.getElementById('intro-overlay').appendChild(btn); btn.onclick = async () => { if (introSkipped) return; await enableAudio(); btn.remove(); typeText(textEl, texts[0], () => setTimeout(() => { if (introSkipped) return; typeText(textEl, texts[1], () => { if (introSkipped) return; actionsEl.style.display = 'flex'; document.getElementById('btn-yes').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, texts[2], () => { if (introSkipped) return; playMajesticChord(); cinematicMode = true; cinematicStartTime = Date.now(); const t1 = setTimeout(() => { if (introSkipped) return; document.getElementById('intro-overlay').style.opacity = '0'; const t2 = setTimeout(() => { forceSkipIntro(); }, 1500); introTimeouts.push(t2); }, 1000); introTimeouts.push(t1); }); }; document.getElementById('btn-no').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", () => setTimeout(() => location.reload(), 1500)); }; }); }, 600)); }; document.getElementById('intro-overlay').addEventListener('click', (e) => { if (e.target.id === 'intro-overlay' || e.target.id === 'skip-hint') forceSkipIntro(); }); document.addEventListener('keydown', (e) => { if ((e.code === 'Space' || e.key === ' ' || e.keyCode === 32) && isIntroActive) { e.preventDefault(); e.stopPropagation(); forceSkipIntro(); } }); }
-function addDonationQR() { try { if (window.location.protocol === 'file:') return; const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3"; const myLink = atob(encodedLink); const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}`; const loader = new THREE.TextureLoader(); loader.load(qrUrl, function(texture) { const geometry = new THREE.PlaneGeometry(0.7, 0.7); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 }); const qrPlane = new THREE.Mesh(geometry, material); qrPlane.position.set(-3.5, -4.05, -3.5); qrPlane.rotation.x = -Math.PI / 2; scene.add(qrPlane); }); } catch(e) { console.log('QR load failed', e); } }
+
+function initIntro() { 
+    try {
+        const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions'); 
+        const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."]; 
+        const btn = document.createElement('button'); 
+        btn.textContent = 'ВХОД'; 
+        btn.className = 'intro-btn'; 
+        btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`; 
+        btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; }; 
+        btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; }; 
+        document.getElementById('intro-overlay').appendChild(btn); 
+        btn.onclick = async () => { 
+            if (introSkipped) return; 
+            await enableAudio(); 
+            btn.remove(); 
+            typeText(textEl, texts[0], () => setTimeout(() => { 
+                if (introSkipped) return; 
+                typeText(textEl, texts[1], () => { 
+                    if (introSkipped) return; 
+                    actionsEl.style.display = 'flex'; 
+                    document.getElementById('btn-yes').onclick = () => { 
+                        if (introSkipped) return; 
+                        actionsEl.style.display = 'none'; 
+                        typeText(textEl, texts[2], () => { 
+                            if (introSkipped) return; 
+                            playMajesticChord(); 
+                            cinematicMode = true; 
+                            cinematicStartTime = Date.now(); 
+                            const t1 = setTimeout(() => { 
+                                if (introSkipped) return; 
+                                document.getElementById('intro-overlay').style.opacity = '0'; 
+                                const t2 = setTimeout(() => { forceSkipIntro(); }, 1500); 
+                                introTimeouts.push(t2); 
+                            }, 1000); 
+                            introTimeouts.push(t1); 
+                        }); 
+                    }; 
+                    document.getElementById('btn-no').onclick = () => { 
+                        if (introSkipped) return; 
+                        actionsEl.style.display = 'none'; 
+                        typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", () => setTimeout(() => location.reload(), 1500)); 
+                    }; 
+                }); 
+            }, 600)); 
+        }; 
+        document.getElementById('intro-overlay').addEventListener('click', (e) => { 
+            if (e.target.id === 'intro-overlay' || e.target.id === 'skip-hint') forceSkipIntro(); 
+        }); 
+        document.addEventListener('keydown', (e) => { 
+            if ((e.code === 'Space' || e.key === ' ' || e.keyCode === 32) && isIntroActive) { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                forceSkipIntro(); 
+            } 
+        }); 
+    } catch(e) {
+        console.log('Intro error:', e);
+        forceSkipIntro();
+    }
+}
+
+// ========== QR КОД С ОБРАБОТКОЙ CORS (БЕЗОПАСНО ДЛЯ CHROME) ==========
+function addDonationQR() { 
+    try { 
+        // Критическая проверка: если файл открыт локально, не грузим текстуры с внешних доменов
+        if (window.location.protocol === 'file:') {
+            console.log('QR не загружается с file:// протокола (CORS restriction)');
+            return;
+        }
+        const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3"; 
+        const myLink = atob(encodedLink); 
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}&format=png`;
+        
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        
+        loader.load(
+            qrUrl, 
+            function(texture) { 
+                const geometry = new THREE.PlaneGeometry(0.7, 0.7); 
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 }); 
+                const qrPlane = new THREE.Mesh(geometry, material); 
+                qrPlane.position.set(-3.5, -4.05, -3.5); 
+                qrPlane.rotation.x = -Math.PI / 2; 
+                scene.add(qrPlane); 
+            },
+            undefined,
+            function(err) {
+                console.log('QR код не загрузился (CORS):', err);
+            }
+        ); 
+    } catch(e) { 
+        console.log('QR load failed', e); 
+    } 
+}
+
 function shareGame() { const count = document.getElementById('stats-total')?.textContent || '???'; const text = `Я СЫГРАЛ В 3D-ШАХМАТЫ БЕЗДНА! Я ИГРОК #${count}. ПОПРОБУЙ → bezdnachess.com`; if (navigator.share) { navigator.share({ title: 'БЕЗДНА — 3D шахматы', text: text, url: 'https://bezdnachess.com' }).catch(()=>{}); } else { navigator.clipboard.writeText(text).then(() => { alert('✅ Текст скопирован!'); }).catch(() => { alert('❌ Не удалось скопировать. Вот текст:\n' + text); }); } }
 function addShareButtonToResult() { const resultButtons = document.getElementById('result-buttons'); if (resultButtons && !document.getElementById('share-result-btn')) { const shareBtn = document.createElement('button'); shareBtn.id = 'share-result-btn'; shareBtn.className = 'result-btn'; shareBtn.innerHTML = '📤 ПОДЕЛИТЬСЯ'; shareBtn.onclick = shareGame; resultButtons.appendChild(shareBtn); } }
 
@@ -486,7 +642,6 @@ let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = 
 let enPassantTarget = null, enPassantVictim = null;
 let threatLines = null;
 
-// Tutorial arena variables
 let tutorialScene, tutorialCamera, tutorialRenderer, tutorialControls, tutorialPieces = [], tutorialSelected = null, tutorialHl = null;
 let tutorialMode = false, currentTutorialPiece = null;
 let tutorialMoveHistory = [], tutorialMoveNumber = 1;
@@ -496,7 +651,11 @@ const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 10
 
 function yToLetter(y) { return String.fromCharCode(96 + y); }
 function letterToY(letter) { return letter.charCodeAt(0) - 96; }
-function formatCoord(z, y, x) { return `${z}${yToLetter(y)}${x}`; }
+
+// Нотация ZYX: Z (высота) + Y (глубина/буква) + X (ширина/цифра)
+function formatCoord(z, y, x) {
+    return `${z}${yToLetter(x)}${y}`; 
+}
 
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -507,7 +666,9 @@ function showPage(pageName) {
   if (pageName === 'game' && scene) document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
 }
 
+// pos(z, y, x): z=height(Y-axis), y=depth(Z-axis), x=width(X-axis)
 function pos(z, y, x) { return new THREE.Vector3(x - 4.5, z - 4.5, y - 4.5); }
+
 function find(z, y, x) { return pieces.find(p => p.userData && p.userData.z === z && p.userData.y === y && p.userData.x === x); }
 function getKing(color) { return pieces.find(p => p.userData.type === 'king' && p.userData.color === color); }
 
@@ -565,21 +726,55 @@ function getAllMoves(p) { return p.userData.type === 'king' ? [...getValidMoves(
 function isCheckmate(color) { const k = getKing(color); if (!k || !isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false; return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0); }
 function isStalemate(color) { const k = getKing(color); if (!k || isSquareAttacked(k.userData.z, k.userData.y, k.userData.x, color)) return false; return !pieces.filter(p => p.userData.color === color).some(p => getAllMoves(p).length > 0); }
 
+// ========== СОЗДАНИЕ 4D/СИММЕТРИЧНЫХ ФИГУР ==========
 function createPiece(type, color, z, y, x) {
   const g = new THREE.Group(); g.userData = { type, color, z, y, x, hasMoved: false };
   const isWhite = color === 'white';
   const matBody = new THREE.MeshStandardMaterial({ color: isWhite ? 0xffffff : 0x4a4a4a, metalness: 0.6, roughness: 0.2 });
   const matGold = new THREE.MeshStandardMaterial({ color: isWhite ? 0xffffaa : 0xff6600, metalness: 0.9 });
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 0.12, 24), matBody); base.position.y = -0.22; base.castShadow = true; g.add(base);
+  
+  // Симметричные части (верх и низ)
   switch (type) {
-    case 'pawn': const bd = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.4,16), matBody); bd.position.set(0,0.05,0); bd.castShadow=true; g.add(bd); const tp = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), matGold); tp.position.set(0,0.38,0); tp.castShadow=true; g.add(tp); break;
-    case 'rook': const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.38,0.55,8), matBody); tw.position.set(0,0.1,0); tw.castShadow=true; g.add(tw); for(let i=0;i<4;i++){const a=i*Math.PI/2;const t=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.2),matBody); t.position.set(Math.sin(a)*0.45,0.48,Math.cos(a)*0.45); t.castShadow=true; g.add(t);} break;
-    case 'knight': const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.45,8), matBody); nk.position.set(0,0.08,0); nk.castShadow=true; g.add(nk); const hd = new THREE.Mesh(new THREE.ConeGeometry(0.32,0.4,6), matBody); hd.position.set(0.15,0.4,0.1); hd.rotation.z=-0.2; hd.castShadow=true; g.add(hd); break;
-    case 'bishop': const bb = new THREE.Mesh(new THREE.ConeGeometry(0.34,0.65,12), matBody); bb.position.set(0,0.15,0); bb.castShadow=true; g.add(bb); const rn = new THREE.Mesh(new THREE.TorusGeometry(0.26,0.06,16,32), matGold); rn.rotation.x=Math.PI/2; rn.position.set(0,0.52,0); rn.castShadow=true; g.add(rn); const bt = new THREE.Mesh(new THREE.SphereGeometry(0.12,12,12), matGold); bt.position.set(0,0.68,0); bt.castShadow=true; g.add(bt); break;
-    case 'queen': const qb = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,0.65,12), matBody); qb.position.set(0,0.1,0); qb.castShadow=true; g.add(qb); const qr = new THREE.Mesh(new THREE.TorusGeometry(0.3,0.05,16,32), matGold); qr.rotation.x=Math.PI/2; qr.position.set(0,0.45,0); qr.castShadow=true; g.add(qr); const qc = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8), matGold); qc.position.set(0,0.62,0); qc.castShadow=true; g.add(qc); for(let i=0;i<4;i++){const a=i*Math.PI/2;const t=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.2,4), matGold); t.position.set(Math.sin(a)*0.25,0.78,Math.cos(a)*0.25); t.castShadow=true; g.add(t);} const qt = new THREE.Mesh(new THREE.SphereGeometry(0.12,16,16), matGold); qt.position.set(0,0.82,0); qt.castShadow=true; g.add(qt); break;
-    case 'king': const kb = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.42,0.7,12), matBody); kb.position.set(0,0.12,0); kb.castShadow=true; g.add(kb); const cb = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.16), matGold); cb.position.set(0,0.72,0); cb.castShadow=true; g.add(cb); const cv = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.25,0.08), matGold); cv.position.set(0,0.88,0); cv.castShadow=true; g.add(cv); const ch = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.08,0.08), matGold); ch.position.set(0,0.88,0); ch.castShadow=true; g.add(ch); break;
+    case 'pawn': 
+      const bd = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.4,16), matBody); bd.position.set(0,0.05,0); bd.castShadow=true; g.add(bd); 
+      const tp = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), matGold); tp.position.set(0,0.38,0); tp.castShadow=true; g.add(tp); 
+      const bp = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), matGold); bp.position.set(0,-0.38,0); bp.castShadow=true; g.add(bp); 
+      break;
+    case 'rook': 
+      const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.38,0.55,8), matBody); tw.position.set(0,0.1,0); tw.castShadow=true; g.add(tw); 
+      for(let i=0;i<4;i++){const a=i*Math.PI/2;const t=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.2),matBody); t.position.set(Math.sin(a)*0.45,0.48,Math.cos(a)*0.45); t.castShadow=true; g.add(t);}
+      for(let i=0;i<4;i++){const a=i*Math.PI/2;const t=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.12,0.2),matBody); t.position.set(Math.sin(a)*0.45,-0.48,Math.cos(a)*0.45); t.castShadow=true; g.add(t);}
+      break;
+    case 'knight': 
+      const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.45,8), matBody); nk.position.set(0,0.08,0); nk.castShadow=true; g.add(nk); 
+      const hd = new THREE.Mesh(new THREE.ConeGeometry(0.32,0.4,6), matBody); hd.position.set(0.15,0.4,0.1); hd.rotation.z=-0.2; hd.castShadow=true; g.add(hd); 
+      const hd2 = new THREE.Mesh(new THREE.ConeGeometry(0.32,0.4,6), matBody); hd2.position.set(-0.15,-0.4,-0.1); hd2.rotation.z=1.2; hd2.castShadow=true; g.add(hd2); 
+      break;
+    case 'bishop': 
+      const bb = new THREE.Mesh(new THREE.ConeGeometry(0.34,0.65,12), matBody); bb.position.set(0,0.15,0); bb.castShadow=true; g.add(bb); 
+      const bb2 = new THREE.Mesh(new THREE.ConeGeometry(0.34,0.65,12), matBody); bb2.position.set(0,-0.15,0); bb2.rotation.z=Math.PI; bb2.castShadow=true; g.add(bb2); 
+      const rn = new THREE.Mesh(new THREE.TorusGeometry(0.26,0.06,16,32), matGold); rn.rotation.x=Math.PI/2; rn.position.set(0,0.52,0); rn.castShadow=true; g.add(rn); 
+      const rn2 = new THREE.Mesh(new THREE.TorusGeometry(0.26,0.06,16,32), matGold); rn2.rotation.x=Math.PI/2; rn2.position.set(0,-0.52,0); rn2.castShadow=true; g.add(rn2); 
+      break;
+    case 'queen': 
+      const qb = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,0.65,12), matBody); qb.position.set(0,0.1,0); qb.castShadow=true; g.add(qb); 
+      const qr = new THREE.Mesh(new THREE.TorusGeometry(0.3,0.05,16,32), matGold); qr.rotation.x=Math.PI/2; qr.position.set(0,0.45,0); qr.castShadow=true; g.add(qr); 
+      const qr2 = new THREE.Mesh(new THREE.TorusGeometry(0.3,0.05,16,32), matGold); qr2.rotation.x=Math.PI/2; qr2.position.set(0,-0.45,0); qr2.castShadow=true; g.add(qr2); 
+      const qc = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8), matGold); qc.position.set(0,0.62,0); qc.castShadow=true; g.add(qc); 
+      const qc2 = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8), matGold); qc2.position.set(0,-0.62,0); qc2.castShadow=true; g.add(qc2); 
+      break;
+    case 'king': 
+      const kb = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.42,0.7,12), matBody); kb.position.set(0,0.12,0); kb.castShadow=true; g.add(kb); 
+      const cb = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.16), matGold); cb.position.set(0,0.72,0); cb.castShadow=true; g.add(cb); 
+      const cb2 = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.16), matGold); cb2.position.set(0,-0.72,0); cb2.castShadow=true; g.add(cb2); 
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.25,0.08), matGold); cv.position.set(0,0.88,0); cv.castShadow=true; g.add(cv); 
+      const cv2 = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.25,0.08), matGold); cv2.position.set(0,-0.88,0); cv2.castShadow=true; g.add(cv2); 
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.08,0.08), matGold); ch.position.set(0,0.88,0); ch.castShadow=true; g.add(ch); 
+      const ch2 = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.08,0.08), matGold); ch2.position.set(0,-0.88,0); ch2.castShadow=true; g.add(ch2); 
+      break;
   }
-  g.position.set(x-4.5, z-4.5, y-4.5);
+  g.position.set(y-4.5, z-4.5, x-4.5);
   return g;
 }
 
@@ -616,7 +811,7 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture){
   if(piece.userData.type==='pawn'&&(Math.abs(toZ-fromZ)===2||Math.abs(toY-fromY)===2||(Math.abs(toZ-fromZ)===2&&Math.abs(toY-fromY)===2))){enPassantTarget={z:(fromZ+toZ)/2,y:(fromY+toY)/2,x:(fromX+toX)/2}; enPassantVictim=piece;}
   else{enPassantTarget=null; enPassantVictim=null;}
   const isCheck=isSquareAttacked(getKing(turn).userData.z,getKing(turn).userData.y,getKing(turn).userData.x,turn);
-  const moveText={html: `${piece.userData.type} ${formatCoord(toZ,toY,toX)}`, text: `${piece.userData.type}${wasCapture?'x':''}${formatCoord(toZ,toY,toX)}${isCheck?'+':''}` };
+  const moveText=formatMove3D(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck);
   addToHistory(moveText,turn==='white');
   saveState();
   turn=turn==='white'?'black':'white';
@@ -630,6 +825,38 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture){
   if(gameMode==='ai'&&turn==='black'&&!gameEnded&&!isUndoMode) aiTimeoutId=setTimeout(()=>aiMove(),75);
 }
 
+function formatMove3D(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
+    const pieceLetters = { king: 'K', queen: 'Q', rook: 'R', bishop: 'B', knight: 'N', pawn: '' };
+    const pieceLetter = pieceLetters[piece.userData.type] || '';
+    const fromCoord = formatCoord(fromZ, fromY, fromX);
+    const toCoord = formatCoord(toZ, toY, toX);
+    
+    let moveStr = '';
+    if (piece.userData.type === 'pawn') {
+        moveStr = (wasCapture ? fromCoord.charAt(1) + 'x' : '') + toCoord;
+    } else {
+        moveStr = pieceLetter;
+        if (isAmbiguousMove(piece, toZ, toY, toX)) {
+            moveStr += fromCoord;
+        }
+        moveStr += (wasCapture ? 'x' : '') + toCoord;
+    }
+    if (isCheck) moveStr += '+';
+    
+    return { html: `<span class="move-piece">${pieceLetter || '♙'}</span> ${moveStr}`, text: moveStr };
+}
+
+function isAmbiguousMove(piece, toZ, toY, toX) {
+    let cnt = 0;
+    for (const p of pieces) {
+        if (p !== piece && p.userData.type === piece.userData.type && p.userData.color === piece.userData.color) {
+            const moves = getAllMoves(p);
+            if (moves.some(m => m.z === toZ && m.y === toY && m.x === toX)) cnt++;
+        }
+    }
+    return cnt > 0;
+}
+
 function addToHistory(fmt,isWhite){
   const div=document.getElementById('history-list');
   if(isWhite){div.innerHTML+=`<div><span style="color:#888">${moveNumber}.</span> <span class="history-white">${fmt.html}</span></div>`; moveHistory.push({number:moveNumber,white:fmt.text,black:null});}
@@ -641,10 +868,8 @@ function clearHistory(){moveHistory=[]; moveNumber=1; document.getElementById('h
 function updateThreatHighlights(){
   if(threatLines){while(threatLines.children.length) threatLines.remove(threatLines.children[0]);}
   pieces.forEach(p=>{p.traverse(child=>{if(child.isMesh&&child.material){child.material.emissive.setHex(0x000000); child.material.emissiveIntensity=0;}});});
-  
   const attackerColor=turn==='white'?'black':'white';
   const highlightColor=turn==='white'?0xff0000:0xffffff;
-  
   pieces.forEach(p=>{
     if(isSquareAttacked(p.userData.z,p.userData.y,p.userData.x,p.userData.color)){
       p.traverse(child=>{if(child.isMesh&&child.material){child.material.emissive.setHex(highlightColor); child.material.emissiveIntensity=1.2;}});
@@ -684,7 +909,7 @@ function clearHL(){while(hl.children.length) hl.remove(hl.children[0]);}
 function highlightLastMove(){if(!lastMoveCoords) return; clearHL(); const{fromZ,fromY,fromX,toZ,toY,toX}=lastMoveCoords; const m1=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7),new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.6})); m1.position.copy(pos(fromZ,fromY,fromX)); hl.add(m1); const m2=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7),new THREE.MeshBasicMaterial({color:0x00ff00,transparent:true,opacity:0.6})); m2.position.copy(pos(toZ,toY,toX)); hl.add(m2); setTimeout(clearHL,3000);}
 
 function getEventCoords(e){if(e.touches&&e.touches.length>0) return{x:e.touches[0].clientX,y:e.touches[0].clientY}; return{x:e.clientX,y:e.clientY};}
-function onMouseClick(e){if(gameEnded||isIntroActive) return; if(isCheckmate(turn)||(gameMode==='ai'&&turn==='black'&&!isUndoMode)) return; const coords=getEventCoords(e); mouse.x=(coords.x/window.innerWidth)*2-1; mouse.y=-(coords.y/window.innerHeight)*2+1; raycaster.setFromCamera(mouse,camera); if(selected){const hit=raycaster.intersectObjects(hl.children); if(hit.length){makeMove(selected,hit[0].object.userData); if(audioEnabled) playClick(); return;}} const hits=raycaster.intersectObjects(pieces,true); if(hits.length){let obj=hits[0].object; while(obj.parent&&!obj.userData.type) obj=obj.parent; if(obj.userData.color!==turn) return; selected=obj; if(audioEnabled) playClick(); highlightValidMoves(); const names={pawn:'пешка',rook:'ладья',knight:'конь',bishop:'слон',queen:'ферзь',king:'король'}; const moves=getAllMoves(obj); document.getElementById('info').textContent=`✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':'⚫'} | ${moves.length} ходов`;}else{clearHL(); selected=null; document.getElementById('info').textContent='🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ';}}
+function onMouseClick(e){if(gameEnded||isIntroActive) return; if(isCheckmate(turn)||(gameMode==='ai'&&turn==='black'&&!isUndoMode)) return; const coords=getEventCoords(e); mouse.x=(coords.x/window.innerWidth)*2-1; mouse.y=-(coords.y/window.innerHeight)*2+1; raycaster.setFromCamera(mouse,camera); if(selected){const hit=raycaster.intersectObjects(hl.children); if(hit.length){makeMove(selected,hit[0].object.userData); if(audioEnabled) playClick(); return;}} const hits=raycaster.intersectObjects(pieces,true); if(hits.length){let obj=hits[0].object; while(obj.parent&&!obj.userData.type) obj=obj.parent; if(obj.userData.color!==turn) return; selected=obj; if(audioEnabled) playClick(); highlightValidMoves(); const names={pawn:'пешка',rook:'ладья',knight:'конь',bishop:'слон',queen:'ферзь',king:'король'}; const moves=getAllMoves(obj); document.getElementById('info').textContent=`✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':''} | ${moves.length} ходов`;}else{clearHL(); selected=null; document.getElementById('info').textContent='🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ';}}
 
 let touchStart=0;
 function onTouchStart(e){if(isIntroActive) return; touchStart=Date.now(); if(e.touches.length===1){e.preventDefault(); onMouseClick(e);}}
@@ -698,7 +923,6 @@ function updateTurnDisplay(){document.getElementById('turn').textContent=turn===
 function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
 function saveTXT(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let txt=`BEZDNA 3D CHESS\nVariant: 3D Chess 8x8x8 (ZYX notation)\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`; moveHistory.forEach(mv=>{if(mv.white!=='-') txt+=`${mv.number}. ${mv.white} `; if(mv.black) txt+=`${mv.black}\n`;}); const blob=new Blob([txt],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`; a.click(); URL.revokeObjectURL(a.href);}
 
-// ========== ФУНКЦИИ ЗАПИСИ ХОДОВ ДЛЯ ТРЕНАЖЁРА ==========
 function tutorialAddToHistory(fmt, isWhite) {
     const div = document.getElementById('history-list');
     if (isWhite) {
@@ -721,13 +945,18 @@ function tutorialAddToHistory(fmt, isWhite) {
 function tutorialFormatMove(piece, fromZ, fromY, fromX, toZ, toY, toX, wasCapture, isCheck) {
     const sym = { king: 'K', queen: 'Q', rook: 'R', bishop: 'B', knight: 'N', pawn: '' };
     const letter = sym[piece.userData.type] || '';
+    const fromCoord = formatCoord(fromZ, fromY, fromX);
     const toCoord = formatCoord(toZ, toY, toX);
-    let move = letter + (wasCapture ? 'x' : '') + toCoord;
+    let move = '';
+    if (piece.userData.type === 'pawn') {
+        move = (wasCapture ? fromCoord.charAt(1) + 'x' : '') + toCoord;
+    } else {
+        move = letter + (wasCapture ? 'x' : '') + toCoord;
+    }
     if (isCheck) move += '+';
     return { html: `<span class="move-piece">${piece.userData.type === 'pawn' ? '♙' : letter}</span> ${move}`, text: move };
 }
 
-// ========== ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР ==========
 function startInteractiveTutorial(){
   showPage('game');
   document.getElementById('tutorial-arena').classList.add('active');
@@ -861,13 +1090,13 @@ function createTutorialPiece(type, color, z, y, x){
       ch.position.set(0,0.88,0); ch.castShadow=true; g.add(ch);
       break;
   }
-  g.position.set(x-4.5, z-4.5, y-4.5);
+  g.position.set(y-4.5, z-4.5, x-4.5);
   tutorialScene.add(g);
   tutorialPieces.push(g);
   return g;
 }
 
-function tutorialPos(z,y,x){ return new THREE.Vector3(x-4.5, z-4.5, y-4.5); }
+function tutorialPos(z,y,x){ return new THREE.Vector3(y-4.5, z-4.5, x-4.5); }
 function tutorialFind(z,y,x){ return tutorialPieces.find(p=>p.userData && p.userData.z===z && p.userData.y===y && p.userData.x===x); }
 
 function tutorialGetRawMoves(p){
@@ -987,7 +1216,6 @@ function animateTutorial(){
   tutorialRenderer.render(tutorialScene, tutorialCamera);
 }
 
-// ========== ВИДЕОЗАПИСЬ ==========
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
@@ -1086,7 +1314,6 @@ function recordShortClip() {
     }, 5000);
 }
 
-// ========== ОСНОВНАЯ СЦЕНА ==========
 function init(){
   try{
     if(typeof THREE==='undefined') throw new Error("Three.js не загружен.");
@@ -1103,6 +1330,9 @@ function init(){
     stars.setAttribute('position',new THREE.BufferAttribute(pos,3));
     starField=new THREE.Points(stars,new THREE.PointsMaterial({size:0.2,color:0xffffff,transparent:true,opacity:0.9}));
     scene.add(starField);
+    
+    addCubeLabels();
+    
     const gridMat=new THREE.LineBasicMaterial({color:0x00ffff,transparent:true,opacity:0.3});
     for(let i=0;i<=8;i++) for(let j=0;j<=8;j++){
       scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i-4,j-4,-4),new THREE.Vector3(i-4,j-4,4)]),gridMat));
@@ -1115,6 +1345,50 @@ function init(){
     
     document.getElementById('tutorial-canvas-container')?.addEventListener('click', onTutorialClick);
   } catch(e){ alert("Ошибка: "+e.message); console.error(e); }
+}
+
+// ========== МЕТОК КООРДИНАТ (ПЕРЕСТАВЛЕННЫЕ: ЗЕЛЕНЫЕ ЦИФРЫ ПО ШИРИНЕ, ЖЕЛТЫЕ БУКВЫ ПО ГЛУБИНЕ) ==========
+function addCubeLabels() {
+    function makeLabel(text, color, fontSize = 36) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.font = `Bold ${fontSize}px "Courier New"`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 64, 64);
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(0.5, 0.5, 0.5);
+        return sprite;
+    }
+    
+    const offset = 0.03;
+    
+    // 1. Белые цифры (1-8) - Высота (ось Y в 3D)
+    for (let z = 1; z <= 8; z++) {
+        const label = makeLabel(z.toString(), '#ffffff', 36);
+        label.position.set(-4.5 - offset, z - 4.5, -4.5 - offset);
+        scene.add(label);
+    }
+    
+    // 2. Зеленые цифры (1-8) - Ширина (ось X в 3D, ближний край)
+    for (let i = 1; i <= 8; i++) {
+        const label = makeLabel(i.toString(), '#00ff00', 36);
+        label.position.set(i - 4.5, -4.5 - offset, -4.5 - offset);
+        scene.add(label);
+    }
+    
+    // 3. Желтые буквы (a-h) - Глубина (ось Z в 3D, левый край)
+    const letters = ['a','b','c','d','e','f','g','h'];
+    for (let i = 0; i < 8; i++) {
+        const label = makeLabel(letters[i], '#ffaa44', 32);
+        label.position.set(-4.5 - offset, -4.5 - offset, i - 3.5);
+        scene.add(label);
+    }
 }
 
 function animate(){
