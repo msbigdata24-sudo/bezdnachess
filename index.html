@@ -265,7 +265,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 <div id="history-panel" class="game-ui">
   <div id="history-title">
     <span>📜 ХОДЫ</span>
-    <button id="collapse-history-btn" onclick="toggleHistoryPanel()" title="Свернуть/развернуть историю">[−]</button>
+    <button id="collapse-history-btn" onclick="toggleHistoryPanel()" title="Свернуть историю">[✖]</button>
   </div>
   <div id="history-list"></div>
   <div id="history-buttons">
@@ -275,7 +275,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   </div>
 </div>
 
-<button id="right-panel-toggle" class="game-ui" onclick="toggleRightPanel()" title="Показать/скрыть правую панель">⚙ ПАНЕЛЬ</button>
+<button id="right-panel-toggle" class="game-ui" onclick="toggleRightPanel()" title="Показать/скрыть правую панель">○ ПАНЕЛЬ</button>
 
 <div id="mode-panel" class="game-ui">
   <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')">👥 PvP</button>
@@ -525,10 +525,16 @@ function toggleHistoryPanel() {
     const btn = document.getElementById('collapse-history-btn');
     if (panel.classList.contains('collapsed')) {
         panel.classList.remove('collapsed');
-        if (btn) btn.innerHTML = '[−]';
+        if (btn) {
+          btn.innerHTML = '[✖]';
+          btn.title = 'Свернуть историю';
+        }
     } else {
         panel.classList.add('collapsed');
-        if (btn) btn.innerHTML = '[+]';
+        if (btn) {
+          btn.innerHTML = '[○]';
+          btn.title = 'Развернуть историю';
+        }
     }
 }
 
@@ -547,7 +553,7 @@ function closeMainMenu() {
 function updateRightPanelToggle() {
   const toggleBtn = document.getElementById('right-panel-toggle');
   if (!toggleBtn) return;
-  toggleBtn.textContent = document.body.classList.contains('right-panel-collapsed') ? '⚙ ПАНЕЛЬ' : '✖ ПАНЕЛЬ';
+  toggleBtn.textContent = document.body.classList.contains('right-panel-collapsed') ? '○ ПАНЕЛЬ' : '✖ ПАНЕЛЬ';
 }
 
 function toggleRightPanel() {
@@ -559,6 +565,16 @@ function initRightPanelByViewport() {
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   document.body.classList.toggle('right-panel-collapsed', isMobile);
   updateRightPanelToggle();
+}
+
+function layoutRightPanels() {
+  const modePanel = document.getElementById('mode-panel');
+  const undoPanel = document.getElementById('undo-panel');
+  if (!modePanel || !undoPanel) return;
+  const gap = 8;
+  const modeTop = parseInt(window.getComputedStyle(modePanel).top, 10) || 74;
+  const dynamicTop = modeTop + modePanel.offsetHeight + gap;
+  undoPanel.style.top = `${dynamicTop}px`;
 }
 
 // ========== REAL COUNTER (CounterAPI.dev) ==========
@@ -704,6 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderCapturesPanel();
     setDefaultUserLabel();
     loadTelegramSDKNonBlocking();
+    setTimeout(layoutRightPanels, 0);
     document.addEventListener('click', function(e) {
       const drawer = document.getElementById('menu-drawer');
       const toggle = document.getElementById('menu-toggle');
@@ -753,12 +770,7 @@ function applySubscriptionLevelAccess() {
   if (levelEl) levelEl.textContent = levelNames[aiLevel];
   const premiumHint = document.getElementById('premium-hint');
   if (premiumHint) premiumHint.style.display = hasSubscription ? 'none' : 'block';
-  const undoPanel = document.getElementById('undo-panel');
-  if (undoPanel) {
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    if (hasSubscription) undoPanel.style.top = isMobile ? '176px' : '204px';
-    else undoPanel.style.top = isMobile ? '210px' : '232px';
-  }
+  layoutRightPanels();
   if (gameMode === 'ai') {
     const aiStatus = document.getElementById('ai-status');
     if (aiStatus) aiStatus.textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
@@ -1332,7 +1344,7 @@ e.preventDefault();
 }
 
 function setMode(mode){gameMode=mode; document.getElementById('mode-pvp').classList.toggle('active',mode==='pvp'); document.getElementById('mode-ai').classList.toggle('active',mode==='ai'); document.getElementById('ai-status').textContent=mode==='pvp'?'👥 PvP':`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`; if(mode==='ai'&&turn==='black'&&!gameEnded) aiMove();}
-function updateLevel(){aiLevel=parseInt(document.getElementById('difficulty-slider').value); document.getElementById('difficulty-value').textContent=levelNames[aiLevel]; if(isPremiumLevel()&&!hasSubscription){alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nДоступный максимум без подписки: 1 РАЗРЯД.`); aiLevel=6; document.getElementById('difficulty-slider').value=6; document.getElementById('difficulty-value').textContent=levelNames[6];} updateUndoButton(); if(gameMode==='ai') document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}
+function updateLevel(){aiLevel=parseInt(document.getElementById('difficulty-slider').value); document.getElementById('difficulty-value').textContent=levelNames[aiLevel]; if(isPremiumLevel()&&!hasSubscription){alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nДоступный максимум без подписки: 1 РАЗРЯД.`); aiLevel=6; document.getElementById('difficulty-slider').value=6; document.getElementById('difficulty-value').textContent=levelNames[6];} updateUndoButton(); layoutRightPanels(); if(gameMode==='ai') document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}
 function updateTurnDisplay(){document.getElementById('turn').textContent=turn==='white'?'⚪ ХОД БЕЛЫХ':'⚫ ХОД ЧЁРНЫХ';}
 
 function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
@@ -1838,7 +1850,7 @@ window.addEventListener('load',()=>{
     }, 100);
 });
 
-window.addEventListener('resize',()=>{if(camera&&renderer){camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);}});
+window.addEventListener('resize',()=>{layoutRightPanels(); if(camera&&renderer){camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);}});
 document.addEventListener('click',onMouseClick);
 window.addEventListener('touchstart',onTouchStart,{passive:false});
 window.addEventListener('touchmove',onTouchMove,{passive:false});
