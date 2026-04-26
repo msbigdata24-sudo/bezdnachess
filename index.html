@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" sizes="512x512" href="favicon-512.png">
 <meta name="theme-color" content="#000000">
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- Telegram SDK загружаем позже и неблокирующе -->
 
 <style>
 *{-webkit-tap-highlight-color:transparent;touch-action:none}
@@ -80,7 +80,13 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 #turn{top:10px;right:10px;color:gold;font-size:13px;font-weight:bold}
 #right-panel-toggle{position:fixed;top:44px;right:10px;background:rgba(0,0,0,0.92);color:#0f0;border:1px solid #0f0;padding:5px 9px;border-radius:4px;z-index:6100;font-family:'Courier New',monospace;font-size:10px;cursor:pointer;pointer-events:auto}
 #mode-panel{top:74px;right:10px;text-align:center;min-width:150px;padding:6px;border:1px solid #0f0;background:rgba(0,0,0,0.9);transition:transform 0.25s ease,opacity 0.25s ease}
-#undo-panel{top:204px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.9);transition:transform 0.25s ease,opacity 0.25s ease}
+#premium-hint{margin-top:4px;padding:3px 4px;border:1px solid #664400;border-radius:4px;background:rgba(40,20,0,0.55);color:#ffcc66;font-size:8px;line-height:1.15;text-align:left}
+#premium-hint .premium-line{display:flex;align-items:center;justify-content:space-between;gap:4px;margin:1px 0}
+#premium-hint .premium-label{color:#ffdd99;font-size:8px;white-space:nowrap}
+#premium-hint .premium-levels{color:#ffd700;font-size:8px;font-weight:bold;letter-spacing:0.5px}
+#premium-unlock{margin-top:3px;width:100%;padding:3px 4px;font-size:8px;border-radius:3px;background:#111;color:#ffd700;border:1px solid #ffd700;cursor:pointer;touch-action:manipulation}
+#premium-unlock:hover{background:#ffd700;color:#000}
+#undo-panel{top:232px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.9);transition:transform 0.25s ease,opacity 0.25s ease}
 body.right-panel-collapsed #mode-panel,
 body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;pointer-events:none}
 
@@ -96,12 +102,18 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 #info{bottom:10px;left:270px;font-size:10px}
 #check{top:80px;left:270px;background:#aa0000;color:#fff;font-weight:bold;display:none;padding:4px 10px;font-size:11px}
 #camera-control{bottom:10px;left:10px;font-size:8px;color:#555;text-align:left}
+#battle-feed{position:fixed;top:46px;left:50%;transform:translateX(-50%);background:rgba(20,0,0,0.9);border:1px solid #ff5555;color:#ffcc88;padding:6px 12px;border-radius:6px;font-size:12px;z-index:7100;display:none;pointer-events:none;text-shadow:0 0 4px rgba(255,120,80,0.6)}
 
 #stats-panel{position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.88);color:#f5d742;padding:6px 8px;border-radius:8px;font-family:'Courier New',monospace;font-size:10px;font-weight:bold;z-index:1000;border:2px solid #f5d742;pointer-events:none;min-width:104px}
 #stats-panel .stats-user{color:#88aaff;font-size:9px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
 #stats-panel .stats-row{display:flex;justify-content:space-between;align-items:center;gap:4px;margin:1px 0}
 #stats-panel .stats-label{color:#f5d742;font-size:9px}
 #stats-panel .stats-value{color:#0f0;font-size:14px;font-weight:bold;line-height:1;min-width:28px;text-align:right}
+#captures-panel{position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.86);border:1px solid #0f0;border-radius:8px;padding:6px 8px;z-index:1000;max-width:220px}
+#captures-panel .captures-title{color:#88ff88;font-size:10px;margin-bottom:4px}
+#captures-panel .captures-row{display:flex;gap:6px;align-items:flex-start;font-size:9px;line-height:1.2;margin:2px 0}
+#captures-panel .captures-label{color:#66ccff;min-width:34px}
+#captures-panel .captures-icons{color:#f5d742;word-break:break-word}
 
 #subscription-modal,#gift-modal,#network-modal,#donation-modal,#interactive-tutorial-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;z-index:7000}
 #subscription-content,#gift-content,#network-content,#donation-content,#interactive-tutorial-content{background:linear-gradient(135deg,#1a1a2e 0%,#0f0f1e 100%);border:3px solid gold;border-radius:15px;padding:30px;text-align:center;max-width:500px}
@@ -184,13 +196,20 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   #menu-drawer{top:38px;left:5px;width:210px;max-height:72vh;padding:6px}
   .menu-btn{font-size:11px;padding:5px 8px}
   #stats-panel{bottom:5px;right:5px;padding:5px 6px;min-width:96px}
+  #captures-panel{left:5px;bottom:5px;max-width:170px;padding:4px 6px}
+  #captures-panel .captures-title{font-size:9px}
+  #captures-panel .captures-row{font-size:8px}
   #history-panel{width:158px;left:5px;top:44px;max-height:50vh;padding:4px 2px}
   #history-panel.collapsed{width:30px}
   #info{left:5px;bottom:40px;font-size:9px}
   #camera-control{left:5px;bottom:5px;font-size:7px}
   #right-panel-toggle{right:5px;top:40px;font-size:9px;padding:4px 7px}
+  #battle-feed{top:40px;font-size:10px;padding:5px 8px;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #mode-panel{right:5px;top:66px;min-width:120px}
-  #undo-panel{right:5px;top:176px}
+  #premium-hint{font-size:7px;padding:2px 3px}
+  #premium-hint .premium-label,#premium-hint .premium-levels{font-size:7px}
+  #premium-unlock{font-size:7px;padding:2px 3px}
+  #undo-panel{right:5px;top:210px}
   .game-ui{font-size:9px;padding:4px 6px}
   #tutorial-page, #rules-page, #about-page{inset:38px 0 0 0;}
   #tutorial-page > div, #rules-page > div, #about-page > div{padding:14px 14px 28px !important;}
@@ -221,6 +240,14 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <div class="stats-row"><span class="stats-label">ONLINE</span><span class="stats-value" id="stats-online">0</span></div>
   <div class="stats-row"><span class="stats-label">MONTH</span><span class="stats-value" id="stats-month">0</span></div>
   <div class="stats-row"><span class="stats-label">TOTAL</span><span class="stats-value" id="stats-total">0</span></div>
+</div>
+
+<div id="battle-feed"></div>
+
+<div id="captures-panel" class="game-ui">
+  <div class="captures-title">⚔️ ТРОФЕИ</div>
+  <div class="captures-row"><span class="captures-label">БЕЛЫЕ:</span><span class="captures-icons" id="captures-white">—</span></div>
+  <div class="captures-row"><span class="captures-label">ЧЁРНЫЕ:</span><span class="captures-icons" id="captures-black">—</span></div>
 </div>
 
 <div id="game-page" class="page active">
@@ -257,6 +284,11 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <div>🏆 РАЗРЯД AI</div>
     <input type="range" id="difficulty-slider" min="1" max="10" step="1" value="5" oninput="updateLevel()">
     <div id="difficulty-value">2 РАЗРЯД</div>
+    <div id="premium-hint">
+      <div class="premium-line"><span class="premium-label">🔒 ПРЕМИУМ</span><span class="premium-levels">КМС·МС·ГМ·БОГ</span></div>
+      <div style="color:#ccaa77;font-size:7px;line-height:1.1;">ЕЩЁ 4 УРОВНЯ В ПОДПИСКЕ</div>
+      <button id="premium-unlock" type="button" onclick="showSubscription()" title="Открыть подписку">💎 ОТКРЫТЬ</button>
+    </div>
   </div>
   <div id="ai-status">🤖 AI: ЧЁРНЫЕ (ЖДЁТ ХОДА)</div>
 </div>
@@ -615,22 +647,25 @@ function initRealCounter() {
 let tg = null;
 let telegramUser = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    initRealCounter();
-    initRightPanelByViewport();
-    document.addEventListener('click', function(e) {
-      const drawer = document.getElementById('menu-drawer');
-      const toggle = document.getElementById('menu-toggle');
-      if (!drawer || !toggle) return;
-      if (!drawer.contains(e.target) && !toggle.contains(e.target)) closeMainMenu();
-    });
+function setDefaultUserLabel() {
+    const userEl = document.getElementById('stats-user');
+    if (userEl) userEl.textContent = '👤 ИГРОК';
+}
+
+function initTelegramWebApp() {
     tg = window.Telegram?.WebApp;
-    if (tg) {
+    if (!tg) {
+        setDefaultUserLabel();
+        return;
+    }
+    try {
         tg.ready();
         telegramUser = tg.initDataUnsafe?.user;
         if (telegramUser) {
             const userEl = document.getElementById('stats-user');
             if (userEl) userEl.textContent = `👤 ${(telegramUser.first_name || telegramUser.username || 'Гость').toUpperCase()}`;
+        } else {
+            setDefaultUserLabel();
         }
         tg.setHeaderColor('#000010');
         tg.setBackgroundColor('#000010');
@@ -641,10 +676,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
         });
-    } else {
-        const userEl = document.getElementById('stats-user');
-        if (userEl) userEl.textContent = '👤 ИГРОК';
+    } catch (e) {
+        console.warn('Telegram WebApp init skipped:', e);
+        setDefaultUserLabel();
     }
+}
+
+function loadTelegramSDKNonBlocking() {
+    if (window.Telegram?.WebApp) {
+        initTelegramWebApp();
+        return;
+    }
+    const sdk = document.createElement('script');
+    sdk.src = 'https://telegram.org/js/telegram-web-app.js';
+    sdk.async = true;
+    sdk.onload = () => initTelegramWebApp();
+    sdk.onerror = () => setDefaultUserLabel();
+    document.head.appendChild(sdk);
+    setTimeout(() => {
+        if (!window.Telegram?.WebApp) setDefaultUserLabel();
+    }, 2500);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initRealCounter();
+    initRightPanelByViewport();
+    renderCapturesPanel();
+    setDefaultUserLabel();
+    loadTelegramSDKNonBlocking();
+    document.addEventListener('click', function(e) {
+      const drawer = document.getElementById('menu-drawer');
+      const toggle = document.getElementById('menu-toggle');
+      if (!drawer || !toggle) return;
+      if (!drawer.contains(e.target) && !toggle.contains(e.target)) closeMainMenu();
+    });
 });
 
 function saveUserStats() {
@@ -673,8 +738,50 @@ function showNetwork() { document.getElementById('network-modal').style.display 
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 
 let hasSubscription = false;
-function loadSubscription() { const saved = localStorage.getItem('bezna_subscription'); if (saved) { const sub = JSON.parse(saved); if (sub.expiry > Date.now()) hasSubscription = true; else localStorage.removeItem('bezna_subscription'); } }
-function buySubscription() { alert('💎 Демо-режим: подписка активирована!'); hasSubscription = true; localStorage.setItem('bezna_subscription', JSON.stringify({ expiry: Date.now() + 365 * 24 * 60 * 60 * 1000 })); closeSubscription(); updateUndoButton(); updateLevel(); }
+const DEMO_SUBSCRIPTION_KEY = 'bezdna_subscription_demo_session';
+function applySubscriptionLevelAccess() {
+  const slider = document.getElementById('difficulty-slider');
+  if (!slider) return;
+  slider.max = hasSubscription ? 10 : 6;
+  let current = parseInt(slider.value, 10) || 5;
+  if (!hasSubscription && current >= 7) {
+    current = 6;
+    slider.value = 6;
+  }
+  aiLevel = current;
+  const levelEl = document.getElementById('difficulty-value');
+  if (levelEl) levelEl.textContent = levelNames[aiLevel];
+  const premiumHint = document.getElementById('premium-hint');
+  if (premiumHint) premiumHint.style.display = hasSubscription ? 'none' : 'block';
+  const undoPanel = document.getElementById('undo-panel');
+  if (undoPanel) {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (hasSubscription) undoPanel.style.top = isMobile ? '176px' : '204px';
+    else undoPanel.style.top = isMobile ? '210px' : '232px';
+  }
+  if (gameMode === 'ai') {
+    const aiStatus = document.getElementById('ai-status');
+    if (aiStatus) aiStatus.textContent = `🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;
+  }
+}
+
+function loadSubscription() {
+  // В демо-режиме подписка действует только в пределах текущей сессии.
+  // Старые персистентные ключи чистим, чтобы премиум не "залипал".
+  localStorage.removeItem('bezna_subscription');
+  hasSubscription = sessionStorage.getItem(DEMO_SUBSCRIPTION_KEY) === '1';
+  applySubscriptionLevelAccess();
+}
+
+function buySubscription() {
+  alert('💎 Демо-режим: подписка активирована!');
+  hasSubscription = true;
+  sessionStorage.setItem(DEMO_SUBSCRIPTION_KEY, '1');
+  closeSubscription();
+  applySubscriptionLevelAccess();
+  updateUndoButton();
+  updateLevel();
+}
 function canUndo() { return aiLevel <= 5; }
 function updateUndoButton() { const btn = document.getElementById('undo-btn'); if (canUndo()) { btn.classList.remove('disabled'); btn.disabled = false; } else { btn.classList.add('disabled'); btn.disabled = true; } }
 function isPremiumLevel() { return aiLevel >= 7; }
@@ -683,8 +790,34 @@ function isPremiumLevel() { return aiLevel >= 7; }
 let audioContext = null, audioEnabled = false;
 function playTypeSound() { if (!audioEnabled || !audioContext) return; try { const buffer = audioContext.createBuffer(1, 4096, audioContext.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < 4096; i++) data[i] = (Math.random() - 0.5) * 0.3 * Math.exp(-i / audioContext.sampleRate * 150); const src = audioContext.createBufferSource(); src.buffer = buffer; src.connect(audioContext.destination); src.start(); } catch(e) {} }
 function playClick() { if (!audioEnabled || !audioContext) return; try { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = 1200; g.gain.setValueAtTime(0.05, audioContext.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1); o.connect(g); g.connect(audioContext.destination); o.start(); o.stop(audioContext.currentTime + 0.1); } catch(e) {} }
+function playCaptureSound() {
+  if (!audioEnabled || !audioContext) return;
+  try {
+    const now = audioContext.currentTime;
+    const o1 = audioContext.createOscillator();
+    const g1 = audioContext.createGain();
+    o1.type = 'triangle';
+    o1.frequency.setValueAtTime(280, now);
+    o1.frequency.exponentialRampToValueAtTime(120, now + 0.16);
+    g1.gain.setValueAtTime(0.06, now);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    o1.connect(g1); g1.connect(audioContext.destination);
+    o1.start(now); o1.stop(now + 0.2);
+  } catch(e) {}
+}
 function initAudio() { if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
 async function enableAudio() { if (!audioContext) initAudio(); if (audioContext.state === 'suspended') await audioContext.resume(); audioEnabled = true; }
+function setupAudioAutostart() {
+  const unlock = async () => {
+    try { await enableAudio(); } catch(e) {}
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('pointerdown', unlock, { passive: true, once: true });
+  window.addEventListener('touchstart', unlock, { passive: true, once: true });
+  window.addEventListener('keydown', unlock, { once: true });
+}
 function playMajesticChord() { if (!audioContext || !audioEnabled) return; try { const freqs = [65.41, 82.41, 98.00, 130.81, 164.81, 196.00, 261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; const now = audioContext.currentTime; freqs.forEach((f, i) => { const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.value = f; const t = now + i * 0.1; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.1, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 3); o.connect(g); g.connect(audioContext.destination); o.start(t); o.stop(t + 3); }); } catch(e) {} }
 
 // ========== ИНТРО ==========
@@ -701,7 +834,10 @@ let scene, camera, renderer, controls, raycaster, mouse;
 let pieces = [], selected = null, turn = 'white', moveHistory = [], moveNumber = 1;
 let gameMode = 'ai', aiThinking = false, aiLevel = 5, gameEnded = false;
 let isIntroActive = true, hl, starField, cinematicMode = false, cinematicStartTime = 0, aiTimeoutId = null;
-let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null;
+let gameHistory = [], historyIndex = -1, isUndoMode = false, pendingPromotion = null, lastMoveCoords = null, lastMoveHighlightTimer = null;
+let capturedByWhite = [], capturedByBlack = [];
+let battleFeedTimer = null;
+let moveAnimationLock = false;
 let enPassantTarget = null, enPassantVictim = null;
 let threatLines = null;
 
@@ -712,10 +848,47 @@ let tutorialMoveHistory = [], tutorialMoveNumber = 1;
 
 const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
 const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
+const pieceLetters = { king:'K', queen:'Q', rook:'R', bishop:'B', knight:'N', pawn:'' };
+const pieceIcons = {
+  king:{white:'♔',black:'♚'},
+  queen:{white:'♕',black:'♛'},
+  rook:{white:'♖',black:'♜'},
+  bishop:{white:'♗',black:'♝'},
+  knight:{white:'♘',black:'♞'},
+  pawn:{white:'♙',black:'♟'}
+};
 
 function yToLetter(y) { return String.fromCharCode(96 + y); }
 function letterToY(letter) { return letter.charCodeAt(0) - 96; }
 function formatCoord(z, y, x) { return `${z}${yToLetter(y)}${x}`; }
+function getPieceIcon(type, color) { return (pieceIcons[type] && pieceIcons[type][color]) ? pieceIcons[type][color] : '?'; }
+
+function renderCapturesPanel() {
+  const whiteEl = document.getElementById('captures-white');
+  const blackEl = document.getElementById('captures-black');
+  if (whiteEl) whiteEl.textContent = capturedByWhite.length ? capturedByWhite.join(' ') : '—';
+  if (blackEl) blackEl.textContent = capturedByBlack.length ? capturedByBlack.join(' ') : '—';
+}
+
+function registerCapture(attackerColor, capturedPiece) {
+  if (!capturedPiece) return;
+  const icon = getPieceIcon(capturedPiece.type, capturedPiece.color);
+  if (attackerColor === 'white') capturedByWhite.push(icon);
+  else capturedByBlack.push(icon);
+  renderCapturesPanel();
+}
+
+function showBattleFeed(text) {
+  const feed = document.getElementById('battle-feed');
+  if (!feed) return;
+  feed.textContent = text;
+  feed.style.display = 'block';
+  if (battleFeedTimer) clearTimeout(battleFeedTimer);
+  battleFeedTimer = setTimeout(() => {
+    feed.style.display = 'none';
+    battleFeedTimer = null;
+  }, 1800);
+}
 
 function showPage(pageName) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -829,45 +1002,98 @@ function setupPieces() {
 
 function promotePawn(piece, type) { const {z,y,x,color}=piece.userData; scene.remove(piece); pieces=pieces.filter(p=>p!==piece); const np=createPiece(type,color,z,y,x); scene.add(np); pieces.push(np); return np; }
 
-function makeMove(piece, move) {
+function animateCaptureAndRemove(target) {
+  return new Promise((resolve) => {
+    if (!target) { resolve(); return; }
+    const start = performance.now();
+    const durationMs = 640;
+    const baseScale = target.scale.clone();
+    const animatedMeshes = [];
+    target.traverse((child) => {
+      if (child.isMesh && child.material) {
+        animatedMeshes.push({ mesh: child, originalOpacity: child.material.opacity, originalTransparent: child.material.transparent });
+      }
+    });
+    function step(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const scale = Math.max(0.08, 1 - ease * 0.85);
+      target.scale.set(baseScale.x * scale, baseScale.y * scale, baseScale.z * scale);
+      animatedMeshes.forEach(({ mesh }) => {
+        mesh.material.transparent = true;
+        mesh.material.opacity = Math.max(0.06, 1 - ease * 0.9);
+        if (mesh.material.emissive) {
+          mesh.material.emissive.setHex(0xff2222);
+          mesh.material.emissiveIntensity = 0.8;
+        }
+      });
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        scene.remove(target);
+        pieces = pieces.filter(p => p !== target);
+        resolve();
+      }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function makeMove(piece, move) {
   if(gameEnded) return;
+  if(moveAnimationLock) return;
+  moveAnimationLock = true;
   const {z,y,x,castling,rook,rookTargetX,enPassant}=move;
   const wasCapture=!!find(z,y,x);
+  let capturedPiece = null;
   const fromZ=piece.userData.z, fromY=piece.userData.y, fromX=piece.userData.x;
-  const target=find(z,y,x); if(target&&target!==piece){scene.remove(target); pieces=pieces.filter(p=>p!==target);}
-  if(enPassant&&enPassantVictim){scene.remove(enPassantVictim); pieces=pieces.filter(p=>p!==enPassantVictim);}
+  const target=find(z,y,x);
+  if(target&&target!==piece){
+    capturedPiece={type:target.userData.type,color:target.userData.color,z:target.userData.z,y:target.userData.y,x:target.userData.x};
+    await animateCaptureAndRemove(target);
+  }
+  if(enPassant&&enPassantVictim){
+    capturedPiece={type:enPassantVictim.userData.type,color:enPassantVictim.userData.color,z:enPassantVictim.userData.z,y:enPassantVictim.userData.y,x:enPassantVictim.userData.x};
+    await animateCaptureAndRemove(enPassantVictim);
+  }
   piece.position.copy(pos(z,y,x)); piece.userData.z=z; piece.userData.y=y; piece.userData.x=x; piece.userData.hasMoved=true;
   if(castling&&rook){rook.position.copy(pos(z,y,rookTargetX)); rook.userData.x=rookTargetX; rook.userData.hasMoved=true;}
   if(piece.userData.type==='pawn'&&((piece.userData.color==='white'&&(z===8||y===8))||(piece.userData.color==='black'&&(z===1||y===1)))){
-    if(gameMode==='ai'&&piece.userData.color==='black'){const newPiece=promotePawn(piece,'queen'); finishMove(newPiece,fromZ,fromY,fromX,z,y,x,wasCapture||(enPassant&&!!enPassantVictim)); return;}
-    else{pendingPromotion={piece,z,y,x,fromZ,fromY,fromX,wasCapture:wasCapture||(enPassant&&!!enPassantVictim)}; document.getElementById('promotion-modal').style.display='flex'; return;}
+    if(gameMode==='ai'&&piece.userData.color==='black'){const newPiece=promotePawn(piece,'queen'); finishMove(newPiece,fromZ,fromY,fromX,z,y,x,wasCapture||(enPassant&&!!enPassantVictim),capturedPiece); moveAnimationLock = false; return;}
+    else{pendingPromotion={piece,z,y,x,fromZ,fromY,fromX,wasCapture:wasCapture||(enPassant&&!!enPassantVictim),capturedPiece}; document.getElementById('promotion-modal').style.display='flex'; moveAnimationLock = false; return;}
   }
-  finishMove(piece,fromZ,fromY,fromX,z,y,x,wasCapture||(enPassant&&!!enPassantVictim));
+  finishMove(piece,fromZ,fromY,fromX,z,y,x,wasCapture||(enPassant&&!!enPassantVictim),capturedPiece);
+  moveAnimationLock = false;
 }
 
-function promoteTo(type){if(pendingPromotion){const newPiece=promotePawn(pendingPromotion.piece,type); document.getElementById('promotion-modal').style.display='none'; finishMove(newPiece,pendingPromotion.fromZ,pendingPromotion.fromY,pendingPromotion.fromX,pendingPromotion.z,pendingPromotion.y,pendingPromotion.x,pendingPromotion.wasCapture); pendingPromotion=null;}}
+function promoteTo(type){if(pendingPromotion){const newPiece=promotePawn(pendingPromotion.piece,type); document.getElementById('promotion-modal').style.display='none'; finishMove(newPiece,pendingPromotion.fromZ,pendingPromotion.fromY,pendingPromotion.fromX,pendingPromotion.z,pendingPromotion.y,pendingPromotion.x,pendingPromotion.wasCapture,pendingPromotion.capturedPiece); pendingPromotion=null;}}
 
-function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture){
+function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture,capturedPiece=null){
   lastMoveCoords={fromZ,fromY,fromX,toZ,toY,toX};
+  playClick();
   if(piece.userData.type==='pawn'&&(Math.abs(toZ-fromZ)===2||Math.abs(toY-fromY)===2||(Math.abs(toZ-fromZ)===2&&Math.abs(toY-fromY)===2))){enPassantTarget={z:(fromZ+toZ)/2,y:(fromY+toY)/2,x:(fromX+toX)/2}; enPassantVictim=piece;}
   else{enPassantTarget=null; enPassantVictim=null;}
   const opponentColor = turn==='white'?'black':'white';
   const opponentKing = getKing(opponentColor);
   const isCheck = !!(opponentKing && isSquareAttacked(opponentKing.userData.z,opponentKing.userData.y,opponentKing.userData.x,opponentColor));
   const isMate = isCheck && isCheckmate(opponentColor);
-  const pieceLetters = { king:'K', queen:'Q', rook:'R', bishop:'B', knight:'N', pawn:'' };
-  const pieceIcons = {
-    king:{white:'♔',black:'♚'},
-    queen:{white:'♕',black:'♛'},
-    rook:{white:'♖',black:'♜'},
-    bishop:{white:'♗',black:'♝'},
-    knight:{white:'♘',black:'♞'},
-    pawn:{white:'♙',black:'♟'}
-  };
   const letter = pieceLetters[piece.userData.type] || '';
-  const icon = (pieceIcons[piece.userData.type] && pieceIcons[piece.userData.type][piece.userData.color]) || '';
+  const icon = getPieceIcon(piece.userData.type, piece.userData.color);
   const notation = `${letter}${wasCapture?'x':''}${formatCoord(toZ,toY,toX)}${isMate?'#':(isCheck?'+':'')}`;
   const moveText={html: `<span class="move-piece">${icon}</span> ${notation}`, text: notation};
+  if (wasCapture && capturedPiece) {
+    registerCapture(piece.userData.color, capturedPiece);
+    const capturedIcon = getPieceIcon(capturedPiece.type, capturedPiece.color);
+    const battleText = `⚔️ ${icon} ВЗЯЛ ${capturedIcon} НА ${formatCoord(toZ,toY,toX)}`;
+    document.getElementById('info').textContent = battleText;
+    showBattleFeed(battleText);
+    playCaptureSound();
+    setTimeout(() => {
+      const infoEl = document.getElementById('info');
+      if (infoEl && infoEl.textContent.includes('ВЗЯЛ')) {
+        infoEl.textContent = '🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ';
+      }
+    }, 1400);
+  }
   addToHistory(moveText,turn==='white');
   saveState();
   turn=turn==='white'?'black':'white';
@@ -923,8 +1149,58 @@ function getAIDepth(){if(aiLevel===5) return 1; if(aiLevel===6) return 1; if(aiL
 function selectBestMove(moves){if(aiLevel<=4){moves.sort((a,b)=>b.score-a.score); if(aiLevel===1) return moves[Math.floor(Math.random()*moves.length)]; if(aiLevel===2) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.5)))]; if(aiLevel===3) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.3)))]; if(aiLevel===4) return moves[Math.floor(Math.random()*Math.max(1,Math.floor(moves.length*0.2)))];} const depth=getAIDepth(); if(depth===0) return moves[0]; return selectBestMoveMinimax(moves,depth);}
 function aiMove(){if(aiThinking||gameMode!=='ai'||turn!=='black'||gameEnded||isUndoMode) return; aiThinking=true; document.getElementById('ai-status').textContent=`🤖 AI (${levelNames[aiLevel]}) ДУМАЕТ...`; aiTimeoutId=setTimeout(()=>{try{const all=[]; for(const p of pieces.filter(p=>p.userData.color==='black')) for(const m of getAllMoves(p)) all.push({piece:p,move:m,score:evaluateMove(p,m,true)}); if(all.length){const best=selectBestMove(all); makeMove(best.piece,best.move);}}catch(e){console.error('AI ERROR:',e);} finally{aiThinking=false; document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}},15);}
 
-function saveState(){const state={pieces:pieces.map(p=>({type:p.userData.type,color:p.userData.color,z:p.userData.z,y:p.userData.y,x:p.userData.x,hasMoved:p.userData.hasMoved,pos:p.position.clone()})),turn,moveNumber,moveHistory:JSON.parse(JSON.stringify(moveHistory))}; if(historyIndex<gameHistory.length-1) gameHistory=gameHistory.slice(0,historyIndex+1); gameHistory.push(state); historyIndex++; isUndoMode=false; updateContinueButton();}
-function restoreState(state){pieces.forEach(p=>scene.remove(p)); pieces=[]; state.pieces.forEach(pData=>{const p=createPiece(pData.type,pData.color,pData.z,pData.y,pData.x); p.userData.hasMoved=pData.hasMoved; p.position.copy(pData.pos); scene.add(p); pieces.push(p);}); turn=state.turn; moveNumber=state.moveNumber; moveHistory=state.moveHistory||[]; document.getElementById('history-list').innerHTML=''; moveHistory.forEach(mv=>{const div=document.getElementById('history-list'); if(mv.white&&mv.black) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span> <span class="history-black">${mv.black}</span></div>`; else if(mv.white) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span></div>`; else if(mv.black) div.innerHTML+=`<div><span style="color:#888">${mv.number}.</span> <span class="history-black">${mv.black}</span></div>`;}); updateTurnDisplay(); enPassantTarget=null; enPassantVictim=null; updateThreatHighlights();}
+function saveState(){
+  const state = {
+    pieces: pieces.map(p => ({
+      type: p.userData.type,
+      color: p.userData.color,
+      z: p.userData.z,
+      y: p.userData.y,
+      x: p.userData.x,
+      hasMoved: p.userData.hasMoved,
+      pos: p.position.clone()
+    })),
+    turn,
+    moveNumber,
+    moveHistory: JSON.parse(JSON.stringify(moveHistory)),
+    capturedByWhite: [...capturedByWhite],
+    capturedByBlack: [...capturedByBlack]
+  };
+  if(historyIndex < gameHistory.length - 1) gameHistory = gameHistory.slice(0, historyIndex + 1);
+  gameHistory.push(state);
+  historyIndex++;
+  isUndoMode=false;
+  updateContinueButton();
+}
+
+function restoreState(state){
+  pieces.forEach(p => scene.remove(p));
+  pieces = [];
+  state.pieces.forEach(pData => {
+    const p = createPiece(pData.type,pData.color,pData.z,pData.y,pData.x);
+    p.userData.hasMoved = pData.hasMoved;
+    p.position.copy(pData.pos);
+    scene.add(p);
+    pieces.push(p);
+  });
+  turn = state.turn;
+  moveNumber = state.moveNumber;
+  moveHistory = state.moveHistory || [];
+  capturedByWhite = Array.isArray(state.capturedByWhite) ? [...state.capturedByWhite] : [];
+  capturedByBlack = Array.isArray(state.capturedByBlack) ? [...state.capturedByBlack] : [];
+  renderCapturesPanel();
+  document.getElementById('history-list').innerHTML = '';
+  moveHistory.forEach(mv => {
+    const div = document.getElementById('history-list');
+    if(mv.white && mv.black) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span> <span class="history-black">${mv.black}</span></div>`;
+    else if(mv.white) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-white">${mv.white}</span></div>`;
+    else if(mv.black) div.innerHTML += `<div><span style="color:#888">${mv.number}.</span> <span class="history-black">${mv.black}</span></div>`;
+  });
+  updateTurnDisplay();
+  enPassantTarget = null;
+  enPassantVictim = null;
+  updateThreatHighlights();
+}
 function undoMove(){if(!canUndo()){alert('❌ Отмена ходов доступна только на уровнях НОВИЧОК, ЛЮБИТЕЛЬ, 4 РАЗРЯД, 3 РАЗРЯД и 2 РАЗРЯД.'); return;} if(historyIndex>0){if(aiTimeoutId) clearTimeout(aiTimeoutId); aiThinking=false; historyIndex--; restoreState(gameHistory[historyIndex]); isUndoMode=true; clearHL(); selected=null; updateContinueButton(); document.getElementById('info').textContent='↩️ Ход отменён. Нажмите "Продолжить"';}}
 function continueGame(){isUndoMode=false; updateContinueButton(); if(gameMode==='ai'&&turn==='black'&&!gameEnded) aiMove();}
 function updateContinueButton(){document.getElementById('continue-btn').style.display=isUndoMode?'block':'none';}
@@ -932,7 +1208,45 @@ function updateContinueButton(){document.getElementById('continue-btn').style.di
 function addHL(m,isCapture=false,customColor=null){const color=customColor!==null?customColor:(isCapture?0xff3333:0x44ff44); const emissive=customColor!==null?customColor:(isCapture?0xff0000:0x44ff44); const intensity=customColor!==null?0.6:(isCapture?1.5:0.4); const s=new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16),new THREE.MeshStandardMaterial({color,emissive,emissiveIntensity:intensity,transparent:true,opacity:0.9})); s.position.copy(pos(m.z,m.y,m.x)); s.userData=m; hl.add(s);}
 function highlightValidMoves(){if(!selected) return; clearHL(); const moves=getAllMoves(selected); moves.forEach(m=>{if(m.castling){const dir=m.x>selected.userData.x?1:-1; addHL({z:m.z,y:m.y,x:selected.userData.x+dir},false,0x44ff44); addHL(m,false,0xffaa44);}else{const target=find(m.z,m.y,m.x); const isCapture=target&&target.userData.color!==selected.userData.color; addHL(m,isCapture);}});}
 function clearHL(){while(hl.children.length) hl.remove(hl.children[0]);}
-function highlightLastMove(){if(!lastMoveCoords) return; clearHL(); const{fromZ,fromY,fromX,toZ,toY,toX}=lastMoveCoords; const m1=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7),new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.6})); m1.position.copy(pos(fromZ,fromY,fromX)); hl.add(m1); const m2=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7),new THREE.MeshBasicMaterial({color:0x00ff00,transparent:true,opacity:0.6})); m2.position.copy(pos(toZ,toY,toX)); hl.add(m2); setTimeout(clearHL,3000);}
+function highlightLastMove(){
+  if(!lastMoveCoords){
+    document.getElementById('info').textContent='ℹ️ Подсветка: сначала сделайте хотя бы 1 ход';
+    setTimeout(() => {
+      if (document.getElementById('info').textContent.includes('Подсветка')) {
+        document.getElementById('info').textContent='🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ';
+      }
+    }, 1500);
+    return;
+  }
+  clearHL();
+  const {fromZ,fromY,fromX,toZ,toY,toX}=lastMoveCoords;
+  const fromMarker=new THREE.Mesh(
+    new THREE.BoxGeometry(0.9,0.9,0.9),
+    new THREE.MeshBasicMaterial({color:0xffd400,transparent:true,opacity:0.72})
+  );
+  fromMarker.position.copy(pos(fromZ,fromY,fromX));
+  hl.add(fromMarker);
+  const toMarker=new THREE.Mesh(
+    new THREE.BoxGeometry(0.95,0.95,0.95),
+    new THREE.MeshBasicMaterial({color:0x22ff55,transparent:true,opacity:0.78})
+  );
+  toMarker.position.copy(pos(toZ,toY,toX));
+  hl.add(toMarker);
+  const traceGeometry = new THREE.BufferGeometry().setFromPoints([
+    pos(fromZ,fromY,fromX),
+    pos(toZ,toY,toX)
+  ]);
+  const traceLine = new THREE.Line(
+    traceGeometry,
+    new THREE.LineBasicMaterial({ color: 0x66ffcc, transparent: true, opacity: 0.85 })
+  );
+  hl.add(traceLine);
+  if (lastMoveHighlightTimer) clearTimeout(lastMoveHighlightTimer);
+  lastMoveHighlightTimer = setTimeout(() => {
+    clearHL();
+    lastMoveHighlightTimer = null;
+  }, 4500);
+}
 
 function getEventCoords(e){if(e.touches&&e.touches.length>0) return{x:e.touches[0].clientX,y:e.touches[0].clientY}; return{x:e.clientX,y:e.clientY};}
 function onMouseClick(e){
@@ -990,25 +1304,35 @@ if(hits.length){
 }
 
 let touchStart=0;
+function isInteractiveTouchTarget(target){
+  if (!target || !target.closest) return false;
+  return !!target.closest(
+    'button, input, select, textarea, a, summary, details, .menu-btn, .history-btn, .mode-btn, .control-btn, .result-btn, .intro-btn, .promo-btn, #main-menu, #menu-drawer, #history-panel, #mode-panel, #undo-panel, #right-panel-toggle, #premium-hint, #premium-unlock, #tutorial-controls, #tutorial-arena'
+  );
+}
+
 function onTouchStart(e){
 if(isIntroActive) return;
 if(!document.getElementById('game-page').classList.contains('active')) return;
+if(isInteractiveTouchTarget(e.target)) return;
 touchStart=Date.now();
 if(e.touches.length===1){e.preventDefault(); onMouseClick(e);}
 }
 function onTouchMove(e){
 if(isIntroActive) return;
 if(!document.getElementById('game-page').classList.contains('active')) return;
+if(isInteractiveTouchTarget(e.target)) return;
 e.preventDefault();
 }
 function onTouchEnd(e){
 if(isIntroActive) return;
 if(!document.getElementById('game-page').classList.contains('active')) return;
+if(isInteractiveTouchTarget(e.target)) return;
 e.preventDefault();
 }
 
 function setMode(mode){gameMode=mode; document.getElementById('mode-pvp').classList.toggle('active',mode==='pvp'); document.getElementById('mode-ai').classList.toggle('active',mode==='ai'); document.getElementById('ai-status').textContent=mode==='pvp'?'👥 PvP':`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`; if(mode==='ai'&&turn==='black'&&!gameEnded) aiMove();}
-function updateLevel(){aiLevel=parseInt(document.getElementById('difficulty-slider').value); document.getElementById('difficulty-value').textContent=levelNames[aiLevel]; if(isPremiumLevel()&&!hasSubscription){alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nУстановлен уровень 2 РАЗРЯД.`); aiLevel=5; document.getElementById('difficulty-slider').value=5; document.getElementById('difficulty-value').textContent=levelNames[5];} updateUndoButton(); if(gameMode==='ai') document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}
+function updateLevel(){aiLevel=parseInt(document.getElementById('difficulty-slider').value); document.getElementById('difficulty-value').textContent=levelNames[aiLevel]; if(isPremiumLevel()&&!hasSubscription){alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nДоступный максимум без подписки: 1 РАЗРЯД.`); aiLevel=6; document.getElementById('difficulty-slider').value=6; document.getElementById('difficulty-value').textContent=levelNames[6];} updateUndoButton(); if(gameMode==='ai') document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}
 function updateTurnDisplay(){document.getElementById('turn').textContent=turn==='white'?'⚪ ХОД БЕЛЫХ':'⚫ ХОД ЧЁРНЫХ';}
 
 function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
@@ -1499,6 +1823,7 @@ function animate(){
 
 window.addEventListener('load',()=>{
     loadSubscription(); 
+    setupAudioAutostart();
     initIntro(); 
     init(); 
     updateUndoButton(); 
