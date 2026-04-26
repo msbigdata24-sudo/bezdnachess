@@ -373,17 +373,66 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 <div id="rules-page" class="page">
   <div style="max-width:800px;margin:0 auto;">
     <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">🧩 ЗАДАЧИ И РАЗБОР</h1>
+    <p style="font-size:12px;color:#9ad79a;line-height:1.6;margin:0 0 14px;">
+      НИЖЕ — КОРОТКИЕ ПРАКТИЧЕСКИЕ СИТУАЦИИ. ОТКРОЙТЕ БЛОК, ПРОЧИТАЙТЕ И СРАЗУ ПРОВЕРЬТЕ ИДЕЮ В ПАРТИИ.
+      ЭТО ПОМОГАЕТ БЫСТРЕЕ ПРИВЫКНУТЬ К 3D-НАПРАВЛЕНИЯМ.
+    </p>
     <details class="rules-item" open>
       <summary>ЗАДАЧА 1: МИНИМАЛЬНЫЙ МАТ</summary>
-      <div class="rules-answer"><strong>ОТВЕТ:</strong> 2 ФЕРЗЯ + КОРОЛЬ. ОДИН ФЕРЗЬ НЕ МОЖЕТ ПЕРЕКРЫТЬ ВСЕ 26 НАПРАВЛЕНИЙ.</div>
+      <div class="rules-answer">
+        <strong>СИТУАЦИЯ:</strong> НУЖНО БЫСТРО ДОВЕСТИ МАТ ПРОТИВ ОДИНОКОГО КОРОЛЯ.<br>
+        <strong>ОТВЕТ:</strong> 2 ФЕРЗЯ + КОРОЛЬ.<br>
+        <strong>ПОЧЕМУ:</strong> ОДИН ФЕРЗЬ СИЛЕН, НО В 3D НЕ ЗАКРЫВАЕТ ВСЕ ЛИНИИ ОТСТУПЛЕНИЯ КОРОЛЯ.
+      </div>
     </details>
     <details class="rules-item">
       <summary>ЗАДАЧА 2: МОГУТ ЛИ 2 ЛАДЬИ?</summary>
-      <div class="rules-answer"><strong>ОТВЕТ:</strong> НЕТ. ЛАДЬЯ ПЕРЕКРЫВАЕТ 6 НАПРАВЛЕНИЙ, ДВЕ — 12, НУЖНА ТРЕТЬЯ.</div>
+      <div class="rules-answer">
+        <strong>СИТУАЦИЯ:</strong> ХВАТИТ ЛИ ДВУХ ЛАДЕЙ ДЛЯ НАДЕЖНОГО КОНТРОЛЯ?<br>
+        <strong>ОТВЕТ:</strong> НЕТ.<br>
+        <strong>ПОЧЕМУ:</strong> ЛАДЬЯ КОНТРОЛИРУЕТ 6 ОСЕВЫХ НАПРАВЛЕНИЙ. В 3D-ШАХМАТАХ ЭТО НЕДОСТАТОЧНО БЕЗ ПОМОЩИ ДРУГИХ ФИГУР.
+      </div>
     </details>
     <details class="rules-item">
       <summary>ЗАДАЧА 3: СЛОН VS ФЕРЗЬ</summary>
-      <div class="rules-answer"><strong>ОТВЕТ:</strong> 20 НАПРАВЛЕНИЙ У СЛОНА, 26 У ФЕРЗЯ.</div>
+      <div class="rules-answer">
+        <strong>ОТВЕТ:</strong> 20 НАПРАВЛЕНИЙ У СЛОНА, 26 У ФЕРЗЯ.<br>
+        <strong>ВЫВОД:</strong> ФЕРЗЬ ЛУЧШЕ В КОНТРОЛЕ ЦЕНТРА, СЛОН — В ТОЧЕЧНОМ ДАВЛЕНИИ ПО ДИАГОНАЛЯМ.
+      </div>
+    </details>
+    <details class="rules-item">
+      <summary>ЗАДАЧА 4: КАК БЫСТРЕЕ УВИДЕТЬ УГРОЗУ МАТА?</summary>
+      <div class="rules-answer">
+        <strong>ПРАВИЛО 3 ШАГОВ:</strong><br>
+        1) ПОСМОТРИТЕ, СКОЛЬКО КЛЕТОК У КОРОЛЯ СОПЕРНИКА УЖЕ ПЕРЕКРЫТО.<br>
+        2) ПРОВЕРЬТЕ ПРОСТРАНСТВЕННЫЕ ДИАГОНАЛИ (НЕ ТОЛЬКО ПЛОСКОСТИ).<br>
+        3) СНАЧАЛА ОТРЕЖЬТЕ ПУТИ ОТХОДА, ПОТОМ ДАВАЙТЕ ШАХ.
+      </div>
+    </details>
+    <details class="rules-item">
+      <summary>ЗАДАЧА 5: ТИПИЧНАЯ ОШИБКА НОВИЧКА</summary>
+      <div class="rules-answer">
+        <strong>ОШИБКА:</strong> ИГРОК ВИДИТ ХОД ТОЛЬКО В ОДНОЙ ПЛОСКОСТИ И ЗАБЫВАЕТ ПРО ОСЬ Z.<br>
+        <strong>КАК ИСПРАВИТЬ:</strong> ПЕРЕД КАЖДЫМ ХОДОМ СПРОСИТЕ СЕБЯ: "А ЧТО МЕНЯЕТСЯ НА УРОВЕНЬ ВЫШЕ/НИЖЕ?"
+      </div>
+    </details>
+    <details class="rules-item">
+      <summary>ЗАДАЧА 6: ЧТО ДЕЛАТЬ В ДЕБЮТЕ?</summary>
+      <div class="rules-answer">
+        <strong>ПЛАН:</strong><br>
+        • ВЫВОДИТЕ ФИГУРЫ В ЦЕНТР (НЕ ПЕРЕГРУЖАЯ ОДНУ ОСЬ).<br>
+        • НЕ ДЕЛАЙТЕ МНОГО ХОДОВ ОДНОЙ ФИГУРОЙ ПОДРЯД.<br>
+        • КОНТРОЛИРУЙТЕ КЛЕТКИ ВОКРУГ КОРОЛЯ СОПЕРНИКА НА 2-3 УРОВНЯХ.
+      </div>
+    </details>
+    <details class="rules-item">
+      <summary>ШПАРГАЛКА: КОГО КОГДА АКТИВИРОВАТЬ?</summary>
+      <div class="rules-answer">
+        <strong>КОНЬ:</strong> ДЛЯ ВНЕЗАПНЫХ ПЕРЕСКОКОВ ЧЕРЕЗ ФИГУРЫ.<br>
+        <strong>СЛОН:</strong> ДЛЯ ДЛИННЫХ ДИАГОНАЛЕЙ И СВЯЗОК.<br>
+        <strong>ЛАДЬЯ:</strong> ДЛЯ ЖЕСТКОГО КОНТРОЛЯ ОСЕЙ.<br>
+        <strong>ФЕРЗЬ:</strong> ДЛЯ РЕШАЮЩЕГО ДАВЛЕНИЯ И МАТОВЫХ СЕТЕЙ.
+      </div>
     </details>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
   </div>
@@ -413,8 +462,8 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="./Vendor/three-r128.min.js"></script>
+<script src="./Vendor/OrbitControls-r128.js"></script>
 
 <script>
 // ============================================================
