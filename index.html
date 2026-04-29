@@ -102,20 +102,21 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 #info{bottom:10px;left:270px;font-size:10px}
 #check{top:80px;left:270px;background:#aa0000;color:#fff;font-weight:bold;display:none;padding:4px 10px;font-size:11px}
 #camera-control{bottom:10px;left:10px;font-size:8px;color:#555;text-align:left}
+#copyright-note{position:fixed;right:8px;bottom:4px;font-size:7px;color:#4e7850;opacity:0.56;z-index:900;pointer-events:none;letter-spacing:0.2px;text-transform:none}
 #battle-feed{position:fixed;top:46px;left:50%;transform:translateX(-50%);background:rgba(20,0,0,0.9);border:1px solid #ff5555;color:#ffcc88;padding:6px 12px;border-radius:6px;font-size:12px;z-index:7100;display:none;pointer-events:none;text-shadow:0 0 4px rgba(255,120,80,0.6)}
 
-#stats-panel{position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.88);color:#f5d742;padding:6px 8px;border-radius:8px;font-family:'Courier New',monospace;font-size:10px;font-weight:bold;z-index:1000;border:2px solid #f5d742;pointer-events:none;min-width:104px}
+#stats-panel{position:fixed;bottom:34px;right:10px;background:rgba(0,0,0,0.88);color:#f5d742;padding:6px 8px;border-radius:8px;font-family:'Courier New',monospace;font-size:10px;font-weight:bold;z-index:1000;border:2px solid #f5d742;pointer-events:none;min-width:104px}
 #stats-panel .stats-user{color:#88aaff;font-size:9px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
 #stats-panel .stats-row{display:flex;justify-content:space-between;align-items:center;gap:4px;margin:1px 0}
 #stats-panel .stats-label{color:#f5d742;font-size:9px}
 #stats-panel .stats-value{color:#0f0;font-size:14px;font-weight:bold;line-height:1;min-width:28px;text-align:right}
-#captures-panel{position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.86);border:1px solid #0f0;border-radius:8px;padding:6px 8px;z-index:1000;max-width:220px}
+#captures-panel{position:fixed;bottom:56px;left:10px;background:rgba(0,0,0,0.86);border:1px solid #0f0;border-radius:8px;padding:6px 8px;z-index:1000;max-width:220px}
 #captures-panel .captures-title{color:#88ff88;font-size:10px;margin-bottom:4px}
 #captures-panel .captures-row{display:flex;gap:6px;align-items:flex-start;font-size:9px;line-height:1.2;margin:2px 0}
 #captures-panel .captures-label{color:#66ccff;min-width:34px}
 #captures-panel .captures-icons{color:#f5d742;word-break:break-word}
 
-#subscription-modal,#gift-modal,#network-modal,#donation-modal,#interactive-tutorial-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;z-index:7000}
+#subscription-modal,#gift-modal,#network-modal,#donation-modal,#interactive-tutorial-modal,#feedback-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;z-index:7000}
 #subscription-content,#gift-content,#network-content,#donation-content,#interactive-tutorial-content{background:linear-gradient(135deg,#1a1a2e 0%,#0f0f1e 100%);border:3px solid gold;border-radius:15px;padding:30px;text-align:center;max-width:500px}
 #interactive-tutorial-content{border-color:#0f0;width:90%;max-width:800px}
 #donation-content{border-color:#ffaa44}
@@ -143,6 +144,19 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 .control-btn:hover{background:#0f0;color:#000}
 .control-btn.disabled{opacity:0.5;cursor:not-allowed;border-color:#666;color:#666}
 .control-btn.disabled:hover{background:#111;color:#666}
+#feedback-content{background:#10141f;border:2px solid #0f0;border-radius:10px;padding:14px;max-width:460px;width:min(92vw,460px);box-shadow:0 0 22px rgba(0,255,0,0.28)}
+#feedback-title{color:#0f0;font-size:14px;margin-bottom:10px;text-shadow:0 0 6px rgba(0,255,0,0.35)}
+#feedback-form{display:flex;flex-direction:column;gap:8px}
+.feedback-row{display:flex;gap:8px}
+.feedback-input,.feedback-select,.feedback-textarea{width:100%;background:#0b1020;border:1px solid #0f0;border-radius:6px;color:#d6ffe0;padding:7px 8px;font-family:'Courier New',monospace;font-size:11px}
+.feedback-textarea{min-height:110px;resize:vertical;line-height:1.35}
+.feedback-input::placeholder,.feedback-textarea::placeholder{color:#6dbb7d}
+#feedback-status{min-height:16px;color:#9cd9a7;font-size:10px}
+.feedback-actions{display:flex;gap:8px;justify-content:flex-end}
+.feedback-btn{background:#111;color:#0f0;border:1px solid #0f0;border-radius:6px;padding:7px 10px;cursor:pointer;font-family:'Courier New',monospace;font-size:11px;font-weight:bold}
+.feedback-btn:hover{background:#0f0;color:#000}
+.feedback-btn.secondary{border-color:#3e7b48;color:#9fe9ad}
+.feedback-btn.secondary:hover{background:#1a2d1d;color:#cfffda}
 .recording-active{animation:recPulse 1s infinite; background:#8b0000 !important; border-color:#ff4444 !important; color:#fff !important;}
 @keyframes recPulse{0%{box-shadow:0 0 0 0 rgba(255,0,0,0.7)}100%{box-shadow:0 0 0 8px rgba(255,0,0,0)}}
 
@@ -173,7 +187,8 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 @keyframes trophyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 #result-title{font-size:28px;font-weight:bold;margin-bottom:15px;text-transform:uppercase;color:#0f0;text-shadow:0 0 10px #0f0}
 #result-message{font-size:14px;color:#aaa;margin-bottom:15px;line-height:1.5}
-#result-level{font-size:16px;color:#f5d742;margin-bottom:20px;font-weight:bold;text-shadow:0 0 5px #f5d742}
+#result-level{font-size:16px;color:#f5d742;margin-bottom:12px;font-weight:bold;text-shadow:0 0 5px #f5d742}
+#result-stats{font-size:13px;color:#888;margin-bottom:16px}
 #result-buttons{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
 .result-btn{background:#111;color:#0f0;border:2px solid #0f0;padding:8px 20px;border-radius:6px;cursor:pointer;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;transition:all 0.3s;touch-action:manipulation}
 .result-btn:hover{background:#0f0;color:#000;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,255,0,0.3)}
@@ -195,14 +210,15 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   #top-strip-title{font-size:10px}
   #menu-drawer{top:38px;left:5px;width:210px;max-height:72vh;padding:6px}
   .menu-btn{font-size:11px;padding:5px 8px}
-  #stats-panel{bottom:5px;right:5px;padding:5px 6px;min-width:96px}
-  #captures-panel{left:5px;bottom:5px;max-width:170px;padding:4px 6px}
+  #stats-panel{bottom:24px;right:5px;padding:5px 6px;min-width:96px}
+  #captures-panel{left:5px;bottom:46px;max-width:170px;padding:4px 6px}
   #captures-panel .captures-title{font-size:9px}
   #captures-panel .captures-row{font-size:8px}
   #history-panel{width:158px;left:5px;top:44px;max-height:50vh;padding:4px 2px}
   #history-panel.collapsed{width:30px}
   #info{left:5px;bottom:40px;font-size:9px}
   #camera-control{left:5px;bottom:5px;font-size:7px}
+  #copyright-note{right:4px;bottom:2px;font-size:6px;opacity:0.5}
   #right-panel-toggle{right:5px;top:40px;font-size:9px;padding:4px 7px}
   #battle-feed{top:40px;font-size:10px;padding:5px 8px;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #mode-panel{right:5px;top:66px;min-width:120px}
@@ -306,6 +322,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 <div id="turn" class="game-ui">⚪ ХОД БЕЛЫХ</div>
 <div id="check" class="game-ui">⚠️ ШАХ! ⚠️</div>
 <div id="info" class="game-ui">🎯 КЛИК ПО ФИГУРЕ → ЗЕЛЁНЫЕ/КРАСНЫЕ ШАРЫ → КЛИК ПО ШАРУ</div>
+<div id="copyright-note">© 2026 Иван Савельев. Все права защищены.</div>
 
 <div id="promotion-modal">
   <div id="promotion-content">
@@ -325,8 +342,10 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <div id="result-title">ПОБЕДА!</div>
     <div id="result-message">МАТ!<br>ПОБЕДИЛИ БЕЛЫЕ</div>
     <div id="result-level">УРОВЕНЬ ПРОТИВНИКА: 2 РАЗРЯД</div>
+    <div id="result-stats"></div>
     <div id="result-buttons">
       <button class="result-btn" onclick="location.reload()">🔄 НОВАЯ ПАРТИЯ</button>
+      <button type="button" class="result-btn" onclick="shareGameResult()" title="Отправить друзьям или опубликовать">📣 ПОДЕЛИТЬСЯ</button>
       <button class="result-btn" onclick="savePGN()">💾 СОХРАНИТЬ PGN</button>
     </div>
   </div>
@@ -400,6 +419,30 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <div id="tutorial-message">⚡ КЛИКНИТЕ ПО ФИГУРЕ, ЗАТЕМ ПО ЗЕЛЁНОЙ СФЕРЕ ДЛЯ ХОДА</div>
 </div>
 
+</div>
+
+<div id="feedback-modal">
+  <div id="feedback-content">
+    <div id="feedback-title">💬 ОТЗЫВ / БАГ-РЕПОРТ (БЕТА)</div>
+    <form id="feedback-form" onsubmit="submitFeedback(event)">
+      <div class="feedback-row">
+        <select id="feedback-type" class="feedback-select" required>
+          <option value="bug">🐞 БАГ</option>
+          <option value="idea">💡 ИДЕЯ</option>
+          <option value="balance">⚖️ БАЛАНС/AI</option>
+          <option value="other">✉️ ДРУГОЕ</option>
+        </select>
+        <input id="feedback-contact" class="feedback-input" type="text" maxlength="80" placeholder="Контакт (email / tg, не обязательно)">
+      </div>
+      <textarea id="feedback-message" class="feedback-textarea" required maxlength="2500" placeholder="Опишите, что случилось: шаги, что ожидали, что получилось, устройство/браузер"></textarea>
+      <input id="feedback-trap" class="feedback-input" type="text" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;pointer-events:none" aria-hidden="true">
+      <div id="feedback-status"></div>
+      <div class="feedback-actions">
+        <button type="button" class="feedback-btn secondary" onclick="closeFeedback()">ЗАКРЫТЬ</button>
+        <button id="feedback-send-btn" type="submit" class="feedback-btn">ОТПРАВИТЬ</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div id="tutorial-page" class="page">
@@ -504,7 +547,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
       ПРОДВИНУТАЯ АНАЛИТИКА ПАРТИЙ И БОЛЕЕ ГЛУБОКИЙ AI.
     </p>
     <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 8px;">
-      ОБРАТНАЯ СВЯЗЬ И СООБЩЕСТВО: <a href="https://t.me/bezdnachess.com" target="_blank" style="color:#0f0;">t.me/bezdnachess.com</a>
+      ОБРАТНАЯ СВЯЗЬ И СООБЩЕСТВО: <a href="https://t.me/bezdnachesscom" target="_blank" style="color:#0f0;">t.me/bezdnachesscom</a>
     </p>
     <p style="font-size:12px;color:#888;margin-top:16px;">THREE.JS · WEBGL · JAVASCRIPT · © 2026</p>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
@@ -726,6 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const toggle = document.getElementById('menu-toggle');
       if (!drawer || !toggle) return;
       if (!drawer.contains(e.target) && !toggle.contains(e.target)) closeMainMenu();
+      if (e.target && e.target.id === 'feedback-modal') closeFeedback();
     });
 });
 
@@ -741,7 +785,100 @@ function saveUserStats() {
 }
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
-function showFeedback() { window.open("https://t.me/bezdnachess.com", '_blank'); }
+const FEEDBACK_EMAIL = 'pablo206759@gmail.com';
+const FEEDBACK_PUBLIC_EMAIL = 'feedback@bezdnachess.com';
+const FEEDBACK_ENDPOINT = `https://formsubmit.co/ajax/${FEEDBACK_EMAIL}`;
+let feedbackModalOpenedAt = 0;
+
+function showFeedback() {
+  const modal = document.getElementById('feedback-modal');
+  const status = document.getElementById('feedback-status');
+  const msg = document.getElementById('feedback-message');
+  if (!modal) return;
+  feedbackModalOpenedAt = Date.now();
+  if (status) status.textContent = 'Опишите баг или идею. Это отправится разработчику на почту.';
+  if (msg && !msg.value) msg.focus();
+  modal.style.display = 'flex';
+}
+
+function closeFeedback() {
+  const modal = document.getElementById('feedback-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitFeedback(e) {
+  e.preventDefault();
+  const statusEl = document.getElementById('feedback-status');
+  const sendBtn = document.getElementById('feedback-send-btn');
+  const type = document.getElementById('feedback-type')?.value || 'other';
+  const contact = (document.getElementById('feedback-contact')?.value || '').trim();
+  const message = (document.getElementById('feedback-message')?.value || '').trim();
+  const userLabel = document.getElementById('stats-user')?.textContent || 'ИГРОК';
+  if (!message) {
+    if (statusEl) statusEl.textContent = 'Добавьте описание проблемы.';
+    return;
+  }
+  const subject = `[BEZDNA beta] ${type.toUpperCase()} ${new Date().toLocaleString('ru-RU')}`;
+  const body = [
+    `Тип: ${type}`,
+    `Контакт: ${contact || 'не указан'}`,
+    `Пользователь: ${userLabel}`,
+    `Режим: ${gameMode}`,
+    `Уровень AI: ${levelNames[aiLevel] || aiLevel}`,
+    `Ход: ${turn}`,
+    `Полных ходов: ${countPlayedMoves()}`,
+    `Страница: ${window.location.href}`,
+    `Платформа: ${navigator.platform || ''}`,
+    `UA: ${navigator.userAgent}`,
+    '',
+    'Сообщение:',
+    message
+  ].join('\n');
+  try {
+    if (sendBtn) sendBtn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Отправляем отзыв...';
+
+    const payload = {
+      _subject: subject,
+      type,
+      contact: contact || 'не указан',
+      user: userLabel,
+      game_mode: gameMode,
+      ai_level: levelNames[aiLevel] || aiLevel,
+      turn,
+      full_moves: countPlayedMoves(),
+      page: window.location.href,
+      platform: navigator.platform || '',
+      user_agent: navigator.userAgent,
+      message
+    };
+
+    const res = await fetch(FEEDBACK_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === false) throw new Error(data.message || `HTTP ${res.status}`);
+
+    if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
+    const form = document.getElementById('feedback-form');
+    if (form) form.reset();
+    feedbackModalOpenedAt = Date.now();
+  } catch (err) {
+    console.error('FEEDBACK SEND ERROR:', err);
+    // Простой резерв: если API недоступно, открываем обычное письмо.
+    const mailtoUrl = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+    if (statusEl) statusEl.textContent = `Открываю почтовый клиент для отправки на ${FEEDBACK_PUBLIC_EMAIL}.`;
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
 function showDonation() { document.getElementById('donation-link').innerText = DONATION_LINK; document.getElementById('donation-modal').style.display = 'flex'; }
 function closeDonation() { document.getElementById('donation-modal').style.display = 'none'; }
@@ -838,8 +975,124 @@ function typeText(el, txt, cb) { el.innerHTML = '<span class="cursor"></span>'; 
 function forceSkipIntro() { if (introSkipped || !isIntroActive) return; introSkipped = true; introTimeouts.forEach(clearTimeout); introTimeouts = []; cinematicMode = false; const overlay = document.getElementById('intro-overlay'); overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; isIntroActive = false; document.querySelectorAll('.game-ui').forEach(e => e.classList.add('visible')); if (controls) controls.enabled = true; setTimeout(() => { try { addDonationQR(); } catch(e) {} }, 500); }, 500); }
 function initIntro() { const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions'); const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."]; const btn = document.createElement('button'); btn.textContent = 'ВХОД'; btn.className = 'intro-btn'; btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`; btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; }; btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; }; document.getElementById('intro-overlay').appendChild(btn); btn.onclick = async () => { if (introSkipped) return; await enableAudio(); btn.remove(); typeText(textEl, texts[0], () => setTimeout(() => { if (introSkipped) return; typeText(textEl, texts[1], () => { if (introSkipped) return; actionsEl.style.display = 'flex'; document.getElementById('btn-yes').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, texts[2], () => { if (introSkipped) return; playMajesticChord(); cinematicMode = true; cinematicStartTime = Date.now(); const t1 = setTimeout(() => { if (introSkipped) return; document.getElementById('intro-overlay').style.opacity = '0'; const t2 = setTimeout(() => { forceSkipIntro(); }, 1500); introTimeouts.push(t2); }, 1000); introTimeouts.push(t1); }); }; document.getElementById('btn-no').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", () => setTimeout(() => location.reload(), 1500)); }; }); }, 600)); }; document.getElementById('intro-overlay').addEventListener('click', (e) => { if (e.target.id === 'intro-overlay' || e.target.id === 'skip-hint') forceSkipIntro(); }); document.addEventListener('keydown', (e) => { if ((e.code === 'Space' || e.key === ' ' || e.keyCode === 32) && isIntroActive) { e.preventDefault(); e.stopPropagation(); forceSkipIntro(); } }); }
 function addDonationQR() { try { if (window.location.protocol === 'file:') return; const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3"; const myLink = atob(encodedLink); const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}`; const loader = new THREE.TextureLoader(); loader.load(qrUrl, function(texture) { const geometry = new THREE.PlaneGeometry(0.7, 0.7); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 }); const qrPlane = new THREE.Mesh(geometry, material); qrPlane.position.set(-3.5, -4.05, -3.5); qrPlane.rotation.x = -Math.PI / 2; scene.add(qrPlane); }); } catch(e) { console.log('QR load failed', e); } }
-function shareGame() { const count = document.getElementById('stats-total')?.textContent || '???'; const text = `Я СЫГРАЛ В 3D-ШАХМАТЫ БЕЗДНА! Я ИГРОК #${count}. ПОПРОБУЙ → bezdnachess.com`; if (navigator.share) { navigator.share({ title: 'БЕЗДНА — 3D шахматы', text: text, url: 'https://bezdnachess.com' }).catch(()=>{}); } else { navigator.clipboard.writeText(text).then(() => { alert('✅ Текст скопирован!'); }).catch(() => { alert('❌ Не удалось скопировать. Вот текст:\n' + text); }); } }
-function addShareButtonToResult() { const resultButtons = document.getElementById('result-buttons'); if (resultButtons && !document.getElementById('share-result-btn')) { const shareBtn = document.createElement('button'); shareBtn.id = 'share-result-btn'; shareBtn.className = 'result-btn'; shareBtn.innerHTML = '📤 ПОДЕЛИТЬСЯ'; shareBtn.onclick = shareGame; resultButtons.appendChild(shareBtn); } }
+const GAME_SHARE_URL = 'https://bezdnachess.com';
+let lastResultForShare = '';
+
+function countPlayedPly() {
+  let n = 0;
+  for (let i = 0; i < moveHistory.length; i++) {
+    const m = moveHistory[i];
+    if (m.white && m.white !== '-') n++;
+    if (m.black) n++;
+  }
+  return n;
+}
+
+function countPlayedMoves() {
+  return Math.ceil(countPlayedPly() / 2);
+}
+
+function composeMateShareText(winnerColor, moves) {
+  const lvl = levelNames[aiLevel];
+  const url = GAME_SHARE_URL;
+  const movesBit = moves > 0 ? ` Мат за ${moves} ходов.` : '';
+  if (gameMode === 'ai') {
+    const humanWon = winnerColor === 'white';
+    if (humanWon) {
+      return `Я выиграл в 3D-шахматы «Бездна» у AI уровня «${lvl}»!${movesBit} Сыграй: ${url}`;
+    }
+    return `В 3D-шахматах «Бездна» меня обыграл AI уровня «${lvl}».${movesBit} Попробуй сам: ${url}`;
+  }
+  const side = winnerColor === 'white' ? 'белые' : 'чёрные';
+  const movesPvP = moves > 0 ? ` За ${moves} ходов.` : '';
+  return `Мат в 3D-шахматах «Бездна»! Победа ${side}.${movesPvP} ${url}`;
+}
+
+function composePatShareText(moves) {
+  const url = GAME_SHARE_URL;
+  const movesBit = moves > 0 ? ` (${moves} ходов)` : '';
+  if (gameMode === 'ai') {
+    return `Ничья — пат в 3D-шахматах «Бездна» против AI уровня «${levelNames[aiLevel]}»${movesBit}. ${url}`;
+  }
+  return `Ничья — пат в 3D-шахматах «Бездна»${movesBit}. ${url}`;
+}
+
+function shareGameResult() {
+  const text = lastResultForShare || `3D-шахматы «Бездна» — ${GAME_SHARE_URL}`;
+  const title = 'БЕЗДНА — 3D шахматы';
+  if (navigator.share) {
+    navigator.share({ title, text }).catch(() => copyShareFallback(text));
+  } else {
+    copyShareFallback(text);
+  }
+}
+
+function copyShareFallback(text) {
+  const t = text.includes(GAME_SHARE_URL) ? text : `${text} ${GAME_SHARE_URL}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(() => alert('✅ Текст скопирован — вставь в чат или соцсеть!')).catch(() => alert('Скопируй текст вручную:\n\n' + t));
+  } else {
+    alert(t);
+  }
+}
+
+function shareGame() {
+  const count = document.getElementById('stats-total')?.textContent || '???';
+  const text = `Я СЫГРАЛ В 3D-ШАХМАТЫ БЕЗДНА! Я ИГРОК #${count}. ПОПРОБУЙ → ${GAME_SHARE_URL}`;
+  if (navigator.share) {
+    navigator.share({ title: 'БЕЗДНА — 3D шахматы', text }).catch(() => copyShareFallback(text));
+  } else {
+    copyShareFallback(text);
+  }
+}
+
+function openGameOverMate() {
+  const winnerRu = turn === 'white' ? 'ЧЁРНЫЕ' : 'БЕЛЫЕ';
+  const winnerColor = turn === 'white' ? 'black' : 'white';
+  const moves = countPlayedMoves();
+  document.getElementById('info').innerHTML = `🏆 МАТ! ПОБЕДА ${winnerRu}! 🏆`;
+  gameEnded = true;
+  const titleEl = document.getElementById('result-title');
+  const levelEl = document.getElementById('result-level');
+  const msgEl = document.getElementById('result-message');
+  const statsEl = document.getElementById('result-stats');
+  if (gameMode === 'ai') {
+    const humanWon = winnerColor === 'white';
+    titleEl.textContent = humanWon ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ!';
+    levelEl.style.display = 'block';
+    levelEl.textContent = humanWon
+      ? `Вы победили AI (${levelNames[aiLevel]})!`
+      : `Вы проиграли AI (${levelNames[aiLevel]}).`;
+  } else {
+    titleEl.textContent = 'МАТ!';
+    levelEl.style.display = 'none';
+  }
+  msgEl.innerHTML = `МАТ!<br>Победили ${winnerRu}`;
+  if (statsEl) statsEl.textContent = moves > 0 ? `Ходов: ${moves}` : '';
+  lastResultForShare = composeMateShareText(winnerColor, moves);
+  document.getElementById('result-modal').style.display = 'flex';
+}
+
+function openGameOverStalemate() {
+  const moves = countPlayedMoves();
+  document.getElementById('info').innerHTML = '🌌 ПАТ! НИЧЬЯ! 🌌';
+  gameEnded = true;
+  const titleEl = document.getElementById('result-title');
+  const levelEl = document.getElementById('result-level');
+  const msgEl = document.getElementById('result-message');
+  const statsEl = document.getElementById('result-stats');
+  titleEl.textContent = 'НИЧЬЯ';
+  if (gameMode === 'ai') {
+    levelEl.style.display = 'block';
+    levelEl.textContent = `Пат в партии с AI (${levelNames[aiLevel]})`;
+  } else {
+    levelEl.style.display = 'none';
+  }
+  msgEl.innerHTML = 'ПАТ!<br>Ничья';
+  if (statsEl) statsEl.textContent = moves > 0 ? `Ходов: ${moves}` : '';
+  lastResultForShare = composePatShareText(moves);
+  document.getElementById('result-modal').style.display = 'flex';
+}
 
 // ========== ОСНОВНАЯ ЛОГИКА ИГРЫ ==========
 let scene, camera, renderer, controls, raycaster, mouse;
@@ -1113,8 +1366,8 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture,capturedPiece
   updateThreatHighlights();
   const king=getKing(turn);
   if(king&&isSquareAttacked(king.userData.z,king.userData.y,king.userData.x,turn)){document.getElementById('check').innerHTML=`⚠️ ШАХ ${turn==='white'?'БЕЛЫМ':'ЧЁРНЫМ'}! ⚠️`; document.getElementById('check').style.display='block'; setTimeout(()=>document.getElementById('check').style.display='none',1500);}
-  if(isCheckmate(turn)){const winner=turn==='white'?'ЧЁРНЫЕ':'БЕЛЫЕ'; document.getElementById('info').innerHTML=`🏆 МАТ! ПОБЕДА ${winner}! 🏆`; gameEnded=true; document.getElementById('result-message').innerHTML=`МАТ!<br>Победили ${winner}`; document.getElementById('result-modal').style.display='flex'; addShareButtonToResult();}
-  else if(isStalemate(turn)){document.getElementById('info').innerHTML=`🌌 ПАТ! НИЧЬЯ! 🌌`; gameEnded=true; document.getElementById('result-message').innerHTML=`ПАТ!<br>Ничья`; document.getElementById('result-modal').style.display='flex'; addShareButtonToResult();}
+  if(isCheckmate(turn)){openGameOverMate();}
+  else if(isStalemate(turn)){openGameOverStalemate();}
   clearHL(); selected=null;
   if(gameMode==='ai'&&turn==='black'&&!gameEnded&&!isUndoMode) aiTimeoutId=setTimeout(()=>aiMove(),75);
 }
@@ -1217,8 +1470,89 @@ function undoMove(){if(!canUndo()){alert('❌ Отмена ходов досту
 function continueGame(){isUndoMode=false; updateContinueButton(); if(gameMode==='ai'&&turn==='black'&&!gameEnded) aiMove();}
 function updateContinueButton(){document.getElementById('continue-btn').style.display=isUndoMode?'block':'none';}
 
-function addHL(m,isCapture=false,customColor=null){const color=customColor!==null?customColor:(isCapture?0xff3333:0x44ff44); const emissive=customColor!==null?customColor:(isCapture?0xff0000:0x44ff44); const intensity=customColor!==null?0.6:(isCapture?1.5:0.4); const s=new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16),new THREE.MeshStandardMaterial({color,emissive,emissiveIntensity:intensity,transparent:true,opacity:0.9})); s.position.copy(pos(m.z,m.y,m.x)); s.userData=m; hl.add(s);}
-function highlightValidMoves(){if(!selected) return; clearHL(); const moves=getAllMoves(selected); moves.forEach(m=>{if(m.castling){const dir=m.x>selected.userData.x?1:-1; addHL({z:m.z,y:m.y,x:selected.userData.x+dir},false,0x44ff44); addHL(m,false,0xffaa44);}else{const target=find(m.z,m.y,m.x); const isCapture=target&&target.userData.color!==selected.userData.color; addHL(m,isCapture);}});}
+function causesStalemateAfterMove(piece, move) {
+  const movingColor = piece.userData.color;
+  const opponentColor = movingColor === 'white' ? 'black' : 'white';
+  const oldZ = piece.userData.z, oldY = piece.userData.y, oldX = piece.userData.x, oldMoved = piece.userData.hasMoved;
+  const prevEPTarget = enPassantTarget ? { ...enPassantTarget } : null;
+  const prevEPVictim = enPassantVictim;
+  let removed = null;
+  let rook = null, rookOldX = null;
+
+  const target = find(move.z, move.y, move.x);
+  if (target && target.userData.color !== movingColor) {
+    removed = target;
+    pieces = pieces.filter(p => p !== target);
+  } else if (move.enPassant && enPassantVictim) {
+    removed = enPassantVictim;
+    pieces = pieces.filter(p => p !== enPassantVictim);
+  }
+
+  if (move.castling && move.rook) {
+    rook = move.rook;
+    rookOldX = rook.userData.x;
+    rook.userData.x = move.rookTargetX;
+  }
+
+  piece.userData.z = move.z; piece.userData.y = move.y; piece.userData.x = move.x; piece.userData.hasMoved = true;
+
+  if (piece.userData.type === 'pawn' && (Math.abs(move.z - oldZ) === 2 || Math.abs(move.y - oldY) === 2 || (Math.abs(move.z - oldZ) === 2 && Math.abs(move.y - oldY) === 2))) {
+    enPassantTarget = { z: (oldZ + move.z) / 2, y: (oldY + move.y) / 2, x: (oldX + move.x) / 2 };
+    enPassantVictim = piece;
+  } else {
+    enPassantTarget = null;
+    enPassantVictim = null;
+  }
+
+  const king = getKing(opponentColor);
+  const isCheck = !!(king && isSquareAttacked(king.userData.z, king.userData.y, king.userData.x, opponentColor));
+  let hasMoves = false;
+  for (let i = 0; i < pieces.length; i++) {
+    if (pieces[i].userData.color === opponentColor && getAllMoves(pieces[i]).length > 0) {
+      hasMoves = true;
+      break;
+    }
+  }
+  const isStalemate = !isCheck && !hasMoves;
+
+  piece.userData.z = oldZ; piece.userData.y = oldY; piece.userData.x = oldX; piece.userData.hasMoved = oldMoved;
+  if (rook) rook.userData.x = rookOldX;
+  if (removed) pieces.push(removed);
+  enPassantTarget = prevEPTarget;
+  enPassantVictim = prevEPVictim;
+  return isStalemate;
+}
+
+function addHL(m,isCapture=false,customColor=null){
+  const color=customColor!==null?customColor:(isCapture?0xff3333:0x44ff44);
+  const emissive=customColor!==null?customColor:(isCapture?0xff0000:0x44ff44);
+  const intensity=customColor!==null?0.7:(isCapture?1.5:0.4);
+  const s=new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16),new THREE.MeshStandardMaterial({color,emissive,emissiveIntensity:intensity,transparent:true,opacity:0.9}));
+  s.position.copy(pos(m.z,m.y,m.x));
+  s.userData={...m};
+  hl.add(s);
+}
+
+function highlightValidMoves(){
+  if(!selected) return { total: 0, stalemateRisk: 0 };
+  clearHL();
+  const moves=getAllMoves(selected);
+  let stalemateRiskCount = 0;
+  moves.forEach(m=>{
+    const isStalemateRisk = causesStalemateAfterMove(selected, m);
+    if (isStalemateRisk) stalemateRiskCount++;
+    if(m.castling){
+      const dir=m.x>selected.userData.x?1:-1;
+      addHL({z:m.z,y:m.y,x:selected.userData.x+dir},false,0x44ff44);
+      addHL({ ...m, stalemateRisk: isStalemateRisk },false,isStalemateRisk?0xcc33ff:0xffaa44);
+    }else{
+      const target=find(m.z,m.y,m.x);
+      const isCapture=target&&target.userData.color!==selected.userData.color;
+      addHL({ ...m, stalemateRisk: isStalemateRisk },isCapture,isStalemateRisk?0xcc33ff:null);
+    }
+  });
+  return { total: moves.length, stalemateRisk: stalemateRiskCount };
+}
 function clearHL(){while(hl.children.length) hl.remove(hl.children[0]);}
 function highlightLastMove(){
   if(!lastMoveCoords){
@@ -1263,6 +1597,7 @@ function highlightLastMove(){
 function getEventCoords(e){if(e.touches&&e.touches.length>0) return{x:e.touches[0].clientX,y:e.touches[0].clientY}; return{x:e.clientX,y:e.clientY};}
 function onMouseClick(e){
 if(gameEnded||isIntroActive) return;
+if(document.getElementById('feedback-modal')?.style.display==='flex') return;
 if(!document.getElementById('game-page').classList.contains('active')) return;
 if(isCheckmate(turn)||(gameMode==='ai'&&turn==='black'&&!isUndoMode)) return;
 
@@ -1275,7 +1610,12 @@ if(selected){
   // Приоритет 1: клик по шару допустимого хода
   const hit=raycaster.intersectObjects(hl.children);
   if(hit.length){
-    makeMove(selected,hit[0].object.userData);
+    const chosenMove = hit[0].object.userData;
+    if (chosenMove.stalemateRisk && !confirm('⚠ Этот ход ведёт к ПАТУ (ничья). Выполнить его?')) {
+      document.getElementById('info').textContent='⚠ Ход с патом отменён. Выберите другой шар.';
+      return;
+    }
+    makeMove(selected,chosenMove);
     if(audioEnabled) playClick();
     return;
   }
@@ -1289,6 +1629,10 @@ if(selected){
       const moves=getAllMoves(selected);
       const captureMove=moves.find(m=>m.z===targetObj.userData.z&&m.y===targetObj.userData.y&&m.x===targetObj.userData.x);
       if(captureMove){
+        if (causesStalemateAfterMove(selected, captureMove) && !confirm('⚠ Этот ход ведёт к ПАТУ (ничья). Выполнить его?')) {
+          document.getElementById('info').textContent='⚠ Ход с патом отменён. Выберите другой ход.';
+          return;
+        }
         makeMove(selected,captureMove);
         if(audioEnabled) playClick();
         return;
@@ -1304,10 +1648,11 @@ if(hits.length){
   if(obj.userData.color!==turn) return;
   selected=obj;
   if(audioEnabled) playClick();
-  highlightValidMoves();
+  const moveSummary = highlightValidMoves();
   const names={pawn:'пешка',rook:'ладья',knight:'конь',bishop:'слон',queen:'ферзь',king:'король'};
-  const moves=getAllMoves(obj);
-  document.getElementById('info').textContent=`✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':'⚫'} | ${moves.length} ходов`;
+  let infoText = `✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':'⚫'} | ${moveSummary.total} ходов`;
+  if (moveSummary.stalemateRisk > 0) infoText += ` | ⚠ пат-риск: ${moveSummary.stalemateRisk}`;
+  document.getElementById('info').textContent = infoText;
 }else{
   clearHL();
   selected=null;
@@ -1347,8 +1692,39 @@ function setMode(mode){gameMode=mode; document.getElementById('mode-pvp').classL
 function updateLevel(){aiLevel=parseInt(document.getElementById('difficulty-slider').value); document.getElementById('difficulty-value').textContent=levelNames[aiLevel]; if(isPremiumLevel()&&!hasSubscription){alert(`⚠️ Уровень ${levelNames[aiLevel]} доступен только по подписке!\nДоступный максимум без подписки: 1 РАЗРЯД.`); aiLevel=6; document.getElementById('difficulty-slider').value=6; document.getElementById('difficulty-value').textContent=levelNames[6];} updateUndoButton(); layoutRightPanels(); if(gameMode==='ai') document.getElementById('ai-status').textContent=`🤖 AI: ЧЁРНЫЕ (${levelNames[aiLevel]})`;}
 function updateTurnDisplay(){document.getElementById('turn').textContent=turn==='white'?'⚪ ХОД БЕЛЫХ':'⚫ ХОД ЧЁРНЫХ';}
 
-function savePGN(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let pgn=`[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n\n`; let moves=''; moveHistory.forEach(mv=>{if(mv.white!=='-') moves+=`${mv.number}. ${mv.white} `; if(mv.black) moves+=`${mv.black} `;}); pgn+=moves.trim(); const blob=new Blob([pgn],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`; a.click(); URL.revokeObjectURL(a.href);}
-function saveTXT(){const d=new Date().toISOString().slice(0,19).replace('T',' '); let txt=`BEZDNA 3D CHESS\nVariant: 3D Chess 8x8x8 (ZYX notation)\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\n\nMoves:\n`; moveHistory.forEach(mv=>{if(mv.white!=='-') txt+=`${mv.number}. ${mv.white} `; if(mv.black) txt+=`${mv.black}\n`;}); const blob=new Blob([txt],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bezdna_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`; a.click(); URL.revokeObjectURL(a.href);}
+function savePGN() {
+  const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const fullMoves = countPlayedMoves();
+  let pgn = `[Event "BEZDNA 3D CHESS"]\n[Variant "3D Chess 8x8x8 (ZYX notation)"]\n[Date "${d}"]\n[White "Player"]\n[Black "AI (${levelNames[aiLevel]})"]\n[Result "*"]\n[FullMoves "${fullMoves}"]\n\n`;
+  let moves = '';
+  moveHistory.forEach(mv => {
+    if (mv.white !== '-') moves += `${mv.number}. ${mv.white} `;
+    if (mv.black) moves += `${mv.black} `;
+  });
+  pgn += moves.trim();
+  const blob = new Blob([pgn], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bezdna_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pgn`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function saveTXT() {
+  const d = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const fullMoves = countPlayedMoves();
+  let txt = `BEZDNA 3D CHESS\nVariant: 3D Chess 8x8x8 (ZYX notation)\nDate: ${d}\nWhite: Player\nBlack: AI (${levelNames[aiLevel]})\nFull moves: ${fullMoves}\n\nMoves:\n`;
+  moveHistory.forEach(mv => {
+    if (mv.white !== '-') txt += `${mv.number}. ${mv.white} `;
+    if (mv.black) txt += `${mv.black}\n`;
+  });
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bezdna_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 // ========== ФУНКЦИИ ЗАПИСИ ХОДОВ ДЛЯ ТРЕНАЖЁРА ==========
 function tutorialAddToHistory(fmt, isWhite) {
@@ -1839,7 +2215,6 @@ window.addEventListener('load',()=>{
     initIntro(); 
     init(); 
     updateUndoButton(); 
-    addShareButtonToResult();
     saveUserStats();
     initVideoCapture();
     
