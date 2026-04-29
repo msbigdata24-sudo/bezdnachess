@@ -789,6 +789,7 @@ const FEEDBACK_EMAIL = 'pablo206759@gmail.com';
 const FEEDBACK_PUBLIC_EMAIL = 'feedback@bezdnachess.com';
 const FEEDBACK_FORM_ID = '502ff00eac5d1146b79c1cb7c270fe3a';
 const FEEDBACK_ENDPOINT = `https://formsubmit.co/ajax/${FEEDBACK_FORM_ID}`;
+const FEEDBACK_ENDPOINT_FALLBACK = `https://formsubmit.co/ajax/${FEEDBACK_EMAIL}`;
 let feedbackModalOpenedAt = 0;
 
 function showFeedback() {
@@ -856,16 +857,27 @@ async function submitFeedback(e) {
       message
     };
 
-    const res = await fetch(FEEDBACK_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) throw new Error(data.message || `HTTP ${res.status}`);
+    async function sendTo(url) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.message || `HTTP ${res.status}`);
+      return data;
+    }
+
+    let lastError = null;
+    try {
+      await sendTo(FEEDBACK_ENDPOINT);
+    } catch (e1) {
+      lastError = e1;
+      await sendTo(FEEDBACK_ENDPOINT_FALLBACK);
+    }
 
     if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
     const form = document.getElementById('feedback-form');
@@ -873,7 +885,7 @@ async function submitFeedback(e) {
     feedbackModalOpenedAt = Date.now();
   } catch (err) {
     console.error('FEEDBACK SEND ERROR:', err);
-    if (statusEl) statusEl.textContent = '❌ Не удалось отправить. Нажмите ОТПРАВИТЬ ещё раз.';
+    if (statusEl) statusEl.textContent = `❌ Не удалось отправить: ${err?.message || 'неизвестная ошибка'}`;
   } finally {
     if (sendBtn) sendBtn.disabled = false;
   }
@@ -974,7 +986,7 @@ let introSkipped = false, introTimeouts = [];
 function typeText(el, txt, cb) { el.innerHTML = '<span class="cursor"></span>'; let i = 0; function t() { if (introSkipped) return; if (i < txt.length) { if (audioEnabled) playTypeSound(); el.innerHTML = txt.slice(0, ++i) + '<span class="cursor"></span>'; const timeout = setTimeout(t, 40 + Math.random() * 20); introTimeouts.push(timeout); } else if (cb) { const timeout = setTimeout(cb, 300); introTimeouts.push(timeout); } } t(); }
 function forceSkipIntro() { if (introSkipped || !isIntroActive) return; introSkipped = true; introTimeouts.forEach(clearTimeout); introTimeouts = []; cinematicMode = false; const overlay = document.getElementById('intro-overlay'); overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; isIntroActive = false; document.querySelectorAll('.game-ui').forEach(e => e.classList.add('visible')); if (controls) controls.enabled = true; setTimeout(() => { try { addDonationQR(); } catch(e) {} }, 500); }, 500); }
 function initIntro() { const textEl = document.getElementById('intro-text'), actionsEl = document.getElementById('intro-actions'); const texts = ["СИСТЕМА: Инициализация модуля БЕЗДНА...\nЗагрузка пространственных координат...\nГотово.", "ВЫ ГОТОВЫ ВОЙТИ В БЕЗДНУ И СЫГРАТЬ С НЕЙ ПАРТИЮ?", "ВЫ СДЕЛАЛИ ВЫБОР.\nВРАТА ОТКРЫТЫ."]; const btn = document.createElement('button'); btn.textContent = 'ВХОД'; btn.className = 'intro-btn'; btn.style.cssText = `background:transparent;color:#0f0;border:2px solid #0f0;padding:8px 25px;font-size:18px;font-family:'Courier New',monospace;cursor:pointer;text-shadow:0 0 3px #0f0;box-shadow:0 0 8px rgba(0,255,0,0.3);transition:all 0.3s;margin-top:20px;text-transform:uppercase;letter-spacing:3px;`; btn.onmouseenter = () => { btn.style.background = '#0f0'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 15px rgba(0,255,0,0.6)'; btn.style.transform = 'scale(1.02)'; }; btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#0f0'; btn.style.boxShadow = '0 0 8px rgba(0,255,0,0.3)'; btn.style.transform = 'scale(1)'; }; document.getElementById('intro-overlay').appendChild(btn); btn.onclick = async () => { if (introSkipped) return; await enableAudio(); btn.remove(); typeText(textEl, texts[0], () => setTimeout(() => { if (introSkipped) return; typeText(textEl, texts[1], () => { if (introSkipped) return; actionsEl.style.display = 'flex'; document.getElementById('btn-yes').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, texts[2], () => { if (introSkipped) return; playMajesticChord(); cinematicMode = true; cinematicStartTime = Date.now(); const t1 = setTimeout(() => { if (introSkipped) return; document.getElementById('intro-overlay').style.opacity = '0'; const t2 = setTimeout(() => { forceSkipIntro(); }, 1500); introTimeouts.push(t2); }, 1000); introTimeouts.push(t1); }); }; document.getElementById('btn-no').onclick = () => { if (introSkipped) return; actionsEl.style.display = 'none'; typeText(textEl, "ДОСТУП ЗАПРЕЩЁН.\nСистема завершает сеанс...", () => setTimeout(() => location.reload(), 1500)); }; }); }, 600)); }; document.getElementById('intro-overlay').addEventListener('click', (e) => { if (e.target.id === 'intro-overlay' || e.target.id === 'skip-hint') forceSkipIntro(); }); document.addEventListener('keydown', (e) => { if ((e.code === 'Space' || e.key === ' ' || e.keyCode === 32) && isIntroActive) { e.preventDefault(); e.stopPropagation(); forceSkipIntro(); } }); }
-function addDonationQR() { try { if (window.location.protocol === 'file:') return; const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3"; const myLink = atob(encodedLink); const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}`; const loader = new THREE.TextureLoader(); loader.load(qrUrl, function(texture) { const geometry = new THREE.PlaneGeometry(0.7, 0.7); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 }); const qrPlane = new THREE.Mesh(geometry, material); qrPlane.position.set(-3.5, -4.05, -3.5); qrPlane.rotation.x = -Math.PI / 2; scene.add(qrPlane); }); } catch(e) { console.log('QR load failed', e); } }
+function addDonationQR() { try { const encodedLink = "aHR0cHM6Ly9maW5hbmNlLm96b24ucnUvYXBwcy9zYnAvb3pvbmJhbmtwYXkvMDE5ZDliMTktMzZiZi03ZTFkLWIzNWUtOTBiNjgwZDkzNmE3"; const myLink = atob(encodedLink); const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(myLink)}`; const loader = new THREE.TextureLoader(); loader.load(qrUrl, function(texture) { const geometry = new THREE.PlaneGeometry(0.7, 0.7); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, opacity: 0.95 }); const qrPlane = new THREE.Mesh(geometry, material); qrPlane.position.set(-3.5, -4.05, -3.5); qrPlane.rotation.x = -Math.PI / 2; scene.add(qrPlane); }); } catch(e) { console.log('QR load failed', e); } }
 const GAME_SHARE_URL = 'https://bezdnachess.com';
 let lastResultForShare = '';
 
