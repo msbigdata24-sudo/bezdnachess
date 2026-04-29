@@ -788,8 +788,7 @@ function saveUserStats() {
 const FEEDBACK_EMAIL = 'pablo206759@gmail.com';
 const FEEDBACK_PUBLIC_EMAIL = 'feedback@bezdnachess.com';
 const FEEDBACK_FORM_ID = '502ff00eac5d1146b79c1cb7c270fe3a';
-const FEEDBACK_ENDPOINT = `https://formsubmit.co/ajax/${FEEDBACK_FORM_ID}`;
-const FEEDBACK_ENDPOINT_FALLBACK = `https://formsubmit.co/ajax/${FEEDBACK_EMAIL}`;
+const FEEDBACK_POST_ENDPOINT = `https://formsubmit.co/${FEEDBACK_FORM_ID}`;
 let feedbackModalOpenedAt = 0;
 
 function showFeedback() {
@@ -836,59 +835,58 @@ async function submitFeedback(e) {
     'Сообщение:',
     message
   ].join('\n');
-  try {
-    if (sendBtn) sendBtn.disabled = true;
-    if (statusEl) statusEl.textContent = 'Отправляем отзыв...';
+  if (sendBtn) sendBtn.disabled = true;
+  if (statusEl) statusEl.textContent = 'Отправляем отзыв...';
 
-    const payload = {
-      _subject: subject,
-      _captcha: 'false',
-      _template: 'table',
-      type,
-      contact: contact || 'не указан',
-      user: userLabel,
-      game_mode: gameMode,
-      ai_level: levelNames[aiLevel] || aiLevel,
-      turn,
-      full_moves: countPlayedMoves(),
-      page: window.location.href,
-      platform: navigator.platform || '',
-      user_agent: navigator.userAgent,
-      message
-    };
-
-    async function sendTo(url) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) throw new Error(data.message || `HTTP ${res.status}`);
-      return data;
-    }
-
-    let lastError = null;
-    try {
-      await sendTo(FEEDBACK_ENDPOINT);
-    } catch (e1) {
-      lastError = e1;
-      await sendTo(FEEDBACK_ENDPOINT_FALLBACK);
-    }
-
-    if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
-    const form = document.getElementById('feedback-form');
-    if (form) form.reset();
-    feedbackModalOpenedAt = Date.now();
-  } catch (err) {
-    console.error('FEEDBACK SEND ERROR:', err);
-    if (statusEl) statusEl.textContent = `❌ Не удалось отправить: ${err?.message || 'неизвестная ошибка'}`;
-  } finally {
-    if (sendBtn) sendBtn.disabled = false;
+  // Надёжная отправка без CORS: обычный POST формы в скрытый iframe.
+  let iframe = document.getElementById('feedback-submit-target');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'feedback-submit-target';
+    iframe.name = 'feedback-submit-target';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
   }
+
+  const postForm = document.createElement('form');
+  postForm.method = 'POST';
+  postForm.action = FEEDBACK_POST_ENDPOINT;
+  postForm.target = 'feedback-submit-target';
+  postForm.style.display = 'none';
+
+  function addField(name, value) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    postForm.appendChild(input);
+  }
+
+  addField('_subject', subject);
+  addField('_captcha', 'false');
+  addField('_template', 'table');
+  addField('type', type);
+  addField('contact', contact || 'не указан');
+  addField('user', userLabel);
+  addField('game_mode', gameMode);
+  addField('ai_level', levelNames[aiLevel] || aiLevel);
+  addField('turn', turn);
+  addField('full_moves', String(countPlayedMoves()));
+  addField('page', window.location.href);
+  addField('platform', navigator.platform || '');
+  addField('user_agent', navigator.userAgent);
+  addField('message', message);
+  addField('full_text', body);
+
+  document.body.appendChild(postForm);
+  postForm.submit();
+  postForm.remove();
+
+  if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
+  const form = document.getElementById('feedback-form');
+  if (form) form.reset();
+  feedbackModalOpenedAt = Date.now();
+  if (sendBtn) sendBtn.disabled = false;
 }
 
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
