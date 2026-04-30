@@ -787,8 +787,8 @@ function saveUserStats() {
 // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
 const FEEDBACK_EMAIL = 'pablo206759@gmail.com';
 const FEEDBACK_PUBLIC_EMAIL = 'feedback@bezdnachess.com';
-const FEEDBACK_FORM_ID = '502ff00eac5d1146b79c1cb7c270fe3a';
-const FEEDBACK_POST_ENDPOINT = `https://formsubmit.co/${FEEDBACK_FORM_ID}`;
+const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+const WEB3FORMS_ACCESS_KEY = '21c76677-2a86-45a3-8bf0-67bfebed54a3';
 let feedbackModalOpenedAt = 0;
 
 function showFeedback() {
@@ -835,58 +835,52 @@ async function submitFeedback(e) {
     'Сообщение:',
     message
   ].join('\n');
-  if (sendBtn) sendBtn.disabled = true;
-  if (statusEl) statusEl.textContent = 'Отправляем отзыв...';
+  try {
+    if (sendBtn) sendBtn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Отправляем отзыв...';
 
-  // Надёжная отправка без CORS: обычный POST формы в скрытый iframe.
-  let iframe = document.getElementById('feedback-submit-target');
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.id = 'feedback-submit-target';
-    iframe.name = 'feedback-submit-target';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+    const payload = {
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject,
+      from_name: 'BEZDNA Feedback',
+      to_email: FEEDBACK_EMAIL,
+      type,
+      contact: contact || 'не указан',
+      user: userLabel,
+      game_mode: gameMode,
+      ai_level: levelNames[aiLevel] || aiLevel,
+      turn,
+      full_moves: countPlayedMoves(),
+      page: window.location.href,
+      platform: navigator.platform || '',
+      user_agent: navigator.userAgent,
+      message,
+      full_text: body
+    };
+
+    const res = await fetch(WEB3FORMS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || `HTTP ${res.status}`);
+    }
+
+    if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
+    const form = document.getElementById('feedback-form');
+    if (form) form.reset();
+    feedbackModalOpenedAt = Date.now();
+  } catch (err) {
+    console.error('WEB3FORMS SEND ERROR:', err);
+    if (statusEl) statusEl.textContent = `❌ Не удалось отправить: ${err?.message || 'ошибка сети'}`;
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
   }
-
-  const postForm = document.createElement('form');
-  postForm.method = 'POST';
-  postForm.action = FEEDBACK_POST_ENDPOINT;
-  postForm.target = 'feedback-submit-target';
-  postForm.style.display = 'none';
-
-  function addField(name, value) {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = name;
-    input.value = value;
-    postForm.appendChild(input);
-  }
-
-  addField('_subject', subject);
-  addField('_captcha', 'false');
-  addField('_template', 'table');
-  addField('type', type);
-  addField('contact', contact || 'не указан');
-  addField('user', userLabel);
-  addField('game_mode', gameMode);
-  addField('ai_level', levelNames[aiLevel] || aiLevel);
-  addField('turn', turn);
-  addField('full_moves', String(countPlayedMoves()));
-  addField('page', window.location.href);
-  addField('platform', navigator.platform || '');
-  addField('user_agent', navigator.userAgent);
-  addField('message', message);
-  addField('full_text', body);
-
-  document.body.appendChild(postForm);
-  postForm.submit();
-  postForm.remove();
-
-  if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
-  const form = document.getElementById('feedback-form');
-  if (form) form.reset();
-  feedbackModalOpenedAt = Date.now();
-  if (sendBtn) sendBtn.disabled = false;
 }
 
 const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36bf-7e1d-b35e-90b680d936a7";
