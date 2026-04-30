@@ -666,14 +666,12 @@ function toggleMoreActions() {
 }
 
 // ========== REAL COUNTER (CounterAPI.dev) ==========
-// ВАЖНО: используем только реальные API-данные, без local fallback.
-const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team';
-const COUNTER_BASE_TOTAL = 102;
-const COUNTER_BASE_MONTH = 102;
+// Используем только реальные API-данные.
+const COUNTER_NAMESPACE = 'msbigdata24-sudos-team';
+const COUNTER_API_URL = `https://api.counterapi.dev/v2/${COUNTER_NAMESPACE}`;
 const COUNTER_COOLDOWN_MS = 15 * 60 * 1000; // 15 минут между инкрементами с одного устройства
-const COUNTER_DEVICE_KEY = 'bezdna_counter_last_up_ts_v1';
-const COUNTER_TOTAL_KEY = 'msbigdata24-sudos-team';
-const COUNTER_ONLINE_KEY = 'bezdna-online-current-counter';
+const COUNTER_DEVICE_KEY = 'bezdna_counter_last_up_ts_v2';
+const COUNTER_RESOLVED_KEYS_STORAGE = 'bezdna_counter_resolved_keys_v1';
 
 function updateStatValue(id, value) {
   const el = document.getElementById(id);
@@ -686,26 +684,77 @@ function updateStatValue(id, value) {
   el.textContent = Number.isFinite(num) ? num.toLocaleString('ru-RU') : String(value);
 }
 
-function monthKey() {
+function monthKeyCandidates() {
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  // В CounterAPI у текущих месяцев зафиксированы такие API Slug:
-  if (ym === '2026-04') return 'msbigdata24-sudo';
-  if (ym === '2026-05') return 'bezdna-month-2026-05-counter';
-  // Для новых месяцев пробуем ожидаемое имя ключа.
-  return `bezdna-month-${ym}`;
+  return [
+    `bezdna-month-${ym}`,
+    `bezdna-month-${ym}-counter`,
+    ym === '2026-04' ? 'msbigdata24-sudo' : '',
+    ym === '2026-05' ? 'bezdna-month-2026-05-counter' : ''
+  ].filter(Boolean);
 }
 
-function onlineKey() {
-  return COUNTER_ONLINE_KEY;
+function getCachedResolvedKeys() {
+  try {
+    const raw = localStorage.getItem(COUNTER_RESOLVED_KEYS_STORAGE);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function cacheResolvedKey(metric, key) {
+  const cache = getCachedResolvedKeys();
+  cache[metric] = key;
+  localStorage.setItem(COUNTER_RESOLVED_KEYS_STORAGE, JSON.stringify(cache));
+}
+
+function metricCandidates(metric) {
+  const cache = getCachedResolvedKeys();
+  const cached = cache[metric] ? [cache[metric]] : [];
+  if (metric === 'total') {
+    return [...cached, 'bezdna-total', 'bezdna-total-counter', COUNTER_NAMESPACE];
+  }
+  if (metric === 'month') {
+    return [...cached, ...monthKeyCandidates()];
+  }
+  if (metric === 'online') {
+    return [...cached, 'bezdna-online-current-counter', 'bezdna-online-current', 'bezdna-online'];
+  }
+  return cached;
 }
 
 function apiUp(key) {
-  return fetch(`${COUNTER_API_URL}/${key}/up`, { method: 'GET' });
+  return fetch(`${COUNTER_API_URL}/${key}/up`, { method: 'GET', cache: 'no-store' });
 }
 
 function apiGet(key) {
-  return fetch(`${COUNTER_API_URL}/${key}`, { method: 'GET' });
+  return fetch(`${COUNTER_API_URL}/${key}`, { method: 'GET', cache: 'no-store' });
+}
+
+async function requestMetric(metric, shouldIncrement) {
+  const candidates = metricCandidates(metric);
+  let lastError = null;
+
+  for (const key of candidates) {
+    try {
+      const response = shouldIncrement ? await apiUp(key) : await apiGet(key);
+      if (!response.ok) {
+        lastError = new Error(`HTTP ${response.status} for ${metric}:${key}`);
+        continue;
+      }
+      const data = await response.json();
+      cacheResolvedKey(metric, key);
+      return { key, data };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error(`No working key for metric "${metric}"`);
 }
 
 function normalizeApiValue(data) {
@@ -716,29 +765,28 @@ function normalizeApiValue(data) {
 }
 
 function initRealCounter() {
-  const monthStorageKey = monthKey();
-  const onlineStorageKey = onlineKey();
   const now = Date.now();
   const lastUpTs = parseInt(localStorage.getItem(COUNTER_DEVICE_KEY) || '0', 10);
   const shouldIncrement = !Number.isFinite(lastUpTs) || (now - lastUpTs) > COUNTER_COOLDOWN_MS;
 
-  const totalRequest = shouldIncrement ? apiUp(COUNTER_TOTAL_KEY) : apiGet(COUNTER_TOTAL_KEY);
-  const monthRequest = shouldIncrement ? apiUp(monthStorageKey) : apiGet(monthStorageKey);
-  const onlineRequest = shouldIncrement ? apiUp(onlineStorageKey) : apiGet(onlineStorageKey);
-
-  Promise.all([totalRequest, monthRequest, onlineRequest])
-    .then(async (responses) => {
-      const parsed = await Promise.all(responses.map(async (r) => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      }));
-      const totalCount = normalizeApiValue(parsed[0]) + COUNTER_BASE_TOTAL;
-      const monthCount = normalizeApiValue(parsed[1]) + COUNTER_BASE_MONTH;
-      const onlineCount = normalizeApiValue(parsed[2]);
+  Promise.all([
+    requestMetric('total', shouldIncrement),
+    requestMetric('month', shouldIncrement),
+    requestMetric('online', shouldIncrement)
+  ])
+    .then((results) => {
+      const totalCount = normalizeApiValue(results[0].data);
+      const monthCount = normalizeApiValue(results[1].data);
+      const onlineCount = normalizeApiValue(results[2].data);
       updateStatValue('stats-online', onlineCount);
       updateStatValue('stats-month', monthCount);
       updateStatValue('stats-total', totalCount);
       if (shouldIncrement) localStorage.setItem(COUNTER_DEVICE_KEY, String(now));
+      console.log('[counter] resolved keys:', {
+        total: results[0].key,
+        month: results[1].key,
+        online: results[2].key
+      });
     })
     .catch((err) => {
       console.error('CounterAPI error:', err);
