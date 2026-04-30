@@ -670,6 +670,10 @@ function toggleMoreActions() {
 const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team';
 const COUNTER_BASE_TOTAL = 102;
 const COUNTER_BASE_MONTH = 102;
+const COUNTER_COOLDOWN_MS = 15 * 60 * 1000; // 15 минут между инкрементами с одного устройства
+const COUNTER_DEVICE_KEY = 'bezdna_counter_last_up_ts_v1';
+const COUNTER_TOTAL_KEY = 'msbigdata24-sudos-team';
+const COUNTER_ONLINE_KEY = 'bezdna-online-current-counter';
 
 function updateStatValue(id, value) {
   const el = document.getElementById(id);
@@ -684,11 +688,16 @@ function updateStatValue(id, value) {
 
 function monthKey() {
   const now = new Date();
-  return `bezdna-month-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  // В CounterAPI у текущих месяцев зафиксированы такие API Slug:
+  if (ym === '2026-04') return 'msbigdata24-sudo';
+  if (ym === '2026-05') return 'bezdna-month-2026-05-counter';
+  // Для новых месяцев пробуем ожидаемое имя ключа.
+  return `bezdna-month-${ym}`;
 }
 
 function onlineKey() {
-  return 'bezdna-online-current';
+  return COUNTER_ONLINE_KEY;
 }
 
 function apiUp(key) {
@@ -709,10 +718,13 @@ function normalizeApiValue(data) {
 function initRealCounter() {
   const monthStorageKey = monthKey();
   const onlineStorageKey = onlineKey();
+  const now = Date.now();
+  const lastUpTs = parseInt(localStorage.getItem(COUNTER_DEVICE_KEY) || '0', 10);
+  const shouldIncrement = !Number.isFinite(lastUpTs) || (now - lastUpTs) > COUNTER_COOLDOWN_MS;
 
-  const totalRequest = apiUp('bezdna-total');
-  const monthRequest = apiUp(monthStorageKey);
-  const onlineRequest = apiUp(onlineStorageKey);
+  const totalRequest = shouldIncrement ? apiUp(COUNTER_TOTAL_KEY) : apiGet(COUNTER_TOTAL_KEY);
+  const monthRequest = shouldIncrement ? apiUp(monthStorageKey) : apiGet(monthStorageKey);
+  const onlineRequest = shouldIncrement ? apiUp(onlineStorageKey) : apiGet(onlineStorageKey);
 
   Promise.all([totalRequest, monthRequest, onlineRequest])
     .then(async (responses) => {
@@ -726,6 +738,7 @@ function initRealCounter() {
       updateStatValue('stats-online', onlineCount);
       updateStatValue('stats-month', monthCount);
       updateStatValue('stats-total', totalCount);
+      if (shouldIncrement) localStorage.setItem(COUNTER_DEVICE_KEY, String(now));
     })
     .catch((err) => {
       console.error('CounterAPI error:', err);
