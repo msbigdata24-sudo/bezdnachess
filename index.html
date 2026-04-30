@@ -666,13 +666,20 @@ function toggleMoreActions() {
 }
 
 // ========== REAL COUNTER (CounterAPI.dev) ==========
-const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team-3853';
+// ВАЖНО: используем только реальные API-данные, без local fallback.
+const COUNTER_API_URL = 'https://api.counterapi.dev/v2/msbigdata24-sudos-team';
 const COUNTER_BASE_TOTAL = 102;
 const COUNTER_BASE_MONTH = 102;
 
 function updateStatValue(id, value) {
   const el = document.getElementById(id);
-  if (el) el.textContent = Number(value || 0).toLocaleString('ru-RU');
+  if (!el) return;
+  if (value === null || value === undefined || value === '') {
+    el.textContent = '—';
+    return;
+  }
+  const num = Number(value);
+  el.textContent = Number.isFinite(num) ? num.toLocaleString('ru-RU') : String(value);
 }
 
 function monthKey() {
@@ -681,8 +688,7 @@ function monthKey() {
 }
 
 function onlineKey() {
-  const now = new Date();
-  return `bezdna-online-${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}${String(now.getUTCDate()).padStart(2, '0')}${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}`;
+  return 'bezdna-online-current';
 }
 
 function apiUp(key) {
@@ -703,22 +709,10 @@ function normalizeApiValue(data) {
 function initRealCounter() {
   const monthStorageKey = monthKey();
   const onlineStorageKey = onlineKey();
-  const totalLocalKey = 'bezdna_fb_total';
-  const monthLocalKey = 'bezdna_fb_month';
-  const onlineLocalKey = 'bezdna_fb_online';
-
-  const onceMonthKey = `bezdna_month_sent_${monthStorageKey}`;
-  const onceOnlineKey = `bezdna_online_sent_${onlineStorageKey}`;
 
   const totalRequest = apiUp('bezdna-total');
-  const monthRequest = sessionStorage.getItem(onceMonthKey) ? apiGet(monthStorageKey) : apiUp(monthStorageKey).then((res) => {
-    sessionStorage.setItem(onceMonthKey, '1');
-    return res;
-  });
-  const onlineRequest = sessionStorage.getItem(onceOnlineKey) ? apiGet(onlineStorageKey) : apiUp(onlineStorageKey).then((res) => {
-    sessionStorage.setItem(onceOnlineKey, '1');
-    return res;
-  });
+  const monthRequest = apiUp(monthStorageKey);
+  const onlineRequest = apiUp(onlineStorageKey);
 
   Promise.all([totalRequest, monthRequest, onlineRequest])
     .then(async (responses) => {
@@ -735,15 +729,9 @@ function initRealCounter() {
     })
     .catch((err) => {
       console.error('CounterAPI error:', err);
-      const totalFb = (parseInt(localStorage.getItem(totalLocalKey), 10) || COUNTER_BASE_TOTAL) + 1;
-      const monthFb = (parseInt(localStorage.getItem(monthLocalKey), 10) || COUNTER_BASE_MONTH) + 1;
-      const onlineFb = (parseInt(localStorage.getItem(onlineLocalKey), 10) || 1) + 1;
-      localStorage.setItem(totalLocalKey, String(totalFb));
-      localStorage.setItem(monthLocalKey, String(monthFb));
-      localStorage.setItem(onlineLocalKey, String(onlineFb));
-      updateStatValue('stats-online', onlineFb);
-      updateStatValue('stats-month', monthFb);
-      updateStatValue('stats-total', totalFb);
+      updateStatValue('stats-online', null);
+      updateStatValue('stats-month', null);
+      updateStatValue('stats-total', null);
     });
 }
 
