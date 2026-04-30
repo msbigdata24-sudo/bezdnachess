@@ -89,6 +89,16 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 #undo-panel{top:232px;right:10px;display:flex;flex-direction:column;gap:5px;border:1px solid #0f0;background:rgba(0,0,0,0.9);transition:transform 0.25s ease,opacity 0.25s ease}
 body.right-panel-collapsed #mode-panel,
 body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;pointer-events:none}
+.secondary-actions{display:none;flex-direction:column;gap:5px}
+.secondary-actions.open{display:flex}
+#more-actions-btn.active{background:#0f0;color:#000}
+#quick-onboarding{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:460px;width:min(92vw,460px);z-index:7200;border:1px solid #0f0;background:rgba(0,0,0,0.92);border-radius:8px;padding:8px 10px}
+#quick-onboarding.hidden{display:none}
+#quick-onboarding-title{color:#0f0;font-size:11px;margin-bottom:5px}
+#quick-onboarding-text{font-size:10px;color:#c8f5c8;line-height:1.35}
+.quick-onboarding-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+.quick-onboarding-btn{background:#111;color:#0f0;border:1px solid #0f0;border-radius:5px;padding:4px 8px;cursor:pointer;font-family:'Courier New',monospace;font-size:10px}
+.quick-onboarding-btn:hover{background:#0f0;color:#000}
 
 /* History Panel с возможностью сворачивания (z-index увеличен) */
 #history-panel{top:52px;left:10px;width:170px;border:1px solid #0f0;background:rgba(0,0,0,0.85);max-height:55vh;overflow-y:auto;padding:5px 2px;transition:all 0.3s ease;z-index:6000}
@@ -225,7 +235,10 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   #premium-hint{font-size:7px;padding:2px 3px}
   #premium-hint .premium-label,#premium-hint .premium-levels{font-size:7px}
   #premium-unlock{font-size:7px;padding:2px 3px}
-  #undo-panel{right:5px;top:210px}
+  #undo-panel{right:5px;top:auto;bottom:48px;left:5px;max-width:54vw}
+  #undo-panel.compact{padding:5px 6px}
+  #undo-panel.compact .control-btn{font-size:9px;padding:5px 6px}
+  #quick-onboarding{bottom:56px}
   .game-ui{font-size:9px;padding:4px 6px}
   #tutorial-page, #rules-page, #about-page{inset:38px 0 0 0;}
   #tutorial-page > div, #rules-page > div, #about-page > div{padding:14px 14px 28px !important;}
@@ -244,11 +257,11 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <button class="menu-btn" onclick="showPage('tutorial'); closeMainMenu();">📖 ОБУЧЕНИЕ</button>
   <button class="menu-btn" onclick="showPage('rules'); closeMainMenu();">🧩 ЗАДАЧИ</button>
   <button class="menu-btn" onclick="showPage('about'); closeMainMenu();">ℹ️ О ПРОЕКТЕ</button>
-  <button class="menu-btn" onclick="showSubscription(); closeMainMenu();">💎 ПОДПИСКА</button>
-  <button class="menu-btn" onclick="showGift(); closeMainMenu();">🎁 ПОДАРИТЬ</button>
-  <button class="menu-btn" onclick="showNetwork(); closeMainMenu();">🌐 СЕТЕВАЯ ИГРА</button>
-  <button class="menu-btn" onclick="showDonation(); closeMainMenu();">❤️ ПОДДЕРЖАТЬ</button>
   <button class="menu-btn" onclick="showFeedback(); closeMainMenu();">💬 ОТЗЫВ</button>
+  <button class="menu-btn" onclick="showNetwork(); closeMainMenu();">🌐 СЕТЕВАЯ ИГРА</button>
+  <button class="menu-btn" onclick="showSubscription(); closeMainMenu();">💎 ПОДПИСКА</button>
+  <button class="menu-btn" onclick="showDonation(); closeMainMenu();">❤️ ПОДДЕРЖАТЬ</button>
+  <button class="menu-btn" onclick="showGift(); closeMainMenu();">🎁 ПОДАРИТЬ</button>
 </div>
 
 <div id="stats-panel">
@@ -310,12 +323,27 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 </div>
 
 <div id="undo-panel" class="game-ui">
-  <button class="control-btn" id="undo-btn" onclick="undoMove()">↩️ ОТМЕНИТЬ ХОД</button>
+  <button class="control-btn" onclick="location.reload()">🔄 НОВАЯ ПАРТИЯ</button>
+  <button class="control-btn" id="undo-btn" onclick="undoMove()">↩️ ОТМЕНИТЬ</button>
+  <button class="control-btn" onclick="highlightLastMove()">🔦 ПОДСВЕТИТЬ</button>
+  <button class="control-btn" onclick="startInteractiveTutorial()">❓ ДЕМО</button>
   <button class="control-btn" id="continue-btn" onclick="continueGame()">▶️ ПРОДОЛЖИТЬ</button>
-  <button class="control-btn" onclick="highlightLastMove()">🔦 ПОДСВЕТКА</button>
-  <button class="control-btn" onclick="startInteractiveTutorial()">❓ ДЕМО ХОДОВ</button>
-  <button class="control-btn" id="record-video-btn" onclick="startVideoRecording()">🎥 ЗАПИСЬ ВИДЕО</button>
-  <button class="control-btn" id="short-clip-btn" onclick="recordShortClip()">⏱️ 5 СЕК КЛИП</button>
+  <button class="control-btn" id="more-actions-btn" onclick="toggleMoreActions()">⋯ ЕЩЁ</button>
+  <div id="secondary-actions" class="secondary-actions">
+    <button class="control-btn" onclick="savePGN()">💾 СОХРАНИТЬ PGN</button>
+    <button class="control-btn" onclick="saveTXT()">📄 СОХРАНИТЬ TXT</button>
+    <button class="control-btn" id="record-video-btn" onclick="startVideoRecording()">🎥 ЗАПИСЬ ВИДЕО</button>
+    <button class="control-btn" id="short-clip-btn" onclick="recordShortClip()">⏱️ 5 СЕК КЛИП</button>
+    <button class="control-btn" onclick="restartQuickOnboarding()">🧭 КРАТКАЯ СПРАВКА</button>
+  </div>
+</div>
+<div id="quick-onboarding" class="hidden">
+  <div id="quick-onboarding-title">Быстрый старт (30 сек)</div>
+  <div id="quick-onboarding-text"></div>
+  <div class="quick-onboarding-actions">
+    <button class="quick-onboarding-btn" type="button" onclick="skipQuickOnboarding()">Пропустить</button>
+    <button class="quick-onboarding-btn" type="button" onclick="restartQuickOnboarding()">Повторить</button>
+  </div>
 </div>
 
 <div id="camera-control" class="game-ui">🔄 ПКМ + DRAG: КАМЕРА<br>🖱️ ЛКМ + DRAG: ВРАЩЕНИЕ</div>
@@ -355,11 +383,24 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <div id="subscription-content">
     <div id="subscription-title">💎 ПРЕМИУМ ПОДПИСКА</div>
     <div id="subscription-message">
-      ДОСТУП К УРОВНЯМ КМС, МС, ГРОССМЕЙСТЕР И БОГ<br>
-      СЕТЕВАЯ ИГРА (СКОРО)<br>
-      ТУРНИРЫ С ПРИЗОВЫМ ФОНДОМ $1,000,000
+      <div style="text-align:left;font-size:12px;line-height:1.45;margin-bottom:8px;">
+        <div style="color:#9fff9f;margin-bottom:4px;"><strong>Доступно сейчас:</strong></div>
+        <div>• Дополнительные уровни AI: КМС, МС, ГРОССМЕЙСТЕР, БОГ</div>
+        <div>• Приоритетный доступ к новым тестовым функциям</div>
+      </div>
+      <div style="text-align:left;font-size:12px;line-height:1.45;margin-bottom:8px;">
+        <div style="color:#ffd27a;margin-bottom:4px;"><strong>Планируется (roadmap):</strong></div>
+        <div>• Сетевая игра (ранний доступ — по заявкам)</div>
+        <div>• Сезонные турниры и рейтинговые матчи</div>
+      </div>
     </div>
     <div id="subscription-price">10 000 ₽ / ГОД</div>
+    <div style="text-align:left;font-size:11px;color:#cfcfcf;line-height:1.35;margin:0 0 10px;">
+      <strong>FAQ</strong><br>
+      1) <strong>Что получаю сразу?</strong> — Расширенные уровни AI и ранний доступ к тестам.<br>
+      2) <strong>Как отменить?</strong> — Напишите в поддержку, отключим продление.<br>
+      3) <strong>Когда сеть?</strong> — Сначала ранний доступ по waitlist, затем публичная бета.
+    </div>
     <button class="subscription-btn" onclick="buySubscription()">КУПИТЬ</button>
     <button class="subscription-btn" onclick="closeSubscription()">ОТМЕНА</button>
   </div>
@@ -379,12 +420,14 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <div id="network-content">
     <div id="subscription-title">🌐 СЕТЕВАЯ ИГРА</div>
     <div id="subscription-message">
-      ⚡ В РАЗРАБОТКЕ ⚡<br><br>
-      В БУДУЩЕМ ЗДЕСЬ БУДЕТ:<br>
-      • ИГРА С ДРУЗЬЯМИ ПО ССЫЛКЕ<br>
-      • РЕЙТИНГОВАЯ СИСТЕМА<br>
-      • ТУРНИРЫ С ПРИЗОВЫМ ФОНДОМ $1,000,000
+      РАННИЙ ДОСТУП: ОСТАВЬТЕ НИК И КОНТАКТ.<br>
+      КАК ТОЛЬКО БЕТА СЕТЕВОЙ ИГРЫ БУДЕТ ГОТОВА — НАПИШЕМ ВАМ ПЕРВЫМ.
     </div>
+    <input type="text" id="waitlist-nick" placeholder="НИКНЕЙМ">
+    <input type="text" id="waitlist-contact" placeholder="КОНТАКТ (TELEGRAM ИЛИ EMAIL)">
+    <div id="waitlist-status" style="min-height:16px;color:#9cd9a7;font-size:10px;margin:6px 0;"></div>
+    <button class="subscription-btn" onclick="submitNetworkWaitlist()">🚀 ЗАПИСАТЬСЯ В РАННИЙ ДОСТУП</button>
+    <button class="subscription-btn" onclick="copyNetworkInvite()">🤝 ПОЗВАТЬ ДРУГА</button>
     <button class="subscription-btn" onclick="closeNetwork()">ЗАКРЫТЬ</button>
   </div>
 </div>
@@ -447,84 +490,67 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 
 <div id="tutorial-page" class="page">
   <div style="padding:80px 30px;max-width:800px;margin:0 auto;">
-    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">📖 ОБУЧЕНИЕ</h1>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🎯 ЦЕЛЬ ИГРЫ</h3><p style="font-size:13px;">ОБЪЯВИТЬ МАТ КОРОЛЮ ПРОТИВНИКА. В 3D-ШАХМАТАХ КОРОЛЬ МОЖЕТ УЙТИ НА 26 НАПРАВЛЕНИЙ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📐 ТРЁХМЕРНОЕ ПОЛЕ 8×8×8</h3><p style="font-size:13px;">ОСИ: X (ГОРИЗОНТАЛЬ, 1-8), Y (ВЕРТИКАЛЬ, 1-8), Z (ГЛУБИНА/УРОВЕНЬ, 1-8). БЕЛЫЕ НАЧИНАЮТ НА Z=1, ЧЁРНЫЕ НА Z=8.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">📝 3D НОТАЦИЯ ZYX (СТАНДАРТ)</h3><p style="font-size:13px;"><strong>ФОРМАТ: [УРОВЕНЬ Z][ВЕРТИКАЛЬ Y a-h][ГОРИЗОНТАЛЬ X 1-8]</strong><br>ПРИМЕР: "1E4" — УРОВЕНЬ 1, ВЕРТИКАЛЬ E, ГОРИЗОНТАЛЬ 4<br>ПРИМЕР: "8A1" — УРОВЕНЬ 8, ВЕРТИКАЛЬ A, ГОРИЗОНТАЛЬ 1 (ЧЁРНАЯ ЛАДЬЯ)<br>ПРИ НЕОДНОЗНАЧНОСТИ: "N1G1-3E3" (КОНЬ С 1G1 НА 3E3)</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♟️ ПЕШКА — 24 ХОДА</h3><p style="font-size:13px;">ХОДИТ ПРЯМО ПО Z, ПО Y ИЛИ ПО ДИАГОНАЛИ Z-Y. БЬЁТ ПО ВСЕМ ДИАГОНАЛЯМ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♞ КОНЬ — 24 ХОДА</h3><p style="font-size:13px;">ХОДИТ «БУКВОЙ Г» В ЛЮБОЙ ПЛОСКОСТИ. ПЕРЕПРЫГИВАЕТ ЧЕРЕЗ ФИГУРЫ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♝ СЛОН — 20 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ ДИАГОНАЛЕЙ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♛ ФЕРЗЬ — 26 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">6 ЛАДЕЙНЫХ + 12 ПЛОСКОСТНЫХ + 8 ПРОСТРАНСТВЕННЫХ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">♚ КОРОЛЬ — 26 НАПРАВЛЕНИЙ</h3><p style="font-size:13px;">ХОДИТ НА 1 КЛЕТКУ В ЛЮБОМ НАПРАВЛЕНИИ.</p></div>
-    <div style="margin-bottom:15px;"><h3 style="color:#0f0;font-size:16px;">🏰 РОКИРОВКА</h3><p style="font-size:13px;">КОРОЛЬ ИДЁТ НА 2 КЛЕТКИ К ЛАДЬЕ, ЛАДЬЯ ПЕРЕПРЫГИВАЕТ.</p></div>
-    <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
-    <button class="menu-btn" onclick="startInteractiveTutorial()" style="margin-top:20px;margin-left:10px;">🎮 ЗАПУСТИТЬ ТРЕНАЖЁР</button>
+    <h1 style="color:#0f0;margin-bottom:10px;font-size:22px;">📖 Обучение</h1>
+    <div style="font-size:12px;color:#9ad79a;margin-bottom:10px;">Быстрый старт за 60 секунд</div>
+    <div style="font-size:12px;color:#88ff88;margin:0 0 12px;" id="learning-progress">Прогресс: 0/5</div>
+
+    <div style="margin-bottom:10px;border:1px solid #0f0;border-radius:6px;padding:10px;background:rgba(0,0,0,0.45);">
+      <h3 style="color:#0f0;font-size:15px;margin:0 0 6px;">1) Цель партии</h3>
+      <p style="font-size:13px;margin:0 0 8px;">Поставьте мат королю соперника. В 3D у короля больше путей отхода, поэтому контролируйте несколько уровней сразу.</p>
+      <button class="menu-btn" onclick="completeLearningCard(1)">✅ ПОНЯТНО</button>
+    </div>
+    <div style="margin-bottom:10px;border:1px solid #0f0;border-radius:6px;padding:10px;background:rgba(0,0,0,0.45);">
+      <h3 style="color:#0f0;font-size:15px;margin:0 0 6px;">2) Как сделать первый ход</h3>
+      <p style="font-size:13px;margin:0 0 8px;">Выберите фигуру → выберите подсвеченную сферу. Если не уверены, включите демо-режим прямо в HUD.</p>
+      <button class="menu-btn" onclick="goToGameWithTip('Сделайте один ход для закрепления шага 2')">▶ ПРОВЕРИТЬ В ПАРТИИ</button>
+    </div>
+    <div style="margin-bottom:10px;border:1px solid #0f0;border-radius:6px;padding:10px;background:rgba(0,0,0,0.45);">
+      <h3 style="color:#0f0;font-size:15px;margin:0 0 6px;">3) Нотация ZYX</h3>
+      <p style="font-size:13px;margin:0 0 8px;">Формат клетки: уровень Z, вертикаль Y, горизонталь X. Пример: 1E4.</p>
+      <button class="menu-btn" onclick="completeLearningCard(3)">✅ ПОНЯТНО</button>
+    </div>
+    <div style="margin-bottom:10px;border:1px solid #0f0;border-radius:6px;padding:10px;background:rgba(0,0,0,0.45);">
+      <h3 style="color:#0f0;font-size:15px;margin:0 0 6px;">4) Камера</h3>
+      <p style="font-size:13px;margin:0 0 8px;">ЛКМ+drag — вращение, ПКМ+drag — камера, колесо — зум.</p>
+      <button class="menu-btn" onclick="completeLearningCard(4)">✅ ПОНЯТНО</button>
+    </div>
+    <div style="margin-bottom:10px;border:1px solid #0f0;border-radius:6px;padding:10px;background:rgba(0,0,0,0.45);">
+      <h3 style="color:#0f0;font-size:15px;margin:0 0 6px;">5) Закрепление</h3>
+      <p style="font-size:13px;margin:0 0 8px;">Сыграйте короткую партию с AI и сделайте минимум 5 ходов.</p>
+      <button class="menu-btn" onclick="goToGameWithTip('Курс новичка завершён. Сыграйте короткую партию с AI')">🎮 СЫГРАТЬ С AI</button>
+    </div>
+
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:12px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
+    <button class="menu-btn" onclick="startInteractiveTutorial()" style="margin-top:12px;margin-left:10px;">🎮 ЗАПУСТИТЬ ТРЕНАЖЁР</button>
   </div>
 </div>
 
 <div id="rules-page" class="page">
   <div style="max-width:800px;margin:0 auto;">
-    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">🧩 ЗАДАЧИ И РАЗБОР</h1>
-    <p style="font-size:12px;color:#9ad79a;line-height:1.6;margin:0 0 14px;">
-      НИЖЕ — КОРОТКИЕ ПРАКТИЧЕСКИЕ СИТУАЦИИ. ОТКРОЙТЕ БЛОК, ПРОЧИТАЙТЕ И СРАЗУ ПРОВЕРЬТЕ ИДЕЮ В ПАРТИИ.
-      ЭТО ПОМОГАЕТ БЫСТРЕЕ ПРИВЫКНУТЬ К 3D-НАПРАВЛЕНИЯМ.
+    <h1 style="color:#0f0;margin-bottom:12px;font-size:22px;">🧩 Задачи</h1>
+    <p style="font-size:12px;color:#9ad79a;line-height:1.6;margin:0 0 12px;">
+      5 коротких миссий. Отмечайте прогресс и сразу проверяйте идею в партии.
     </p>
+    <div style="font-size:12px;color:#88ff88;margin:0 0 12px;" id="rules-progress">Прогресс миссий: 0/5</div>
     <details class="rules-item" open>
-      <summary>ЗАДАЧА 1: МИНИМАЛЬНЫЙ МАТ</summary>
-      <div class="rules-answer">
-        <strong>СИТУАЦИЯ:</strong> НУЖНО БЫСТРО ДОВЕСТИ МАТ ПРОТИВ ОДИНОКОГО КОРОЛЯ.<br>
-        <strong>ОТВЕТ:</strong> 2 ФЕРЗЯ + КОРОЛЬ.<br>
-        <strong>ПОЧЕМУ:</strong> ОДИН ФЕРЗЬ СИЛЕН, НО В 3D НЕ ЗАКРЫВАЕТ ВСЕ ЛИНИИ ОТСТУПЛЕНИЯ КОРОЛЯ.
-      </div>
+      <summary>Миссия 1: быстрый мат-сетап</summary>
+      <div class="rules-answer">Соберите матовую сеть из двух сильных фигур и короля поддержки. <br><button class="menu-btn" onclick="completeRuleMission(1)">✅ Выполнено</button> <button class="menu-btn" onclick="goToGameWithTip('Миссия 1: проверьте матовую сеть в партии')">▶ Проверить в партии</button></div>
     </details>
     <details class="rules-item">
-      <summary>ЗАДАЧА 2: МОГУТ ЛИ 2 ЛАДЬИ?</summary>
-      <div class="rules-answer">
-        <strong>СИТУАЦИЯ:</strong> ХВАТИТ ЛИ ДВУХ ЛАДЕЙ ДЛЯ НАДЕЖНОГО КОНТРОЛЯ?<br>
-        <strong>ОТВЕТ:</strong> НЕТ.<br>
-        <strong>ПОЧЕМУ:</strong> ЛАДЬЯ КОНТРОЛИРУЕТ 6 ОСЕВЫХ НАПРАВЛЕНИЙ. В 3D-ШАХМАТАХ ЭТО НЕДОСТАТОЧНО БЕЗ ПОМОЩИ ДРУГИХ ФИГУР.
-      </div>
+      <summary>Миссия 2: контроль осей</summary>
+      <div class="rules-answer">Удерживайте линии X/Y/Z, не зацикливайтесь только на одной плоскости. <br><button class="menu-btn" onclick="completeRuleMission(2)">✅ Выполнено</button> <button class="menu-btn" onclick="goToGameWithTip('Миссия 2: сыграйте с акцентом на контроль осей')">▶ Проверить в партии</button></div>
     </details>
     <details class="rules-item">
-      <summary>ЗАДАЧА 3: СЛОН VS ФЕРЗЬ</summary>
-      <div class="rules-answer">
-        <strong>ОТВЕТ:</strong> 20 НАПРАВЛЕНИЙ У СЛОНА, 26 У ФЕРЗЯ.<br>
-        <strong>ВЫВОД:</strong> ФЕРЗЬ ЛУЧШЕ В КОНТРОЛЕ ЦЕНТРА, СЛОН — В ТОЧЕЧНОМ ДАВЛЕНИИ ПО ДИАГОНАЛЯМ.
-      </div>
+      <summary>Миссия 3: диагонали в объеме</summary>
+      <div class="rules-answer">Потренируйте длинные диагонали на разных уровнях. <br><button class="menu-btn" onclick="completeRuleMission(3)">✅ Выполнено</button> <button class="menu-btn" onclick="goToGameWithTip('Миссия 3: используйте пространственные диагонали')">▶ Проверить в партии</button></div>
     </details>
     <details class="rules-item">
-      <summary>ЗАДАЧА 4: КАК БЫСТРЕЕ УВИДЕТЬ УГРОЗУ МАТА?</summary>
-      <div class="rules-answer">
-        <strong>ПРАВИЛО 3 ШАГОВ:</strong><br>
-        1) ПОСМОТРИТЕ, СКОЛЬКО КЛЕТОК У КОРОЛЯ СОПЕРНИКА УЖЕ ПЕРЕКРЫТО.<br>
-        2) ПРОВЕРЬТЕ ПРОСТРАНСТВЕННЫЕ ДИАГОНАЛИ (НЕ ТОЛЬКО ПЛОСКОСТИ).<br>
-        3) СНАЧАЛА ОТРЕЖЬТЕ ПУТИ ОТХОДА, ПОТОМ ДАВАЙТЕ ШАХ.
-      </div>
+      <summary>Миссия 4: не зевнуть мат</summary>
+      <div class="rules-answer">Перед ходом проверяйте отходы короля соперника и свои уязвимые клетки. <br><button class="menu-btn" onclick="completeRuleMission(4)">✅ Выполнено</button> <button class="menu-btn" onclick="goToGameWithTip('Миссия 4: сыграйте аккуратно против мата')">▶ Проверить в партии</button></div>
     </details>
     <details class="rules-item">
-      <summary>ЗАДАЧА 5: ТИПИЧНАЯ ОШИБКА НОВИЧКА</summary>
-      <div class="rules-answer">
-        <strong>ОШИБКА:</strong> ИГРОК ВИДИТ ХОД ТОЛЬКО В ОДНОЙ ПЛОСКОСТИ И ЗАБЫВАЕТ ПРО ОСЬ Z.<br>
-        <strong>КАК ИСПРАВИТЬ:</strong> ПЕРЕД КАЖДЫМ ХОДОМ СПРОСИТЕ СЕБЯ: "А ЧТО МЕНЯЕТСЯ НА УРОВЕНЬ ВЫШЕ/НИЖЕ?"
-      </div>
-    </details>
-    <details class="rules-item">
-      <summary>ЗАДАЧА 6: ЧТО ДЕЛАТЬ В ДЕБЮТЕ?</summary>
-      <div class="rules-answer">
-        <strong>ПЛАН:</strong><br>
-        • ВЫВОДИТЕ ФИГУРЫ В ЦЕНТР (НЕ ПЕРЕГРУЖАЯ ОДНУ ОСЬ).<br>
-        • НЕ ДЕЛАЙТЕ МНОГО ХОДОВ ОДНОЙ ФИГУРОЙ ПОДРЯД.<br>
-        • КОНТРОЛИРУЙТЕ КЛЕТКИ ВОКРУГ КОРОЛЯ СОПЕРНИКА НА 2-3 УРОВНЯХ.
-      </div>
-    </details>
-    <details class="rules-item">
-      <summary>ШПАРГАЛКА: КОГО КОГДА АКТИВИРОВАТЬ?</summary>
-      <div class="rules-answer">
-        <strong>КОНЬ:</strong> ДЛЯ ВНЕЗАПНЫХ ПЕРЕСКОКОВ ЧЕРЕЗ ФИГУРЫ.<br>
-        <strong>СЛОН:</strong> ДЛЯ ДЛИННЫХ ДИАГОНАЛЕЙ И СВЯЗОК.<br>
-        <strong>ЛАДЬЯ:</strong> ДЛЯ ЖЕСТКОГО КОНТРОЛЯ ОСЕЙ.<br>
-        <strong>ФЕРЗЬ:</strong> ДЛЯ РЕШАЮЩЕГО ДАВЛЕНИЯ И МАТОВЫХ СЕТЕЙ.
-      </div>
+      <summary>Миссия 5: дебют без перегруза</summary>
+      <div class="rules-answer">Развивайте разные фигуры, а не одну и ту же подряд. <br><button class="menu-btn" onclick="completeRuleMission(5)">✅ Выполнено</button> <button class="menu-btn" onclick="goToGameWithTip('Миссия 5: сделайте 5 спокойных развивающих ходов')">▶ Проверить в партии</button></div>
     </details>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
   </div>
@@ -549,13 +575,16 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 8px;">
       ОБРАТНАЯ СВЯЗЬ И СООБЩЕСТВО: <a href="https://t.me/bezdnachesscom" target="_blank" style="color:#0f0;">t.me/bezdnachesscom</a>
     </p>
+    <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 8px;">
+      ПРИНЦИП ПРОЕКТА: БЕЗ НАВЯЗЧИВОЙ РЕКЛАМЫ. В ИГРЕ НЕТ И НЕ ПЛАНИРУЕТСЯ РЕКЛАМНЫХ БАННЕРОВ.
+    </p>
     <p style="font-size:12px;color:#888;margin-top:16px;">THREE.JS · WEBGL · JAVASCRIPT · © 2026</p>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
   </div>
 </div>
 
-<script src="./Vendor/three-r128.min.js"></script>
-<script src="./Vendor/OrbitControls-r128.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" onerror="this.onerror=null;this.src='./Vendor/three-r128.min.js'"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" onerror="this.onerror=null;this.src='./Vendor/OrbitControls-r128.js'"></script>
 
 <script>
 // ============================================================
@@ -614,10 +643,26 @@ function layoutRightPanels() {
   const modePanel = document.getElementById('mode-panel');
   const undoPanel = document.getElementById('undo-panel');
   if (!modePanel || !undoPanel) return;
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  undoPanel.classList.toggle('compact', isMobile);
+  if (isMobile) {
+    undoPanel.style.top = 'auto';
+    undoPanel.style.bottom = '48px';
+    return;
+  }
   const gap = 8;
   const modeTop = parseInt(window.getComputedStyle(modePanel).top, 10) || 74;
   const dynamicTop = modeTop + modePanel.offsetHeight + gap;
+  undoPanel.style.bottom = 'auto';
   undoPanel.style.top = `${dynamicTop}px`;
+}
+
+function toggleMoreActions() {
+  const panel = document.getElementById('secondary-actions');
+  const btn = document.getElementById('more-actions-btn');
+  if (!panel || !btn) return;
+  panel.classList.toggle('open');
+  btn.classList.toggle('active', panel.classList.contains('open'));
 }
 
 // ========== REAL COUNTER (CounterAPI.dev) ==========
@@ -815,8 +860,13 @@ async function submitFeedback(e) {
   const contact = (document.getElementById('feedback-contact')?.value || '').trim();
   const message = (document.getElementById('feedback-message')?.value || '').trim();
   const userLabel = document.getElementById('stats-user')?.textContent || 'ИГРОК';
+  const ticketId = `FB-${Date.now().toString(36).toUpperCase()}`;
   if (!message) {
     if (statusEl) statusEl.textContent = 'Добавьте описание проблемы.';
+    return;
+  }
+  if (type === 'bug' && message.length < 20) {
+    if (statusEl) statusEl.textContent = 'Для бага опишите шаги воспроизведения (хотя бы 20 символов).';
     return;
   }
   const subject = `[BEZDNA beta] ${type.toUpperCase()} ${new Date().toLocaleString('ru-RU')}`;
@@ -844,6 +894,7 @@ async function submitFeedback(e) {
       subject,
       from_name: 'BEZDNA Feedback',
       to_email: FEEDBACK_EMAIL,
+      ticket_id: ticketId,
       type,
       contact: contact || 'не указан',
       user: userLabel,
@@ -871,7 +922,7 @@ async function submitFeedback(e) {
       throw new Error(data.message || `HTTP ${res.status}`);
     }
 
-    if (statusEl) statusEl.textContent = `✅ Отзыв отправлен на ${FEEDBACK_PUBLIC_EMAIL}. Спасибо!`;
+    if (statusEl) statusEl.textContent = `✅ Отзыв отправлен. ID: ${ticketId}`;
     const form = document.getElementById('feedback-form');
     if (form) form.reset();
     feedbackModalOpenedAt = Date.now();
@@ -887,13 +938,36 @@ const DONATION_LINK = "https://finance.ozon.ru/apps/sbp/ozonbankpay/019d9b19-36b
 function showDonation() { document.getElementById('donation-link').innerText = DONATION_LINK; document.getElementById('donation-modal').style.display = 'flex'; }
 function closeDonation() { document.getElementById('donation-modal').style.display = 'none'; }
 function openDonationLink() { window.open(DONATION_LINK, '_blank'); }
-function showSubscription() { document.getElementById('subscription-modal').style.display = 'flex'; }
+function showSubscription() { trackEvent('premium_opened', { from: 'ui' }); document.getElementById('subscription-modal').style.display = 'flex'; }
 function closeSubscription() { document.getElementById('subscription-modal').style.display = 'none'; }
 function showGift() { document.getElementById('gift-modal').style.display = 'flex'; }
 function closeGift() { document.getElementById('gift-modal').style.display = 'none'; }
 function sendGift() { const friend = document.getElementById('gift-input').value.trim(); if (friend) { alert(`🎁 Подарок отправлен пользователю ${friend}!`); document.getElementById('gift-input').value = ''; closeGift(); } else alert('Введите никнейм друга'); }
 function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; }
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
+function submitNetworkWaitlist() {
+  const nick = (document.getElementById('waitlist-nick')?.value || '').trim();
+  const contact = (document.getElementById('waitlist-contact')?.value || '').trim();
+  const status = document.getElementById('waitlist-status');
+  if (!nick || !contact) {
+    if (status) status.textContent = 'Укажите ник и контакт.';
+    return;
+  }
+  const row = { nick, contact, ts: Date.now() };
+  try {
+    const prev = JSON.parse(localStorage.getItem('bezdna_waitlist_v1') || '[]');
+    prev.push(row);
+    localStorage.setItem('bezdna_waitlist_v1', JSON.stringify(prev.slice(-500)));
+  } catch (e) {}
+  trackEvent('network_waitlist_submitted', { nick });
+  if (status) status.textContent = '✅ Вы в списке раннего доступа. Спасибо!';
+}
+function copyNetworkInvite() {
+  const text = 'Я записался в ранний доступ сетевой игры БЕЗДНА 3D. Залетай тоже: https://bezdnachess.com/';
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(() => {});
+  const status = document.getElementById('waitlist-status');
+  if (status) status.textContent = 'Инвайт-текст скопирован.';
+}
 
 let hasSubscription = false;
 const DEMO_SUBSCRIPTION_KEY = 'bezdna_subscription_demo_session';
@@ -927,6 +1001,7 @@ function loadSubscription() {
 }
 
 function buySubscription() {
+  trackEvent('premium_clicked', { plan: 'yearly_demo' });
   alert('💎 Демо-режим: подписка активирована!');
   hasSubscription = true;
   sessionStorage.setItem(DEMO_SUBSCRIPTION_KEY, '1');
@@ -1114,6 +1189,10 @@ let threatLines = null;
 let tutorialScene, tutorialCamera, tutorialRenderer, tutorialControls, tutorialPieces = [], tutorialSelected = null, tutorialHl = null;
 let tutorialMode = false, currentTutorialPiece = null;
 let tutorialMoveHistory = [], tutorialMoveNumber = 1;
+let quickOnboardingActive = false, quickOnboardingStep = 0;
+let firstMoveTracked = false;
+const QUICK_ONBOARDING_KEY = 'bezdna_quick_onboarding_done_v1';
+const ANALYTICS_LOG_KEY = 'bezdna_analytics_events_v1';
 
 const levelNames = { 1: "НОВИЧОК", 2: "ЛЮБИТЕЛЬ", 3: "4 РАЗРЯД", 4: "3 РАЗРЯД", 5: "2 РАЗРЯД", 6: "1 РАЗРЯД", 7: "КМС", 8: "МС", 9: "ГРОССМЕЙСТЕР", 10: "БОГ" };
 const pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
@@ -1174,6 +1253,115 @@ function showPage(pageName) {
     if (renderer && renderer.domElement) renderer.domElement.style.pointerEvents = 'none';
     if (controls) controls.enabled = false;
   }
+  layoutRightPanels();
+}
+
+function trackEvent(name, payload = {}) {
+  const event = { name, ts: Date.now(), payload };
+  try {
+    const prev = JSON.parse(localStorage.getItem(ANALYTICS_LOG_KEY) || '[]');
+    prev.push(event);
+    localStorage.setItem(ANALYTICS_LOG_KEY, JSON.stringify(prev.slice(-300)));
+  } catch (e) {}
+  console.log('[analytics]', name, payload);
+}
+
+function updateQuickOnboardingView() {
+  const box = document.getElementById('quick-onboarding');
+  const text = document.getElementById('quick-onboarding-text');
+  if (!box || !text) return;
+  if (!quickOnboardingActive || isIntroActive || !document.getElementById('game-page')?.classList.contains('active')) {
+    box.classList.add('hidden');
+    return;
+  }
+  box.classList.remove('hidden');
+  if (quickOnboardingStep === 1) {
+    text.textContent = '1/3: выберите фигуру.';
+  } else if (quickOnboardingStep === 2) {
+    text.textContent = '2/3: выберите доступный ход.';
+  } else {
+    text.textContent = '3/3: подтвердите первый ход.';
+  }
+}
+
+function startQuickOnboarding(force = false) {
+  const alreadyDone = localStorage.getItem(QUICK_ONBOARDING_KEY) === '1';
+  if (!force && alreadyDone) return;
+  quickOnboardingActive = true;
+  quickOnboardingStep = 1;
+  updateQuickOnboardingView();
+  trackEvent('tutorial_start', { quick: true, force });
+}
+
+function skipQuickOnboarding() {
+  quickOnboardingActive = false;
+  quickOnboardingStep = 0;
+  localStorage.setItem(QUICK_ONBOARDING_KEY, '1');
+  updateQuickOnboardingView();
+}
+
+function restartQuickOnboarding() {
+  localStorage.removeItem(QUICK_ONBOARDING_KEY);
+  startQuickOnboarding(true);
+}
+
+function advanceQuickOnboarding(step) {
+  if (!quickOnboardingActive) return;
+  if (step <= quickOnboardingStep) return;
+  quickOnboardingStep = step;
+  updateQuickOnboardingView();
+}
+
+function completeQuickOnboarding() {
+  if (!quickOnboardingActive) return;
+  quickOnboardingActive = false;
+  quickOnboardingStep = 0;
+  localStorage.setItem(QUICK_ONBOARDING_KEY, '1');
+  updateQuickOnboardingView();
+  trackEvent('tutorial_completed', { quick: true });
+}
+
+function getLearningState() {
+  try {
+    return JSON.parse(localStorage.getItem('bezdna_learning_progress_v1') || '{"cards":[],"missions":[]}');
+  } catch (e) {
+    return { cards: [], missions: [] };
+  }
+}
+
+function saveLearningState(state) {
+  localStorage.setItem('bezdna_learning_progress_v1', JSON.stringify(state));
+}
+
+function renderLearningProgress() {
+  const state = getLearningState();
+  const cardDone = Array.isArray(state.cards) ? state.cards.length : 0;
+  const missionDone = Array.isArray(state.missions) ? state.missions.length : 0;
+  const learningEl = document.getElementById('learning-progress');
+  const rulesEl = document.getElementById('rules-progress');
+  if (learningEl) learningEl.textContent = `Прогресс: ${cardDone}/5`;
+  if (rulesEl) rulesEl.textContent = `Прогресс миссий: ${missionDone}/5`;
+}
+
+function completeLearningCard(id) {
+  const state = getLearningState();
+  state.cards = Array.from(new Set([...(state.cards || []), id]));
+  saveLearningState(state);
+  renderLearningProgress();
+}
+
+function completeRuleMission(id) {
+  const state = getLearningState();
+  state.missions = Array.from(new Set([...(state.missions || []), id]));
+  saveLearningState(state);
+  renderLearningProgress();
+}
+
+function goToGameWithTip(text) {
+  showPage('game');
+  closeMainMenu();
+  const infoEl = document.getElementById('info');
+  if (infoEl) infoEl.textContent = `🎯 ${text}`;
 }
 
 function pos(z, y, x) { return new THREE.Vector3(x - 4.5, z - 4.5, y - 4.5); }
@@ -1364,6 +1552,11 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture,capturedPiece
     }, 1400);
   }
   addToHistory(moveText,turn==='white');
+  if (!firstMoveTracked) {
+    firstMoveTracked = true;
+    trackEvent('first_move_done', { by: turn, mode: gameMode });
+  }
+  completeQuickOnboarding();
   saveState();
   turn=turn==='white'?'black':'white';
   updateTurnDisplay();
@@ -1619,6 +1812,7 @@ if(selected){
       document.getElementById('info').textContent='⚠ Ход с патом отменён. Выберите другой шар.';
       return;
     }
+    advanceQuickOnboarding(3);
     makeMove(selected,chosenMove);
     if(audioEnabled) playClick();
     return;
@@ -1637,6 +1831,7 @@ if(selected){
           document.getElementById('info').textContent='⚠ Ход с патом отменён. Выберите другой ход.';
           return;
         }
+        advanceQuickOnboarding(3);
         makeMove(selected,captureMove);
         if(audioEnabled) playClick();
         return;
@@ -1653,6 +1848,7 @@ if(hits.length){
   selected=obj;
   if(audioEnabled) playClick();
   const moveSummary = highlightValidMoves();
+  advanceQuickOnboarding(2);
   const names={pawn:'пешка',rook:'ладья',knight:'конь',bishop:'слон',queen:'ферзь',king:'король'};
   let infoText = `✅ ${names[obj.userData.type]} ${obj.userData.color==='white'?'⚪':'⚫'} | ${moveSummary.total} ходов`;
   if (moveSummary.stalemateRisk > 0) infoText += ` | ⚠ пат-риск: ${moveSummary.stalemateRisk}`;
@@ -2189,6 +2385,7 @@ function init(){
     hl=new THREE.Group(); scene.add(hl);
     threatLines=new THREE.Group(); scene.add(threatLines);
     setupPieces(); saveState(); animate();
+    trackEvent('game_started', { mode: gameMode, level: aiLevel });
     
     document.getElementById('tutorial-canvas-container')?.addEventListener('click', onTutorialClick);
   } catch(e){ alert("Ошибка: "+e.message); console.error(e); }
@@ -2214,11 +2411,15 @@ function animate(){
 }
 
 window.addEventListener('load',()=>{
+    document.querySelectorAll('.game-ui').forEach(el => el.classList.remove('visible'));
     loadSubscription(); 
     setupAudioAutostart();
     initIntro(); 
     init(); 
     updateUndoButton(); 
+    layoutRightPanels();
+    updateQuickOnboardingView();
+    renderLearningProgress();
     saveUserStats();
     initVideoCapture();
     
