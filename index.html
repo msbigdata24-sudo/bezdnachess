@@ -425,7 +425,11 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     </div>
     <input type="text" id="waitlist-nick" placeholder="НИКНЕЙМ">
     <input type="text" id="waitlist-contact" placeholder="КОНТАКТ (TELEGRAM ИЛИ EMAIL)">
+    <input type="text" id="invite-target-nick" placeholder="НИК СОПЕРНИКА ДЛЯ ПРИГЛАШЕНИЯ">
     <div id="waitlist-status" style="min-height:16px;color:#9cd9a7;font-size:10px;margin:6px 0;"></div>
+    <button class="subscription-btn" onclick="findOnlineOpponent()">🎮 ИСКАТЬ СВОБОДНОГО СОПЕРНИКА</button>
+    <button class="subscription-btn" onclick="inviteByNickname()">📨 ПРИГЛАСИТЬ ПО НИКУ</button>
+    <button class="subscription-btn" onclick="cancelOnlineSearch()">⛔ ОТМЕНИТЬ ПОИСК</button>
     <button class="subscription-btn" onclick="submitNetworkWaitlist()">🚀 ЗАПИСАТЬСЯ В РАННИЙ ДОСТУП</button>
     <button class="subscription-btn" onclick="copyNetworkInvite()">🤝 ПОЗВАТЬ ДРУГА</button>
     <button class="subscription-btn" onclick="closeNetwork()">ЗАКРЫТЬ</button>
@@ -585,6 +589,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" onerror="this.onerror=null;this.src='./Vendor/three-r128.min.js'"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" onerror="this.onerror=null;this.src='./Vendor/OrbitControls-r128.js'"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 // ============================================================
@@ -830,6 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderCapturesPanel();
     setDefaultUserLabel();
     loadTelegramSDKNonBlocking();
+    initOnlineBridge();
     setTimeout(layoutRightPanels, 0);
     document.addEventListener('click', function(e) {
       const drawer = document.getElementById('menu-drawer');
@@ -965,6 +971,221 @@ function closeSubscription() { document.getElementById('subscription-modal').sty
 function showGift() { document.getElementById('gift-modal').style.display = 'flex'; }
 function closeGift() { document.getElementById('gift-modal').style.display = 'none'; }
 function sendGift() { const friend = document.getElementById('gift-input').value.trim(); if (friend) { alert(`🎁 Подарок отправлен пользователю ${friend}!`); document.getElementById('gift-input').value = ''; closeGift(); } else alert('Введите никнейм друга'); }
+const ONLINE_API_URL = 'https://bezdna-api.onrender.com';
+const ONLINE_PLAYER_ID_KEY = 'bezdna_online_player_id_v1';
+const ONLINE_PLAYER_NAME_KEY = 'bezdna_online_player_name_v1';
+let onlineSocket = null;
+let onlineSearching = false;
+let onlineConnected = false;
+let currentOnlineRoomId = null;
+let currentOnlinePlayerColor = null;
+let onlineMatchActive = false;
+let onlineRemoteMoveLock = false;
+
+function updateOnlineStatus(text, isError) {
+  const status = document.getElementById('waitlist-status');
+  if (!status) return;
+  status.style.color = isError ? '#ffb0b0' : '#9cd9a7';
+  status.textContent = text;
+}
+
+function ensureOnlineIdentity() {
+  let playerId = localStorage.getItem(ONLINE_PLAYER_ID_KEY);
+  if (!playerId) {
+    playerId = `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(ONLINE_PLAYER_ID_KEY, playerId);
+  }
+
+  let username = localStorage.getItem(ONLINE_PLAYER_NAME_KEY);
+  if (!username) {
+    username = telegramUser?.username || telegramUser?.first_name || 'Игрок_Бездны';
+    localStorage.setItem(ONLINE_PLAYER_NAME_KEY, username);
+  }
+  return { playerId, username };
+}
+
+function syncOnlineNicknameFromInput() {
+  const nickInput = document.getElementById('waitlist-nick');
+  const typed = (nickInput?.value || '').trim();
+  if (!typed) return;
+  localStorage.setItem(ONLINE_PLAYER_NAME_KEY, typed);
+}
+
+function isOnlineMyTurn() {
+  if (!onlineMatchActive || !currentOnlinePlayerColor) return true;
+  return turn === currentOnlinePlayerColor;
+}
+
+function sendOnlineMove(movePayload) {
+  if (!onlineMatchActive || onlineRemoteMoveLock) return;
+  if (!onlineSocket || !currentOnlineRoomId) return;
+  onlineSocket.emit('make_move', {
+    roomId: currentOnlineRoomId,
+    move: movePayload
+  });
+}
+
+function applyRemoteMove(moveData) {
+  if (!moveData || !moveData.from || !moveData.to) return;
+  const src = moveData.from;
+  const dst = moveData.to;
+  const piece = find(src.z, src.y, src.x);
+  if (!piece) {
+    updateOnlineStatus('❌ Не найдена фигура соперника для применения хода.', true);
+    return;
+  }
+  const moves = getAllMoves(piece);
+  const targetMove = moves.find(m => m.z === dst.z && m.y === dst.y && m.x === dst.x);
+  if (!targetMove) {
+    updateOnlineStatus('❌ Ход соперника не прошел локальную проверку.', true);
+    return;
+  }
+  onlineRemoteMoveLock = true;
+  Promise.resolve(makeMove(piece, targetMove)).finally(() => {
+    onlineRemoteMoveLock = false;
+  });
+}
+
+function initOnlineBridge() {
+  if (onlineSocket || typeof io !== 'function') return;
+  onlineSocket = io(ONLINE_API_URL, {
+    transports: ['websocket', 'polling'],
+    reconnection: true
+  });
+
+  onlineSocket.on('connect', () => {
+    onlineConnected = true;
+    const identity = ensureOnlineIdentity();
+    onlineSocket.emit('register', identity);
+    if (!onlineSearching) updateOnlineStatus('🟢 Сервер сети подключен.', false);
+  });
+
+  onlineSocket.on('disconnect', () => {
+    onlineConnected = false;
+    updateOnlineStatus('⚠️ Соединение потеряно. Пытаемся переподключиться...', true);
+  });
+
+  onlineSocket.on('registered', (data) => {
+    const name = data?.username || ensureOnlineIdentity().username;
+    localStorage.setItem(ONLINE_PLAYER_NAME_KEY, name);
+    const nickInput = document.getElementById('waitlist-nick');
+    if (nickInput && !nickInput.value) nickInput.value = name;
+  });
+
+  onlineSocket.on('queue_status', (data) => {
+    if (data?.inQueue) {
+      onlineSearching = true;
+      updateOnlineStatus(`🔎 Поиск соперника... В очереди: ${data.size || 1}`, false);
+    } else {
+      onlineSearching = false;
+      updateOnlineStatus('Поиск остановлен.', false);
+    }
+  });
+
+  onlineSocket.on('match_found', (data) => {
+    const identity = ensureOnlineIdentity();
+    currentOnlineRoomId = data?.roomId || null;
+    currentOnlinePlayerColor = (data?.white?.playerId === identity.playerId) ? 'white' : 'black';
+    onlineMatchActive = true;
+    setMode('pvp');
+    onlineSearching = false;
+    updateOnlineStatus(`✅ Матч найден! Комната: ${currentOnlineRoomId}. Ваш цвет: ${currentOnlinePlayerColor === 'white' ? 'белые' : 'черные'}.`, false);
+    document.getElementById('info').textContent = currentOnlinePlayerColor === 'white'
+      ? '🌐 СЕТЕВАЯ ИГРА: ВЫ БЕЛЫЕ, ВАШ ПЕРВЫЙ ХОД.'
+      : '🌐 СЕТЕВАЯ ИГРА: ВЫ ЧЕРНЫЕ, ОЖИДАЙТЕ ХОД БЕЛЫХ.';
+  });
+
+  onlineSocket.on('invite_received', (data) => {
+    const fromNick = data?.fromNickname || 'Неизвестный';
+    const ask = confirm(`📨 Игрок "${fromNick}" приглашает вас в сетевую партию. Принять?`);
+    onlineSocket.emit('invite_response', {
+      inviteId: data?.inviteId,
+      accept: ask
+    });
+    updateOnlineStatus(ask ? `Вы приняли приглашение от ${fromNick}.` : `Вы отклонили приглашение от ${fromNick}.`, !ask);
+  });
+
+  onlineSocket.on('invite_result', (data) => {
+    if (data?.status === 'sent') {
+      updateOnlineStatus(`📨 Приглашение отправлено игроку ${data.targetNickname}.`, false);
+      return;
+    }
+    if (data?.status === 'accepted') {
+      updateOnlineStatus('✅ Ваше приглашение принято. Подключаем к партии...', false);
+      return;
+    }
+    if (data?.status === 'declined') {
+      updateOnlineStatus('❌ Приглашение отклонено.', true);
+      return;
+    }
+    if (data?.status === 'not_found') {
+      updateOnlineStatus('❌ Игрок с таким ником не найден онлайн.', true);
+      return;
+    }
+    updateOnlineStatus(`❌ ${data?.message || 'Ошибка приглашения'}`, true);
+  });
+
+  onlineSocket.on('opponent_move', (data) => {
+    applyRemoteMove(data?.move);
+  });
+
+  onlineSocket.on('game_finished', (data) => {
+    onlineMatchActive = false;
+    updateOnlineStatus(`🏁 Сетевая партия завершена: ${data?.result || 'результат неизвестен'}.`, false);
+  });
+
+  onlineSocket.on('rating_updated', (data) => {
+    const identity = ensureOnlineIdentity();
+    const me = data?.white?.playerId === identity.playerId ? data.white : data?.black;
+    if (me) updateOnlineStatus(`⭐ Рейтинг: ${me.newRating} (${me.delta >= 0 ? '+' : ''}${me.delta})`, false);
+  });
+
+  onlineSocket.on('error_message', (data) => {
+    updateOnlineStatus(`❌ ${data?.message || 'Ошибка сети'}`, true);
+  });
+}
+
+function findOnlineOpponent() {
+  syncOnlineNicknameFromInput();
+  initOnlineBridge();
+  if (!onlineSocket || !onlineConnected) {
+    updateOnlineStatus('Подключаемся к серверу... нажмите еще раз через 1-2 секунды.', true);
+    return;
+  }
+  if (onlineSearching) {
+    updateOnlineStatus('Поиск уже идет...', false);
+    return;
+  }
+  onlineSocket.emit('queue_join', { mode: 'ranked' });
+  onlineSearching = true;
+  updateOnlineStatus('🔎 Ищем свободного соперника...', false);
+}
+
+function inviteByNickname() {
+  syncOnlineNicknameFromInput();
+  initOnlineBridge();
+  const targetNickname = (document.getElementById('invite-target-nick')?.value || '').trim();
+  if (!targetNickname) {
+    updateOnlineStatus('Укажите ник соперника для приглашения.', true);
+    return;
+  }
+  if (!onlineSocket || !onlineConnected) {
+    updateOnlineStatus('Подключаемся к серверу... попробуйте снова через 1-2 секунды.', true);
+    return;
+  }
+  onlineSocket.emit('invite_by_nick', { targetNickname });
+}
+
+function cancelOnlineSearch() {
+  if (!onlineSocket) {
+    updateOnlineStatus('Поиск не запущен.', false);
+    return;
+  }
+  onlineSocket.emit('queue_leave');
+  onlineSearching = false;
+  updateOnlineStatus('Поиск остановлен.', false);
+}
+
 function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; }
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 function submitNetworkWaitlist() {
@@ -1574,6 +1795,14 @@ function finishMove(piece,fromZ,fromY,fromX,toZ,toY,toX,wasCapture,capturedPiece
     }, 1400);
   }
   addToHistory(moveText,turn==='white');
+  if (onlineMatchActive && piece.userData.color === currentOnlinePlayerColor) {
+    sendOnlineMove({
+      from: { z: fromZ, y: fromY, x: fromX },
+      to: { z: toZ, y: toY, x: toX },
+      pieceType: piece.userData.type,
+      pieceColor: piece.userData.color
+    });
+  }
   if (!firstMoveTracked) {
     firstMoveTracked = true;
     trackEvent('first_move_done', { by: turn, mode: gameMode });
@@ -1819,6 +2048,10 @@ if(gameEnded||isIntroActive) return;
 if(document.getElementById('feedback-modal')?.style.display==='flex') return;
 if(!document.getElementById('game-page').classList.contains('active')) return;
 if(isCheckmate(turn)||(gameMode==='ai'&&turn==='black'&&!isUndoMode)) return;
+if(onlineMatchActive && !isOnlineMyTurn()){
+  document.getElementById('info').textContent='🌐 Ход соперника. Подождите, пока придет его ход.';
+  return;
+}
 
 const coords=getEventCoords(e);
 mouse.x=(coords.x/window.innerWidth)*2-1;
