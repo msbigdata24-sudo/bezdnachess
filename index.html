@@ -439,8 +439,15 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <button class="subscription-btn" onclick="findOnlineOpponent()">🎮 ИСКАТЬ СВОБОДНОГО СОПЕРНИКА</button>
     <button class="subscription-btn" onclick="inviteByNickname()">📨 ПРИГЛАСИТЬ ПО НИКУ</button>
     <button class="subscription-btn" onclick="cancelOnlineSearch()">⛔ ОТМЕНИТЬ ПОИСК</button>
-    <button class="subscription-btn" onclick="submitNetworkWaitlist()">🚀 ЗАПИСАТЬСЯ В РАННИЙ ДОСТУП</button>
-    <button class="subscription-btn" onclick="copyNetworkInvite()">🤝 ПОЗВАТЬ ДРУГА</button>
+    <button class="subscription-btn" id="network-play-btn" onclick="goToMatchedGame()" style="display:none;">▶ ИГРАТЬ</button>
+    <div style="text-align:left;border:1px solid #225533;padding:8px;margin:8px 0;font-size:10px;line-height:1.45;color:#d8e6d8;">
+      <div style="color:#9cd9a7;margin-bottom:4px;">⭐ Рейтинг в сети (как работает)</div>
+      <div>• Рейтинг считается только в онлайн PvP.</div>
+      <div>• Калибровка: 3 первые онлайн PvP-партии, K=60.</div>
+      <div>• После калибровки: до 30 партий K=40, затем K=20, для 2000+ K=10.</div>
+      <div>• Антинакрутка: не более 3 рейтинговых игр в день с одним соперником.</div>
+      <div>• Матчмейкинг: подбор в диапазоне около ±200 рейтинга.</div>
+    </div>
     <button class="subscription-btn" onclick="closeNetwork()">ЗАКРЫТЬ</button>
   </div>
 </div>
@@ -610,6 +617,15 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <p style="font-size:14px;line-height:1.7;margin-bottom:12px;">
       ВАШ ТЕКУЩИЙ РЕЙТИНГ: <strong id="rating-current-value">1200</strong>
       <span id="rating-current-title" style="margin-left:8px;color:#ffd27a;">СВЕТ</span>
+    </p>
+    <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 8px;">
+      📊 ПОСЛЕДНЕЕ ИЗМЕНЕНИЕ: <strong id="rating-last-delta">+0</strong>
+    </p>
+    <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 10px;">
+      🏆 ЛУЧШИЙ РЕЙТИНГ: <strong id="rating-peak-value">1200</strong>
+    </p>
+    <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 10px;">
+      🧪 КАЛИБРОВКА: <strong id="rating-calibration-left">3</strong> партий(и) осталось
     </p>
     <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 10px;">
       РЕЙТИНГ НАЧИСЛЯЕТСЯ ТОЛЬКО В ОНЛАЙН PvP-ПАРТИЯХ.
@@ -1050,6 +1066,9 @@ const ONLINE_API_URL = 'https://bezdna-api.onrender.com';
 const ONLINE_PLAYER_ID_KEY = 'bezdna_online_player_id_v1';
 const ONLINE_PLAYER_NAME_KEY = 'bezdna_online_player_name_v1';
 const ONLINE_PLAYER_RATING_KEY = 'bezdna_online_player_rating_v1';
+const ONLINE_PLAYER_RATING_PEAK_KEY = 'bezdna_online_player_rating_peak_v1';
+const ONLINE_PLAYER_RATING_LAST_DELTA_KEY = 'bezdna_online_player_rating_last_delta_v1';
+const ONLINE_PLAYER_CALIBRATION_LEFT_KEY = 'bezdna_online_player_calibration_left_v1';
 let onlineSocket = null;
 let onlineSearching = false;
 let onlineConnected = false;
@@ -1097,13 +1116,25 @@ function getRankInfo(rating) {
 function renderRatingPage() {
   const ratingRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_KEY) || '1200', 10);
   const rating = Number.isFinite(ratingRaw) ? ratingRaw : 1200;
+  const peakRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_PEAK_KEY) || String(rating), 10);
+  const peak = Number.isFinite(peakRaw) ? peakRaw : rating;
+  const deltaRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_LAST_DELTA_KEY) || '0', 10);
+  const delta = Number.isFinite(deltaRaw) ? deltaRaw : 0;
   const rank = getRankInfo(rating);
+  const calRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_CALIBRATION_LEFT_KEY) || '3', 10);
+  const calLeft = Number.isFinite(calRaw) ? calRaw : 3;
   const ratingEl = document.getElementById('rating-current-value');
   const titleEl = document.getElementById('rating-current-title');
   const nextEl = document.getElementById('rating-next-title');
+  const deltaEl = document.getElementById('rating-last-delta');
+  const peakEl = document.getElementById('rating-peak-value');
+  const calEl = document.getElementById('rating-calibration-left');
   if (ratingEl) ratingEl.textContent = String(rating);
   if (titleEl) titleEl.textContent = rank.title;
   if (nextEl) nextEl.textContent = rank.next;
+  if (deltaEl) deltaEl.textContent = `${delta >= 0 ? '+' : ''}${delta}`;
+  if (peakEl) peakEl.textContent = String(peak);
+  if (calEl) calEl.textContent = String(Math.max(0, calLeft));
 }
 
 function syncOnlineNicknameFromInput() {
@@ -1139,6 +1170,21 @@ function renderOnlinePlayers() {
 function requestOnlinePlayers() {
   if (!onlineSocket || !onlineConnected) return;
   onlineSocket.emit('request_online_players');
+}
+
+function setNetworkPlayButtonVisible(visible) {
+  const btn = document.getElementById('network-play-btn');
+  if (!btn) return;
+  btn.style.display = visible ? 'inline-block' : 'none';
+}
+
+function goToMatchedGame() {
+  if (!onlineMatchActive || !currentOnlineRoomId) {
+    updateOnlineStatus('Сначала дождитесь подбора матча.', true);
+    return;
+  }
+  closeNetwork();
+  showPage('game');
 }
 
 function isOnlineMyTurn() {
@@ -1200,7 +1246,15 @@ function initOnlineBridge() {
     const name = data?.username || ensureOnlineIdentity().username;
     localStorage.setItem(ONLINE_PLAYER_NAME_KEY, name);
     if (Number.isFinite(Number(data?.rating))) {
-      localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(Number(data.rating)));
+      const r = Number(data.rating);
+      localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(r));
+      const peakRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_PEAK_KEY) || '0', 10);
+      if (!Number.isFinite(peakRaw) || r > peakRaw) {
+        localStorage.setItem(ONLINE_PLAYER_RATING_PEAK_KEY, String(r));
+      }
+    }
+    if (Number.isFinite(Number(data?.calibrationRemaining))) {
+      localStorage.setItem(ONLINE_PLAYER_CALIBRATION_LEFT_KEY, String(Number(data.calibrationRemaining)));
     }
     const nickInput = document.getElementById('waitlist-nick');
     if (nickInput && !nickInput.value) nickInput.value = name;
@@ -1210,12 +1264,14 @@ function initOnlineBridge() {
 
   onlineSocket.on('online_players', (data) => {
     onlinePlayers = Array.isArray(data?.players) ? data.players : [];
+    updateStatValue('stats-online', onlinePlayers.length);
     renderOnlinePlayers();
   });
 
   onlineSocket.on('queue_status', (data) => {
     if (data?.inQueue) {
       onlineSearching = true;
+      setNetworkPlayButtonVisible(false);
       updateOnlineStatus(`🔎 Поиск соперника... В очереди: ${data.size || 1}`, false);
     } else {
       onlineSearching = false;
@@ -1228,6 +1284,7 @@ function initOnlineBridge() {
     currentOnlineRoomId = data?.roomId || null;
     currentOnlinePlayerColor = (data?.white?.playerId === identity.playerId) ? 'white' : 'black';
     onlineMatchActive = true;
+    setNetworkPlayButtonVisible(true);
     setMode('pvp');
     onlineSearching = false;
     updateOnlineStatus(`✅ Матч найден! Комната: ${currentOnlineRoomId}. Ваш цвет: ${currentOnlinePlayerColor === 'white' ? 'белые' : 'черные'}.`, false);
@@ -1272,6 +1329,7 @@ function initOnlineBridge() {
 
   onlineSocket.on('game_finished', (data) => {
     onlineMatchActive = false;
+    setNetworkPlayButtonVisible(false);
     updateOnlineStatus(`🏁 Сетевая партия завершена: ${data?.result || 'результат неизвестен'}.`, false);
   });
 
@@ -1280,8 +1338,18 @@ function initOnlineBridge() {
     const me = data?.white?.playerId === identity.playerId ? data.white : data?.black;
     if (me) {
       localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(me.newRating));
+      localStorage.setItem(ONLINE_PLAYER_RATING_LAST_DELTA_KEY, String(me.delta));
+      const peakRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_PEAK_KEY) || '0', 10);
+      if (!Number.isFinite(peakRaw) || me.newRating > peakRaw) {
+        localStorage.setItem(ONLINE_PLAYER_RATING_PEAK_KEY, String(me.newRating));
+      }
+      if (Number.isFinite(Number(me.calibrationRemaining))) {
+        localStorage.setItem(ONLINE_PLAYER_CALIBRATION_LEFT_KEY, String(Number(me.calibrationRemaining)));
+      }
       renderRatingPage();
-      updateOnlineStatus(`⭐ Рейтинг: ${me.newRating} (${me.delta >= 0 ? '+' : ''}${me.delta})`, false);
+      const cal = Number(localStorage.getItem(ONLINE_PLAYER_CALIBRATION_LEFT_KEY) || '0');
+      const calText = cal > 0 ? ` | калибровка: осталось ${cal}` : '';
+      updateOnlineStatus(`⭐ Рейтинг: ${me.newRating} (${me.delta >= 0 ? '+' : ''}${me.delta})${calText}`, false);
     }
   });
 
@@ -1301,6 +1369,7 @@ function findOnlineOpponent() {
     updateOnlineStatus('Поиск уже идет...', false);
     return;
   }
+  setNetworkPlayButtonVisible(false);
   const identity = ensureOnlineIdentity();
   onlineSocket.emit('register', identity);
   setTimeout(() => {
@@ -1338,6 +1407,7 @@ function cancelOnlineSearch() {
   }
   onlineSocket.emit('queue_leave');
   onlineSearching = false;
+  setNetworkPlayButtonVisible(false);
   updateOnlineStatus('Поиск остановлен.', false);
 }
 
@@ -1346,6 +1416,7 @@ function showNetwork() {
   initOnlineBridge();
   requestOnlinePlayers();
   renderOnlinePlayers();
+  setNetworkPlayButtonVisible(!!onlineMatchActive);
 }
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 function submitNetworkWaitlist() {
