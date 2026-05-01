@@ -52,9 +52,11 @@ async function initDb() {
       white_rating_after INTEGER NOT NULL,
       black_rating_before INTEGER NOT NULL,
       black_rating_after INTEGER NOT NULL,
+      moves_count INTEGER NOT NULL DEFAULT 0,
       played_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE rated_games ADD COLUMN IF NOT EXISTS moves_count INTEGER NOT NULL DEFAULT 0;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS player_vs_daily (
@@ -105,6 +107,10 @@ const playerToSocket = new Map(); // playerId -> socket.id
 const usernameToPlayer = new Map(); // usernameLower -> playerId
 const playerIdToUsername = new Map(); // playerId -> username
 const pendingInvites = new Map(); // inviteId -> {fromPlayerId,toPlayerId,createdAt}
+const MAX_RATED_GAMES_PER_DAY_PER_PLAYER = 40;
+const SUSPICIOUS_PAIR_WINDOW_DAYS = 7;
+const SUSPICIOUS_PAIR_MIN_GAMES = 12;
+const SUSPICIOUS_PAIR_WINRATE = 0.9;
 
 function clearQueueForPlayer(playerId) {
   const idx = queue.findIndex((x) => x.playerId === playerId);
@@ -156,6 +162,51 @@ async function increasePairDailyCount(p1, p2) {
     `,
     [day, a, b]
   );
+}
+
+async function getDailyRatedCount(playerId) {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const res = await pool.query(
+    `
+      SELECT COUNT(*)::int AS cnt
+      FROM rated_games
+      WHERE played_at >= $1
+        AND (white_player_id = $2 OR black_player_id = $2)
+    `,
+    [dayStart.toISOString(), playerId]
+  );
+  return res.rows[0]?.cnt || 0;
+}
+
+async function isSuspiciousPair(p1, p2) {
+  const windowStart = new Date(Date.now() - SUSPICIOUS_PAIR_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const pairRes = await pool.query(
+    `
+      SELECT
+        COUNT(*)::int AS total_games,
+        SUM(CASE WHEN result = 'white' AND white_player_id = $1 THEN 1
+                 WHEN result = 'black' AND black_player_id = $1 THEN 1
+                 ELSE 0 END)::int AS p1_wins,
+        SUM(CASE WHEN result = 'white' AND white_player_id = $2 THEN 1
+                 WHEN result = 'black' AND black_player_id = $2 THEN 1
+                 ELSE 0 END)::int AS p2_wins
+      FROM rated_games
+      WHERE played_at >= $3
+        AND (
+          (white_player_id = $1 AND black_player_id = $2)
+          OR
+          (white_player_id = $2 AND black_player_id = $1)
+        )
+    `,
+    [p1, p2, windowStart]
+  );
+  const row = pairRes.rows[0] || { total_games: 0, p1_wins: 0, p2_wins: 0 };
+  const total = row.total_games || 0;
+  if (total < SUSPICIOUS_PAIR_MIN_GAMES) return false;
+  const p1Rate = (row.p1_wins || 0) / total;
+  const p2Rate = (row.p2_wins || 0) / total;
+  return p1Rate >= SUSPICIOUS_PAIR_WINRATE || p2Rate >= SUSPICIOUS_PAIR_WINRATE;
 }
 
 function createRoomAndNotifyPlayers({
@@ -407,6 +458,33 @@ io.on('connection', (socket) => {
 
     if (game.mode === 'ranked') {
       try {
+        const [dailyWhite, dailyBlack] = await Promise.all([
+          getDailyRatedCount(game.whitePlayerId),
+          getDailyRatedCount(game.blackPlayerId)
+        ]);
+        if (dailyWhite >= MAX_RATED_GAMES_PER_DAY_PER_PLAYER || dailyBlack >= MAX_RATED_GAMES_PER_DAY_PER_PLAYER) {
+          io.to(roomId).emit('game_finished', {
+            roomId,
+            result,
+            rated: false,
+            reason: 'daily_limit_reached'
+          });
+          activeGames.delete(roomId);
+          return;
+        }
+
+        const suspiciousPair = await isSuspiciousPair(game.whitePlayerId, game.blackPlayerId);
+        if (suspiciousPair) {
+          io.to(roomId).emit('game_finished', {
+            roomId,
+            result,
+            rated: false,
+            reason: 'suspicious_pair_locked'
+          });
+          activeGames.delete(roomId);
+          return;
+        }
+
         const whiteRes = await pool.query(`SELECT * FROM players WHERE id = $1`, [game.whitePlayerId]);
         const blackRes = await pool.query(`SELECT * FROM players WHERE id = $1`, [game.blackPlayerId]);
         if (!whiteRes.rows.length || !blackRes.rows.length) return;
@@ -442,9 +520,9 @@ io.on('connection', (socket) => {
         await pool.query(
           `INSERT INTO rated_games(
             id, room_id, white_player_id, black_player_id, result,
-            white_rating_before, white_rating_after, black_rating_before, black_rating_after
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [uuidv4(), roomId, w.id, b.id, result, w.rating, wNew, b.rating, bNew]
+            white_rating_before, white_rating_after, black_rating_before, black_rating_after, moves_count
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [uuidv4(), roomId, w.id, b.id, result, w.rating, wNew, b.rating, bNew, game.movesCount || 0]
         );
         await increasePairDailyCount(w.id, b.id);
         await pool.query('COMMIT');
