@@ -257,6 +257,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <button class="menu-btn" onclick="showPage('tutorial'); closeMainMenu();">📖 ОБУЧЕНИЕ</button>
   <button class="menu-btn" onclick="showPage('rules'); closeMainMenu();">🧩 ЗАДАЧИ</button>
   <button class="menu-btn" onclick="showPage('about'); closeMainMenu();">ℹ️ О ПРОЕКТЕ</button>
+  <button class="menu-btn" onclick="showPage('rating'); closeMainMenu();">⭐ РЕЙТИНГ И ЗВАНИЯ</button>
   <button class="menu-btn" onclick="showFeedback(); closeMainMenu();">💬 ОТЗЫВ</button>
   <button class="menu-btn" onclick="showNetwork(); closeMainMenu();">🌐 СЕТЕВАЯ ИГРА</button>
   <button class="menu-btn" onclick="showSubscription(); closeMainMenu();">💎 ПОДПИСКА</button>
@@ -409,9 +410,13 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 <div id="gift-modal">
   <div id="gift-content">
     <div id="subscription-title">🎁 ПОДАРИТЬ ПОДПИСКУ</div>
-    <div id="subscription-message">ВВЕДИТЕ НИКНЕЙМ ДРУГА, ЧТОБЫ ПОДАРИТЬ ЕМУ ГОДОВУЮ ПОДПИСКУ</div>
+    <div id="subscription-message">
+      ФУНКЦИЯ ПОДАРКОВ ВРЕМЕННО ОТКЛЮЧЕНА.<br>
+      ПОДКЛЮЧИМ ПОСЛЕ ИНТЕГРАЦИИ ОФИЦИАЛЬНОГО ПЛАТЕЖНОГО СЕРВИСА.
+    </div>
     <input type="text" id="gift-input" placeholder="НИКНЕЙМ ДРУГА">
-    <button class="gift-btn" onclick="sendGift()">ПОДАРИТЬ</button>
+    <div id="gift-status" style="min-height:16px;color:#9cd9a7;font-size:10px;margin:8px 0;"></div>
+    <button class="gift-btn" onclick="showGiftStubInfo()">СКОРО ДОСТУПНО</button>
     <button class="gift-btn" onclick="closeGift()">ОТМЕНА</button>
   </div>
 </div>
@@ -420,13 +425,17 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <div id="network-content">
     <div id="subscription-title">🌐 СЕТЕВАЯ ИГРА</div>
     <div id="subscription-message">
-      РАННИЙ ДОСТУП: ОСТАВЬТЕ НИК И КОНТАКТ.<br>
-      КАК ТОЛЬКО БЕТА СЕТЕВОЙ ИГРЫ БУДЕТ ГОТОВА — НАПИШЕМ ВАМ ПЕРВЫМ.
+      СЕТЕВОЙ РЕЖИМ УЖЕ ДОСТУПЕН: ИЩИТЕ СВОБОДНОГО СОПЕРНИКА ИЛИ ПРИГЛАСИТЕ ПО НИКУ.<br>
+      ПОЛЕ КОНТАКТА НИЖЕ — ДЛЯ НОВОСТЕЙ О ТУРНИРАХ И РЕЙТИНГОВЫХ СЕЗОНАХ.
     </div>
     <input type="text" id="waitlist-nick" placeholder="НИКНЕЙМ">
     <input type="text" id="waitlist-contact" placeholder="КОНТАКТ (TELEGRAM ИЛИ EMAIL)">
     <input type="text" id="invite-target-nick" placeholder="НИК СОПЕРНИКА ДЛЯ ПРИГЛАШЕНИЯ">
     <div id="waitlist-status" style="min-height:16px;color:#9cd9a7;font-size:10px;margin:6px 0;"></div>
+    <div id="online-players-box" style="max-height:120px;overflow:auto;border:1px solid #225533;padding:6px;margin:6px 0;text-align:left;font-size:10px;">
+      <div style="color:#9cd9a7;margin-bottom:4px;">🟢 Онлайн игроки</div>
+      <div id="online-players-list" style="color:#cfe8d3;">Список загружается...</div>
+    </div>
     <button class="subscription-btn" onclick="findOnlineOpponent()">🎮 ИСКАТЬ СВОБОДНОГО СОПЕРНИКА</button>
     <button class="subscription-btn" onclick="inviteByNickname()">📨 ПРИГЛАСИТЬ ПО НИКУ</button>
     <button class="subscription-btn" onclick="cancelOnlineSearch()">⛔ ОТМЕНИТЬ ПОИСК</button>
@@ -573,8 +582,16 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
       БАЗОВАЯ НОТАЦИЯ — ZYX (УРОВЕНЬ, ВЕРТИКАЛЬ, ГОРИЗОНТАЛЬ).
     </p>
     <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 10px;">
-      ПЛАНИРУЕМОЕ РАЗВИТИЕ: СЕТЕВАЯ ИГРА, РЕЙТИНГОВЫЕ МАТЧИ, ТУРНИРНЫЙ РЕЖИМ, УЛУЧШЕННЫЕ СЦЕНАРИИ ОБУЧЕНИЯ,
-      ПРОДВИНУТАЯ АНАЛИТИКА ПАРТИЙ И БОЛЕЕ ГЛУБОКИЙ AI.
+      СЕТЕВАЯ ИГРА УЖЕ ДОСТУПНА: МОЖНО ИСКАТЬ СВОБОДНОГО СОПЕРНИКА И ПРИГЛАШАТЬ ИГРОКА ПО НИКУ.
+      СЕРВЕРНЫЙ РЕЖИМ РАБОТАЕТ В РЕАЛЬНОМ ВРЕМЕНИ.
+    </p>
+    <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 10px;">
+      РЕЙТИНГ И ЗВАНИЯ: РЕЙТИНГ НАЧИСЛЯЕТСЯ ТОЛЬКО В ОНЛАЙН PvP (НЕ В PvAI И НЕ В ЛОКАЛЬНОМ РЕЖИМЕ).
+      СТАРТ — 1200. ШКАЛА ЗВАНИЙ: ТЬМА → СУМЕРКИ → ПОЛУМРАК → СВЕТ → СТРАННИК → МАСТЕР → ХРАНИТЕЛЬ → АРХИТЕКТОР → ВЛАСТЕЛИН → БЕЗДНА.
+    </p>
+    <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 10px;">
+      ПЛАНИРУЕМОЕ РАЗВИТИЕ: ПОЛНАЯ РЕГИСТРАЦИЯ (EMAIL + УНИКАЛЬНЫЙ НИК + ПОДТВЕРЖДЕНИЕ), ТУРНИРНЫЙ РЕЖИМ,
+      СЕЗОННЫЕ ТАБЛИЦЫ, РАСШИРЕННАЯ АНАЛИТИКА ПАРТИЙ И БОЛЕЕ ГЛУБОКИЙ AI.
     </p>
     <p style="font-size:13px;line-height:1.7;max-width:820px;margin:0 auto 8px;">
       ОБРАТНАЯ СВЯЗЬ И СООБЩЕСТВО: <a href="https://t.me/bezdnachesscom" target="_blank" style="color:#0f0;">t.me/bezdnachesscom</a>
@@ -584,6 +601,40 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     </p>
     <p style="font-size:12px;color:#888;margin-top:16px;">THREE.JS · WEBGL · JAVASCRIPT · © 2026</p>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:20px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
+  </div>
+</div>
+
+<div id="rating-page" class="page">
+  <div style="max-width:900px;margin:0 auto;text-align:center;">
+    <h1 style="color:#0f0;margin-bottom:20px;font-size:22px;">⭐ РЕЙТИНГ И ЗВАНИЯ</h1>
+    <p style="font-size:14px;line-height:1.7;margin-bottom:12px;">
+      ВАШ ТЕКУЩИЙ РЕЙТИНГ: <strong id="rating-current-value">1200</strong>
+      <span id="rating-current-title" style="margin-left:8px;color:#ffd27a;">СВЕТ</span>
+    </p>
+    <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 10px;">
+      РЕЙТИНГ НАЧИСЛЯЕТСЯ ТОЛЬКО В ОНЛАЙН PvP-ПАРТИЯХ.
+      PvAI И ЛОКАЛЬНЫЕ ПАРТИИ НЕ ИЗМЕНЯЮТ РЕЙТИНГ.
+    </p>
+    <p style="font-size:13px;line-height:1.6;max-width:820px;margin:0 auto 14px;">
+      БАЗОВЫЙ СТАРТ ДЛЯ НОВОГО ИГРОКА: 1200.
+      РАСЧЕТ ИДЕТ ПО СИСТЕМЕ ELO.
+    </p>
+    <div style="text-align:left;max-width:700px;margin:0 auto 16px;font-size:12px;line-height:1.5;color:#ddd;">
+      <div>0-799 — 🌑 ТЬМА</div>
+      <div>800-999 — 🌒 СУМЕРКИ</div>
+      <div>1000-1199 — 🌓 ПОЛУМРАК</div>
+      <div>1200-1399 — 🌕 СВЕТ</div>
+      <div>1400-1599 — 🚶 СТРАННИК</div>
+      <div>1600-1799 — ⚔️ МАСТЕР</div>
+      <div>1800-1999 — 🛡️ ХРАНИТЕЛЬ</div>
+      <div>2000-2199 — 🜁 АРХИТЕКТОР</div>
+      <div>2200-2399 — 👑 ВЛАСТЕЛИН</div>
+      <div>2400+ — 🕳️ БЕЗДНА</div>
+    </div>
+    <p style="font-size:12px;line-height:1.5;color:#9cd9a7;margin-bottom:16px;">
+      СЛЕДУЮЩЕЕ ЗВАНИЕ: <span id="rating-next-title">СТРАННИК (1400)</span>
+    </p>
+    <button class="menu-btn" onclick="showPage('game')" style="margin-top:8px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
   </div>
 </div>
 
@@ -968,12 +1019,37 @@ function closeDonation() { document.getElementById('donation-modal').style.displ
 function openDonationLink() { window.open(DONATION_LINK, '_blank'); }
 function showSubscription() { trackEvent('premium_opened', { from: 'ui' }); document.getElementById('subscription-modal').style.display = 'flex'; }
 function closeSubscription() { document.getElementById('subscription-modal').style.display = 'none'; }
-function showGift() { document.getElementById('gift-modal').style.display = 'flex'; }
+function showGift() {
+  const modal = document.getElementById('gift-modal');
+  const status = document.getElementById('gift-status');
+  if (modal) modal.style.display = 'flex';
+  if (status) {
+    status.style.color = '#9cd9a7';
+    status.textContent = 'Пока работает только заглушка: подарок будет доступен после подключения платежей.';
+  }
+}
 function closeGift() { document.getElementById('gift-modal').style.display = 'none'; }
-function sendGift() { const friend = document.getElementById('gift-input').value.trim(); if (friend) { alert(`🎁 Подарок отправлен пользователю ${friend}!`); document.getElementById('gift-input').value = ''; closeGift(); } else alert('Введите никнейм друга'); }
+
+function setGiftStatus(text, isError = false) {
+  const status = document.getElementById('gift-status');
+  if (!status) return;
+  status.style.color = isError ? '#ffb0b0' : '#9cd9a7';
+  status.textContent = text;
+}
+
+function showGiftStubInfo() {
+  const friend = (document.getElementById('gift-input')?.value || '').trim();
+  if (!friend) {
+    setGiftStatus('Введите ник получателя. После подключения платежей отправка заработает.', true);
+    return;
+  }
+  trackEvent('gift_stub_opened', { targetNick: friend });
+  setGiftStatus(`Подарок для ${friend} пока не отправляется: ждем подключение платежного сервиса.`);
+}
 const ONLINE_API_URL = 'https://bezdna-api.onrender.com';
 const ONLINE_PLAYER_ID_KEY = 'bezdna_online_player_id_v1';
 const ONLINE_PLAYER_NAME_KEY = 'bezdna_online_player_name_v1';
+const ONLINE_PLAYER_RATING_KEY = 'bezdna_online_player_rating_v1';
 let onlineSocket = null;
 let onlineSearching = false;
 let onlineConnected = false;
@@ -981,6 +1057,7 @@ let currentOnlineRoomId = null;
 let currentOnlinePlayerColor = null;
 let onlineMatchActive = false;
 let onlineRemoteMoveLock = false;
+let onlinePlayers = [];
 
 function updateOnlineStatus(text, isError) {
   const status = document.getElementById('waitlist-status');
@@ -1004,11 +1081,64 @@ function ensureOnlineIdentity() {
   return { playerId, username };
 }
 
+function getRankInfo(rating) {
+  if (rating >= 2400) return { title: 'БЕЗДНА', next: 'МАКСИМАЛЬНОЕ ЗВАНИЕ ДОСТИГНУТО' };
+  if (rating >= 2200) return { title: 'ВЛАСТЕЛИН', next: 'БЕЗДНА (2400)' };
+  if (rating >= 2000) return { title: 'АРХИТЕКТОР', next: 'ВЛАСТЕЛИН (2200)' };
+  if (rating >= 1800) return { title: 'ХРАНИТЕЛЬ', next: 'АРХИТЕКТОР (2000)' };
+  if (rating >= 1600) return { title: 'МАСТЕР', next: 'ХРАНИТЕЛЬ (1800)' };
+  if (rating >= 1400) return { title: 'СТРАННИК', next: 'МАСТЕР (1600)' };
+  if (rating >= 1200) return { title: 'СВЕТ', next: 'СТРАННИК (1400)' };
+  if (rating >= 1000) return { title: 'ПОЛУМРАК', next: 'СВЕТ (1200)' };
+  if (rating >= 800) return { title: 'СУМЕРКИ', next: 'ПОЛУМРАК (1000)' };
+  return { title: 'ТЬМА', next: 'СУМЕРКИ (800)' };
+}
+
+function renderRatingPage() {
+  const ratingRaw = parseInt(localStorage.getItem(ONLINE_PLAYER_RATING_KEY) || '1200', 10);
+  const rating = Number.isFinite(ratingRaw) ? ratingRaw : 1200;
+  const rank = getRankInfo(rating);
+  const ratingEl = document.getElementById('rating-current-value');
+  const titleEl = document.getElementById('rating-current-title');
+  const nextEl = document.getElementById('rating-next-title');
+  if (ratingEl) ratingEl.textContent = String(rating);
+  if (titleEl) titleEl.textContent = rank.title;
+  if (nextEl) nextEl.textContent = rank.next;
+}
+
 function syncOnlineNicknameFromInput() {
   const nickInput = document.getElementById('waitlist-nick');
   const typed = (nickInput?.value || '').trim();
   if (!typed) return;
   localStorage.setItem(ONLINE_PLAYER_NAME_KEY, typed);
+  if (onlineSocket && onlineConnected) {
+    const identity = ensureOnlineIdentity();
+    onlineSocket.emit('register', identity);
+  }
+}
+
+function renderOnlinePlayers() {
+  const listEl = document.getElementById('online-players-list');
+  if (!listEl) return;
+  const myName = (localStorage.getItem(ONLINE_PLAYER_NAME_KEY) || '').trim().toLowerCase();
+  if (!Array.isArray(onlinePlayers) || onlinePlayers.length === 0) {
+    listEl.textContent = 'Пока никого онлайн.';
+    return;
+  }
+  const rows = onlinePlayers
+    .filter(n => String(n || '').trim())
+    .map((name) => {
+      const safe = String(name);
+      const isMe = safe.trim().toLowerCase() === myName;
+      if (isMe) return `<div style="margin-bottom:4px;">• ${safe} (это вы)</div>`;
+      return `<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;"><span>• ${safe}</span><button type="button" class="history-btn" onclick="inviteByNickname('${safe.replace(/'/g, "\\'")}')">пригласить</button></div>`;
+    });
+  listEl.innerHTML = rows.join('') || 'Пока никого онлайн.';
+}
+
+function requestOnlinePlayers() {
+  if (!onlineSocket || !onlineConnected) return;
+  onlineSocket.emit('request_online_players');
 }
 
 function isOnlineMyTurn() {
@@ -1058,6 +1188,7 @@ function initOnlineBridge() {
     const identity = ensureOnlineIdentity();
     onlineSocket.emit('register', identity);
     if (!onlineSearching) updateOnlineStatus('🟢 Сервер сети подключен.', false);
+    requestOnlinePlayers();
   });
 
   onlineSocket.on('disconnect', () => {
@@ -1068,8 +1199,18 @@ function initOnlineBridge() {
   onlineSocket.on('registered', (data) => {
     const name = data?.username || ensureOnlineIdentity().username;
     localStorage.setItem(ONLINE_PLAYER_NAME_KEY, name);
+    if (Number.isFinite(Number(data?.rating))) {
+      localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(Number(data.rating)));
+    }
     const nickInput = document.getElementById('waitlist-nick');
     if (nickInput && !nickInput.value) nickInput.value = name;
+    renderRatingPage();
+    requestOnlinePlayers();
+  });
+
+  onlineSocket.on('online_players', (data) => {
+    onlinePlayers = Array.isArray(data?.players) ? data.players : [];
+    renderOnlinePlayers();
   });
 
   onlineSocket.on('queue_status', (data) => {
@@ -1137,7 +1278,11 @@ function initOnlineBridge() {
   onlineSocket.on('rating_updated', (data) => {
     const identity = ensureOnlineIdentity();
     const me = data?.white?.playerId === identity.playerId ? data.white : data?.black;
-    if (me) updateOnlineStatus(`⭐ Рейтинг: ${me.newRating} (${me.delta >= 0 ? '+' : ''}${me.delta})`, false);
+    if (me) {
+      localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(me.newRating));
+      renderRatingPage();
+      updateOnlineStatus(`⭐ Рейтинг: ${me.newRating} (${me.delta >= 0 ? '+' : ''}${me.delta})`, false);
+    }
   });
 
   onlineSocket.on('error_message', (data) => {
@@ -1156,15 +1301,21 @@ function findOnlineOpponent() {
     updateOnlineStatus('Поиск уже идет...', false);
     return;
   }
-  onlineSocket.emit('queue_join', { mode: 'ranked' });
-  onlineSearching = true;
-  updateOnlineStatus('🔎 Ищем свободного соперника...', false);
+  const identity = ensureOnlineIdentity();
+  onlineSocket.emit('register', identity);
+  setTimeout(() => {
+    onlineSocket.emit('queue_join', { mode: 'ranked' });
+    onlineSearching = true;
+    updateOnlineStatus('🔎 Ищем свободного соперника...', false);
+  }, 120);
 }
 
-function inviteByNickname() {
+function inviteByNickname(prefilledNickname = '') {
   syncOnlineNicknameFromInput();
   initOnlineBridge();
-  const targetNickname = (document.getElementById('invite-target-nick')?.value || '').trim();
+  const targetInput = document.getElementById('invite-target-nick');
+  if (prefilledNickname && targetInput) targetInput.value = prefilledNickname;
+  const targetNickname = (targetInput?.value || '').trim();
   if (!targetNickname) {
     updateOnlineStatus('Укажите ник соперника для приглашения.', true);
     return;
@@ -1173,7 +1324,11 @@ function inviteByNickname() {
     updateOnlineStatus('Подключаемся к серверу... попробуйте снова через 1-2 секунды.', true);
     return;
   }
-  onlineSocket.emit('invite_by_nick', { targetNickname });
+  const identity = ensureOnlineIdentity();
+  onlineSocket.emit('register', identity);
+  setTimeout(() => {
+    onlineSocket.emit('invite_by_nick', { targetNickname });
+  }, 120);
 }
 
 function cancelOnlineSearch() {
@@ -1186,7 +1341,12 @@ function cancelOnlineSearch() {
   updateOnlineStatus('Поиск остановлен.', false);
 }
 
-function showNetwork() { document.getElementById('network-modal').style.display = 'flex'; }
+function showNetwork() {
+  document.getElementById('network-modal').style.display = 'flex';
+  initOnlineBridge();
+  requestOnlinePlayers();
+  renderOnlinePlayers();
+}
 function closeNetwork() { document.getElementById('network-modal').style.display = 'none'; }
 function submitNetworkWaitlist() {
   const nick = (document.getElementById('waitlist-nick')?.value || '').trim();
@@ -1487,6 +1647,9 @@ function showPage(pageName) {
   document.getElementById(pageName + '-page').classList.add('active');
   const buttons = document.querySelectorAll('.menu-btn');
   buttons.forEach(btn => { if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("showPage('"+pageName+"')")) btn.classList.add('active'); });
+  if (pageName === 'rating') {
+    renderRatingPage();
+  }
   if (pageName === 'game' && scene) {
     document.querySelectorAll('.game-ui').forEach(el => el.classList.add('visible'));
     if (renderer && renderer.domElement) renderer.domElement.style.pointerEvents = 'auto';
@@ -1641,6 +1804,9 @@ function getRawMoves(p) {
       const cap3D = find(z + dz, y + dy, x + dx);
       if (cap3D && cap3D.userData.color !== color) push(z + dz, y + dy, x + dx);
     }
+    // Диагональ в плоскости Z-Y (вперёд по двум осям без смещения по X)
+    const capZY = find(z + dz, y + dy, x);
+    if (capZY && capZY.userData.color !== color) push(z + dz, y + dy, x);
     if (enPassantTarget) { for (let cy = -1; cy <= 1; cy++) for (let cx = -1; cx <= 1; cx++) if (cy || cx) { if (enPassantTarget.z === z+dz && enPassantTarget.y === y+cy && enPassantTarget.x === x+cx && !find(enPassantTarget.z, enPassantTarget.y, enPassantTarget.x)) res.push({ z: enPassantTarget.z, y: enPassantTarget.y, x: enPassantTarget.x, enPassant: true }); if (enPassantTarget.z === z+cy && enPassantTarget.y === y+dy && enPassantTarget.x === x+cx && !find(enPassantTarget.z, enPassantTarget.y, enPassantTarget.x)) res.push({ z: enPassantTarget.z, y: enPassantTarget.y, x: enPassantTarget.x, enPassant: true }); if (enPassantTarget.z === z+dz && enPassantTarget.y === y+dy && enPassantTarget.x === x+cx && !find(enPassantTarget.z, enPassantTarget.y, enPassantTarget.x)) res.push({ z: enPassantTarget.z, y: enPassantTarget.y, x: enPassantTarget.x, enPassant: true }); } }
   }
   return res;
