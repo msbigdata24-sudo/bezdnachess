@@ -31,6 +31,7 @@ async function initDb() {
       rating INTEGER NOT NULL DEFAULT 1200,
       peak_rating INTEGER NOT NULL DEFAULT 1200,
       games_played INTEGER NOT NULL DEFAULT 0,
+      calibration_games_remaining INTEGER NOT NULL DEFAULT 3,
       wins INTEGER NOT NULL DEFAULT 0,
       losses INTEGER NOT NULL DEFAULT 0,
       draws INTEGER NOT NULL DEFAULT 0,
@@ -38,6 +39,7 @@ async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS calibration_games_remaining INTEGER NOT NULL DEFAULT 3;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS rated_games (
@@ -71,7 +73,8 @@ function expectedScore(rA, rB) {
   return 1 / (1 + Math.pow(10, (rB - rA) / 400));
 }
 
-function kFactor(rating, gamesPlayed) {
+function kFactor(rating, gamesPlayed, calibrationGamesRemaining) {
+  if ((calibrationGamesRemaining || 0) > 0) return 60;
   if (gamesPlayed < 30) return 40;
   if (rating >= 2000) return 10;
   return 20;
@@ -100,6 +103,7 @@ const activeGames = new Map(); // roomId -> state
 const socketToPlayer = new Map(); // socket.id -> playerId
 const playerToSocket = new Map(); // playerId -> socket.id
 const usernameToPlayer = new Map(); // usernameLower -> playerId
+const playerIdToUsername = new Map(); // playerId -> username
 const pendingInvites = new Map(); // inviteId -> {fromPlayerId,toPlayerId,createdAt}
 
 function clearQueueForPlayer(playerId) {
@@ -109,9 +113,17 @@ function clearQueueForPlayer(playerId) {
 
 function findMatchmakingPair() {
   if (queue.length < 2) return null;
-  const a = queue.shift();
-  const b = queue.shift();
-  return [a, b];
+  queue.sort((a, b) => a.joinedAt - b.joinedAt);
+  for (let i = 0; i < queue.length; i++) {
+    for (let j = i + 1; j < queue.length; j++) {
+      if (Math.abs((queue[i].rating || 1200) - (queue[j].rating || 1200)) <= 200) {
+        const a = queue.splice(j, 1)[0];
+        const b = queue.splice(i, 1)[0];
+        return [a, b];
+      }
+    }
+  }
+  return null;
 }
 
 function todayKey() {
@@ -178,6 +190,20 @@ function createRoomAndNotifyPlayers({
   });
 }
 
+function buildOnlinePlayersList() {
+  const names = [];
+  for (const playerId of playerToSocket.keys()) {
+    const username = playerIdToUsername.get(playerId);
+    if (username) names.push(username);
+  }
+  names.sort((a, b) => a.localeCompare(b, 'ru'));
+  return names;
+}
+
+function emitOnlinePlayersToAll() {
+  io.emit('online_players', { players: buildOnlinePlayersList() });
+}
+
 app.get('/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -214,6 +240,7 @@ io.on('connection', (socket) => {
       socketToPlayer.set(socket.id, playerId);
       playerToSocket.set(playerId, socket.id);
       usernameToPlayer.set(normalized.toLowerCase(), playerId);
+      playerIdToUsername.set(playerId, normalized);
 
       const p = await pool.query(`SELECT * FROM players WHERE id = $1`, [playerId]);
       const row = p.rows[0];
@@ -221,11 +248,17 @@ io.on('connection', (socket) => {
         playerId: row.id,
         username: row.username,
         rating: row.rating,
+        calibrationRemaining: row.calibration_games_remaining,
         title: rankTitle(row.rating)
       });
+      emitOnlinePlayersToAll();
     } catch (e) {
       socket.emit('error_message', { message: 'Ошибка регистрации' });
     }
+  });
+
+  socket.on('request_online_players', () => {
+    socket.emit('online_players', { players: buildOnlinePlayersList() });
   });
 
   socket.on('queue_join', async ({ mode = 'ranked' } = {}) => {
@@ -384,8 +417,8 @@ io.on('connection', (socket) => {
         const Eb = expectedScore(b.rating, w.rating);
         const Sw = result === 'white' ? 1 : result === 'draw' ? 0.5 : 0;
         const Sb = result === 'black' ? 1 : result === 'draw' ? 0.5 : 0;
-        const Kw = kFactor(w.rating, w.games_played);
-        const Kb = kFactor(b.rating, b.games_played);
+        const Kw = kFactor(w.rating, w.games_played, w.calibration_games_remaining);
+        const Kb = kFactor(b.rating, b.games_played, b.calibration_games_remaining);
         const wNew = Math.max(0, Math.round(w.rating + Kw * (Sw - Ew)));
         const bNew = Math.max(0, Math.round(b.rating + Kb * (Sb - Eb)));
 
@@ -393,6 +426,7 @@ io.on('connection', (socket) => {
         await pool.query(
           `UPDATE players
            SET rating=$2, peak_rating=GREATEST(peak_rating,$2), games_played=games_played+1,
+               calibration_games_remaining=GREATEST(0, calibration_games_remaining - 1),
                wins=wins+$3, losses=losses+$4, draws=draws+$5, updated_at=NOW()
            WHERE id=$1`,
           [w.id, wNew, result === 'white' ? 1 : 0, result === 'black' ? 1 : 0, result === 'draw' ? 1 : 0]
@@ -400,6 +434,7 @@ io.on('connection', (socket) => {
         await pool.query(
           `UPDATE players
            SET rating=$2, peak_rating=GREATEST(peak_rating,$2), games_played=games_played+1,
+               calibration_games_remaining=GREATEST(0, calibration_games_remaining - 1),
                wins=wins+$3, losses=losses+$4, draws=draws+$5, updated_at=NOW()
            WHERE id=$1`,
           [b.id, bNew, result === 'black' ? 1 : 0, result === 'white' ? 1 : 0, result === 'draw' ? 1 : 0]
@@ -415,8 +450,24 @@ io.on('connection', (socket) => {
         await pool.query('COMMIT');
 
         io.to(roomId).emit('rating_updated', {
-          white: { playerId: w.id, oldRating: w.rating, newRating: wNew, delta: wNew - w.rating, title: rankTitle(wNew) },
-          black: { playerId: b.id, oldRating: b.rating, newRating: bNew, delta: bNew - b.rating, title: rankTitle(bNew) }
+          white: {
+            playerId: w.id,
+            oldRating: w.rating,
+            newRating: wNew,
+            delta: wNew - w.rating,
+            title: rankTitle(wNew),
+            kUsed: Kw,
+            calibrationRemaining: Math.max(0, (w.calibration_games_remaining || 0) - 1)
+          },
+          black: {
+            playerId: b.id,
+            oldRating: b.rating,
+            newRating: bNew,
+            delta: bNew - b.rating,
+            title: rankTitle(bNew),
+            kUsed: Kb,
+            calibrationRemaining: Math.max(0, (b.calibration_games_remaining || 0) - 1)
+          }
         });
       } catch (e) {
         try { await pool.query('ROLLBACK'); } catch (_) {}
@@ -434,10 +485,12 @@ io.on('connection', (socket) => {
 
     clearQueueForPlayer(playerId);
     playerToSocket.delete(playerId);
+    playerIdToUsername.delete(playerId);
 
     for (const [nickLower, pId] of usernameToPlayer.entries()) {
       if (pId === playerId) usernameToPlayer.delete(nickLower);
     }
+    emitOnlinePlayersToAll();
   });
 });
 
