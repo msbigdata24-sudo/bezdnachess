@@ -709,9 +709,18 @@ async function fetchMetric(key, shouldIncrement) {
 
 function normalizeApiValue(data) {
   if (!data) return 0;
+  // CounterAPI v2 commonly returns { code, data: { up_count, ... } }.
+  if (data.data && data.data.up_count !== undefined) return data.data.up_count;
+  if (data.data && data.data.count !== undefined) return data.data.count;
   if (data.count !== undefined) return data.count;
   if (data.value !== undefined) return data.value;
   return 0;
+}
+
+function settlePromise(promise) {
+  return promise
+    .then((value) => ({ status: 'fulfilled', value }))
+    .catch((reason) => ({ status: 'rejected', reason }));
 }
 
 function initRealCounter() {
@@ -720,10 +729,10 @@ function initRealCounter() {
   const lastUpTs = parseInt(localStorage.getItem(COUNTER_DEVICE_KEY) || '0', 10);
   const shouldIncrement = !Number.isFinite(lastUpTs) || (now - lastUpTs) > COUNTER_COOLDOWN_MS;
 
-  Promise.allSettled([
-    fetchMetric(COUNTER_TOTAL_KEY, shouldIncrement),
-    fetchMetric(monthKeyValue, shouldIncrement),
-    fetchMetric(COUNTER_ONLINE_KEY, shouldIncrement)
+  Promise.all([
+    settlePromise(fetchMetric(COUNTER_TOTAL_KEY, shouldIncrement)),
+    settlePromise(fetchMetric(monthKeyValue, shouldIncrement)),
+    settlePromise(fetchMetric(COUNTER_ONLINE_KEY, shouldIncrement))
   ])
     .then((results) => {
       const totalOk = results[0].status === 'fulfilled';
