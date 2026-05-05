@@ -27,7 +27,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 .page.active{display:block}
 
 /* Информационные страницы поверх игры */
-#tutorial-page, #rules-page, #about-page{
+#tutorial-page, #rules-page, #about-page, #tictactoe-page{
   position:fixed;
   inset:40px 0 0 0;
   z-index:6500;
@@ -128,6 +128,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 
 #subscription-modal,#gift-modal,#network-modal,#donation-modal,#interactive-tutorial-modal,#feedback-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;z-index:7000}
 #subscription-content,#gift-content,#network-content,#donation-content,#interactive-tutorial-content{background:linear-gradient(135deg,#1a1a2e 0%,#0f0f1e 100%);border:3px solid gold;border-radius:15px;padding:30px;text-align:center;max-width:500px}
+#network-content{max-height:90vh;overflow-y:auto;box-sizing:border-box}
 #interactive-tutorial-content{border-color:#0f0;width:90%;max-width:800px}
 #donation-content{border-color:#ffaa44}
 #subscription-title{font-size:22px;color:gold;margin-bottom:15px;text-shadow:0 0 5px gold}
@@ -214,6 +215,19 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 #tutorial-message{position:absolute;bottom:90px;left:20px;background:rgba(0,0,0,0.85);border:1px solid #0f0;padding:10px 15px;border-radius:8px;font-size:12px;z-index:10;pointer-events:none}
 .rec-indicator{background:#ff0000; color:#fff; padding:2px 6px; border-radius:4px; font-size:9px; margin-left:5px; display:none;}
 
+#tictactoe-page{background:radial-gradient(circle at 50% 45%,rgba(0,255,120,0.12),rgba(0,0,0,0) 34%),radial-gradient(circle at 20% 15%,rgba(80,140,255,0.18),rgba(0,0,0,0) 30%),#000;overflow:hidden}
+#tictactoe-page::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#0f0 0.7px,transparent 0.8px),radial-gradient(#88aaff 0.7px,transparent 0.8px);background-size:90px 90px,140px 140px;background-position:0 0,35px 55px;opacity:0.35;pointer-events:none}
+#tictactoe-shell{position:relative;z-index:1;padding:12px;height:100%;box-sizing:border-box}
+#tictactoe-frame{width:100%;height:100%;border:1px solid #0f0;border-radius:8px;background:#000;box-shadow:0 0 25px rgba(0,255,0,0.25),inset 0 0 30px rgba(0,255,0,0.08)}
+
+#network-auth-box{border:1px solid #225533;padding:8px;margin:8px 0;text-align:left;font-size:10px;line-height:1.45;color:#d8e6d8;background:rgba(0,16,8,0.35);border-radius:6px}
+#network-auth-title{color:#9cd9a7;margin-bottom:6px;font-weight:bold}
+.network-auth-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.network-auth-input{background:#111;border:1px solid #0f0;color:#dfffea;padding:7px;width:100%;box-sizing:border-box;font-family:'Courier New',monospace;font-size:10px;border-radius:4px;text-transform:none}
+.network-auth-input::placeholder{color:#78b885;text-transform:uppercase}
+.network-auth-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.network-auth-note{color:#9cd9a7;font-size:9px;margin-top:5px;min-height:14px}
+
 @media(max-width:768px){
   #main-menu{padding:4px 6px;height:36px}
   #menu-toggle{padding:2px 8px;font-size:16px}
@@ -240,9 +254,10 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   #undo-panel.compact .control-btn{font-size:9px;padding:5px 6px}
   #quick-onboarding{bottom:56px}
   .game-ui{font-size:9px;padding:4px 6px}
-  #tutorial-page, #rules-page, #about-page{inset:38px 0 0 0;}
+  #tutorial-page, #rules-page, #about-page, #tictactoe-page{inset:38px 0 0 0;}
   #tutorial-page > div, #rules-page > div, #about-page > div{padding:14px 14px 28px !important;}
   .rules-item summary{font-size:14px;}
+  .network-auth-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -263,6 +278,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <button class="menu-btn" onclick="showSubscription(); closeMainMenu();">💎 ПОДПИСКА</button>
   <button class="menu-btn" onclick="showDonation(); closeMainMenu();">❤️ ПОДДЕРЖАТЬ</button>
   <button class="menu-btn" onclick="showGift(); closeMainMenu();">🎁 ПОДАРИТЬ</button>
+  <button class="menu-btn" onclick="showPage('tictactoe'); closeMainMenu();">❌ КРЕСТИКИ-НОЛИКИ</button>
 </div>
 
 <div id="stats-panel">
@@ -432,6 +448,23 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
     <input type="text" id="waitlist-contact" placeholder="КОНТАКТ (TELEGRAM ИЛИ EMAIL)">
     <input type="text" id="invite-target-nick" placeholder="НИК СОПЕРНИКА ДЛЯ ПРИГЛАШЕНИЯ">
     <div id="waitlist-status" style="min-height:16px;color:#9cd9a7;font-size:10px;margin:6px 0;"></div>
+    <div id="network-auth-box">
+      <div id="network-auth-title">🔐 АККАУНТ ИГРОКА</div>
+      <div id="network-auth-summary">МОЖНО ИГРАТЬ ГОСТЕМ, НО ДЛЯ ЗАКРЕПЛЕННОГО НИКА И РЕЙТИНГА ЛУЧШЕ ЗАРЕГИСТРИРОВАТЬСЯ.</div>
+      <div class="network-auth-grid">
+        <input class="network-auth-input" type="text" id="auth-username" maxlength="30" placeholder="НИК ДЛЯ РЕГИСТРАЦИИ">
+        <input class="network-auth-input" type="email" id="auth-email" maxlength="254" placeholder="EMAIL">
+        <input class="network-auth-input" type="password" id="auth-password" minlength="8" placeholder="ПАРОЛЬ ОТ 8 СИМВОЛОВ">
+        <input class="network-auth-input" type="password" id="auth-password-login" placeholder="ПАРОЛЬ ДЛЯ ВХОДА">
+      </div>
+      <div class="network-auth-actions">
+        <button class="history-btn" type="button" onclick="registerNetworkAccount()">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+        <button class="history-btn" type="button" onclick="loginNetworkAccount()">ВОЙТИ</button>
+        <button class="history-btn" type="button" onclick="resendNetworkVerification()">ВЫСЛАТЬ ССЫЛКУ</button>
+        <button class="history-btn" type="button" onclick="logoutNetworkAccount()">ВЫЙТИ</button>
+      </div>
+      <div class="network-auth-note" id="network-auth-status"></div>
+    </div>
     <div id="online-players-box" style="max-height:120px;overflow:auto;border:1px solid #225533;padding:6px;margin:6px 0;text-align:left;font-size:10px;">
       <div style="color:#9cd9a7;margin-bottom:4px;">🟢 Онлайн игроки</div>
       <div id="online-players-list" style="color:#cfe8d3;">Список загружается...</div>
@@ -651,6 +684,12 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
       СЛЕДУЮЩЕЕ ЗВАНИЕ: <span id="rating-next-title">СТРАННИК (1400)</span>
     </p>
     <button class="menu-btn" onclick="showPage('game')" style="margin-top:8px;">← ВЕРНУТЬСЯ К ИГРЕ</button>
+  </div>
+</div>
+
+<div id="tictactoe-page" class="page">
+  <div id="tictactoe-shell">
+    <iframe id="tictactoe-frame" src="./tic-tac-toe.html" title="Крестики-нолики в Бездне"></iframe>
   </div>
 </div>
 
@@ -901,6 +940,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initRightPanelByViewport();
     renderCapturesPanel();
     setDefaultUserLabel();
+    renderNetworkAuthPanel();
+    verifyNetworkEmailFromUrl();
     loadTelegramSDKNonBlocking();
     initOnlineBridge();
     setTimeout(layoutRightPanels, 0);
@@ -1069,6 +1110,9 @@ const ONLINE_PLAYER_RATING_KEY = 'bezdna_online_player_rating_v1';
 const ONLINE_PLAYER_RATING_PEAK_KEY = 'bezdna_online_player_rating_peak_v1';
 const ONLINE_PLAYER_RATING_LAST_DELTA_KEY = 'bezdna_online_player_rating_last_delta_v1';
 const ONLINE_PLAYER_CALIBRATION_LEFT_KEY = 'bezdna_online_player_calibration_left_v1';
+const ONLINE_AUTH_TOKEN_KEY = 'bezdna_online_auth_token_v1';
+const ONLINE_AUTH_EMAIL_KEY = 'bezdna_online_auth_email_v1';
+const ONLINE_AUTH_VERIFIED_KEY = 'bezdna_online_auth_verified_v1';
 let onlineSocket = null;
 let onlineSearching = false;
 let onlineConnected = false;
@@ -1085,7 +1129,162 @@ function updateOnlineStatus(text, isError) {
   status.textContent = text;
 }
 
+function setNetworkAuthStatus(text, isError = false) {
+  const status = document.getElementById('network-auth-status');
+  if (!status) return;
+  status.style.color = isError ? '#ffb0b0' : '#9cd9a7';
+  status.textContent = text;
+}
+
+function applyNetworkAuthSession(data, email = '') {
+  if (!data || !data.token) return;
+  localStorage.setItem(ONLINE_AUTH_TOKEN_KEY, data.token);
+  if (email) localStorage.setItem(ONLINE_AUTH_EMAIL_KEY, email);
+  if (data.playerId) localStorage.setItem(ONLINE_PLAYER_ID_KEY, data.playerId);
+  if (data.username) localStorage.setItem(ONLINE_PLAYER_NAME_KEY, data.username);
+  localStorage.setItem(ONLINE_AUTH_VERIFIED_KEY, data.emailVerified ? '1' : '0');
+  if (Number.isFinite(Number(data.rating))) localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(Number(data.rating)));
+  if (Number.isFinite(Number(data.peakRating))) localStorage.setItem(ONLINE_PLAYER_RATING_PEAK_KEY, String(Number(data.peakRating)));
+  if (Number.isFinite(Number(data.calibrationRemaining))) localStorage.setItem(ONLINE_PLAYER_CALIBRATION_LEFT_KEY, String(Number(data.calibrationRemaining)));
+  renderNetworkAuthPanel();
+  renderRatingPage();
+  if (onlineSocket && onlineConnected) onlineSocket.emit('register', ensureOnlineIdentity());
+}
+
+function renderNetworkAuthPanel() {
+  const summary = document.getElementById('network-auth-summary');
+  const nickInput = document.getElementById('auth-username');
+  const emailInput = document.getElementById('auth-email');
+  const waitNick = document.getElementById('waitlist-nick');
+  const username = localStorage.getItem(ONLINE_PLAYER_NAME_KEY) || '';
+  const email = localStorage.getItem(ONLINE_AUTH_EMAIL_KEY) || '';
+  const token = localStorage.getItem(ONLINE_AUTH_TOKEN_KEY) || '';
+  const verified = localStorage.getItem(ONLINE_AUTH_VERIFIED_KEY) === '1';
+  if (nickInput && username && !nickInput.value) nickInput.value = username;
+  if (waitNick && username && !waitNick.value) waitNick.value = username;
+  if (emailInput && email && !emailInput.value) emailInput.value = email;
+  if (summary) {
+    summary.textContent = token
+      ? `ВЫ ВОШЛИ КАК ${username || 'ИГРОК'}${email ? ` (${email})` : ''}. EMAIL: ${verified ? 'ПОДТВЕРЖДЕН' : 'НЕ ПОДТВЕРЖДЕН'}.`
+      : 'МОЖНО ИГРАТЬ ГОСТЕМ, НО ДЛЯ ЗАКРЕПЛЕННОГО НИКА И РЕЙТИНГА ЛУЧШЕ ЗАРЕГИСТРИРОВАТЬСЯ.';
+  }
+}
+
+function networkAuthErrorMessage(error) {
+  const map = {
+    invalid_email: 'Некорректный email.',
+    password_short: 'Пароль должен быть не короче 8 символов.',
+    username_short: 'Ник должен быть не короче 2 символов.',
+    username_taken: 'Этот ник уже занят.',
+    email_taken: 'Этот email уже зарегистрирован.',
+    invalid_credentials: 'Неверный email или пароль.',
+    invalid_or_expired: 'Ссылка подтверждения устарела или неверна.',
+    bad_request: 'Заполните email и пароль.'
+  };
+  return map[error] || `Ошибка: ${error || 'сервер не ответил'}`;
+}
+
+async function postOnlineAuth(path, payload) {
+  const res = await fetch(`${ONLINE_API_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) throw new Error(networkAuthErrorMessage(data.error));
+  return data;
+}
+
+async function registerNetworkAccount() {
+  const username = (document.getElementById('auth-username')?.value || document.getElementById('waitlist-nick')?.value || '').trim();
+  const email = (document.getElementById('auth-email')?.value || '').trim();
+  const password = document.getElementById('auth-password')?.value || '';
+  if (!username || !email || !password) {
+    setNetworkAuthStatus('Заполните ник, email и пароль для регистрации.', true);
+    return;
+  }
+  try {
+    setNetworkAuthStatus('Регистрируем аккаунт...');
+    const data = await postOnlineAuth('/auth/register', { username, email, password });
+    localStorage.setItem(ONLINE_PLAYER_ID_KEY, data.playerId);
+    localStorage.setItem(ONLINE_PLAYER_NAME_KEY, data.username || username);
+    localStorage.setItem(ONLINE_AUTH_EMAIL_KEY, email);
+    localStorage.setItem(ONLINE_AUTH_VERIFIED_KEY, '0');
+    renderNetworkAuthPanel();
+    setNetworkAuthStatus(data.emailSent ? '✅ Аккаунт создан. Проверьте почту и подтвердите email.' : `✅ Аккаунт создан. SMTP не отправил письмо${data.devVerificationUrl ? ': ' + data.devVerificationUrl : '.'}`);
+  } catch (e) {
+    setNetworkAuthStatus(e.message, true);
+  }
+}
+
+async function loginNetworkAccount() {
+  const email = (document.getElementById('auth-email')?.value || '').trim();
+  const password = document.getElementById('auth-password-login')?.value || document.getElementById('auth-password')?.value || '';
+  if (!email || !password) {
+    setNetworkAuthStatus('Введите email и пароль для входа.', true);
+    return;
+  }
+  try {
+    setNetworkAuthStatus('Входим...');
+    const data = await postOnlineAuth('/auth/login', { email, password });
+    applyNetworkAuthSession(data, email);
+    setNetworkAuthStatus(data.emailVerified ? '✅ Вход выполнен. Email подтвержден.' : '✅ Вход выполнен. Подтвердите email для рейтингового подбора.');
+  } catch (e) {
+    setNetworkAuthStatus(e.message, true);
+  }
+}
+
+async function resendNetworkVerification() {
+  const email = (document.getElementById('auth-email')?.value || localStorage.getItem(ONLINE_AUTH_EMAIL_KEY) || '').trim();
+  if (!email) {
+    setNetworkAuthStatus('Укажите email, куда выслать ссылку.', true);
+    return;
+  }
+  try {
+    setNetworkAuthStatus('Отправляем ссылку подтверждения...');
+    const data = await postOnlineAuth('/auth/resend-verification', { email });
+    setNetworkAuthStatus(data.emailSent ? '✅ Ссылка отправлена. Проверьте почту.' : `✅ Запрос принят${data.devVerificationUrl ? ': ' + data.devVerificationUrl : '.'}`);
+  } catch (e) {
+    setNetworkAuthStatus(e.message, true);
+  }
+}
+
+function logoutNetworkAccount() {
+  localStorage.removeItem(ONLINE_AUTH_TOKEN_KEY);
+  localStorage.removeItem(ONLINE_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ONLINE_AUTH_VERIFIED_KEY);
+  renderNetworkAuthPanel();
+  setNetworkAuthStatus('Вы вышли из аккаунта. Можно играть как гость.');
+}
+
+async function verifyNetworkEmailFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('verify_email');
+  if (!token) return;
+  try {
+    const data = await postOnlineAuth('/auth/verify-email', { token });
+    applyNetworkAuthSession(data, localStorage.getItem(ONLINE_AUTH_EMAIL_KEY) || '');
+    setNetworkAuthStatus('✅ Email подтвержден. Можно играть рейтинговые партии.');
+    updateOnlineStatus('✅ Email подтвержден. Можно играть рейтинговые партии.', false);
+    params.delete('verify_email');
+    const clean = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', clean);
+  } catch (e) {
+    setNetworkAuthStatus(e.message, true);
+    updateOnlineStatus(e.message, true);
+  }
+}
+
 function ensureOnlineIdentity() {
+  const authToken = localStorage.getItem(ONLINE_AUTH_TOKEN_KEY);
+  if (authToken) {
+    return {
+      authToken,
+      playerId: localStorage.getItem(ONLINE_PLAYER_ID_KEY) || '',
+      username: localStorage.getItem(ONLINE_PLAYER_NAME_KEY) || ''
+    };
+  }
+
   let playerId = localStorage.getItem(ONLINE_PLAYER_ID_KEY);
   if (!playerId) {
     playerId = `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -1244,7 +1443,11 @@ function initOnlineBridge() {
 
   onlineSocket.on('registered', (data) => {
     const name = data?.username || ensureOnlineIdentity().username;
+    if (data?.playerId) localStorage.setItem(ONLINE_PLAYER_ID_KEY, data.playerId);
     localStorage.setItem(ONLINE_PLAYER_NAME_KEY, name);
+    if (typeof data?.emailVerified === 'boolean') {
+      localStorage.setItem(ONLINE_AUTH_VERIFIED_KEY, data.emailVerified ? '1' : '0');
+    }
     if (Number.isFinite(Number(data?.rating))) {
       const r = Number(data.rating);
       localStorage.setItem(ONLINE_PLAYER_RATING_KEY, String(r));
@@ -1258,6 +1461,7 @@ function initOnlineBridge() {
     }
     const nickInput = document.getElementById('waitlist-nick');
     if (nickInput && !nickInput.value) nickInput.value = name;
+    renderNetworkAuthPanel();
     renderRatingPage();
     requestOnlinePlayers();
   });
@@ -1413,6 +1617,7 @@ function cancelOnlineSearch() {
 
 function showNetwork() {
   document.getElementById('network-modal').style.display = 'flex';
+  renderNetworkAuthPanel();
   initOnlineBridge();
   requestOnlinePlayers();
   renderOnlinePlayers();
