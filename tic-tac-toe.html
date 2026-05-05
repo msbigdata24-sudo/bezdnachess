@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Крестики-нолики 3D | Красный крест vs Синий нолик</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(0, 255, 120, 0.16), transparent 34%),
+        radial-gradient(circle at 82% 18%, rgba(80, 140, 255, 0.16), transparent 28%),
+        radial-gradient(circle at 50% 80%, rgba(255, 58, 111, 0.1), transparent 32%),
+        #000;
+      min-height: 100vh;
+      color: #dfffea;
+      overflow: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(#0f0 0.7px, transparent 0.8px),
+        radial-gradient(#88aaff 0.8px, transparent 0.9px);
+      background-size: 86px 86px, 132px 132px;
+      background-position: 0 0, 44px 58px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+    .sidebar {
+      width: 320px;
+      background: rgba(0, 0, 0, 0.76);
+      backdrop-filter: blur(7px);
+      border-right: 1px solid rgba(0, 255, 120, 0.55);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    .game-area {
+      flex: 1;
+      position: relative;
+      background: transparent;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00ff88, #8be9ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 4px;
+      text-shadow: 0 0 18px rgba(0,255,120,0.25);
+    }
+    .sub {
+      font-size: 13px;
+      color: #8fd9b0;
+      margin-top: -6px;
+    }
+    button {
+      background: rgba(0, 16, 8, 0.88);
+      border: 1px solid rgba(0, 255, 120, 0.55);
+      color: #dfffea;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.1s linear;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0f0;
+      border-color: #0f0;
+      color: #000;
+      transform: scale(0.97);
+    }
+    .status-card {
+      background: rgba(0, 16, 8, 0.78);
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid rgba(0, 255, 120, 0.45);
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(0, 255, 120, 0.12);
+    }
+    .legend {
+      background: rgba(0, 16, 8, 0.7);
+      border-radius: 18px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      border: 1px solid rgba(0, 255, 120, 0.35);
+    }
+    .legend span.x { color: #ff7777; font-weight: bold; }
+    .legend span.o { color: #77aaff; font-weight: bold; }
+    .legend span.win { color: #66ff99; font-weight: bold; }
+    .badge-cube {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      background: #00000099;
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-family: monospace;
+      pointer-events: none;
+      z-index: 20;
+    }
+    @media (max-width: 700px) {
+      .sidebar { width: 260px; }
+      h1 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <div>
+      <h1>❌ КРЕСТИКИ-НОЛИКИ БЕЗДНЫ</h1>
+      <div class="sub">3D поле в космосе | Кликни по шару → красный крест</div>
+    </div>
+
+    <div class="status-card" id="statusMsg">🎮 Новая игра! Твой ход (КРАСНЫЙ КРЕСТ)</div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <button data-size="3">3×3×3</button>
+      <button data-size="5">5×5×5</button>
+      <button data-size="8">8×8×8</button>
+      <button id="resetGame">🔄 Сброс</button>
+      <button id="forceAI">🤖 Ход AI</button>
+    </div>
+
+    <div class="legend">
+      <div><span class="x">❌ КРАСНЫЙ КРЕСТ</span> — объёмный, три оси</div>
+      <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
+      <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
+      <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
+      <div>🖱️ ЛКМ по сфере → поставить <span class="x">крестик</span></div>
+      <div>🖱️ ЛКМ + drag: вращение | ПКМ + drag: панорама | колёсико: зум</div>
+      <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <canvas id="gameCanvas"></canvas>
+    <div class="badge-cube" id="infoBadge">⚫ 3×3×3 | цель: 3 в ряд</div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ---------- DOM ----------
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('statusMsg');
+    const infoBadge = document.getElementById('infoBadge');
+
+    // ---------- Игровые параметры ----------
+    let size = 3;           // 3,5,8
+    let targetLen = 3;      // для победы: 3 или 5
+    let board = [];         // плоский массив
+    let turn = 'X';         // X - игрок (ставит крестик), O - AI (нолик)
+    let gameOver = false;
+    let winSet = new Set();  // индексы победных ячеек
+    
+    // ----- Камера -----
+    let yaw = 0.72;
+    let pitch = -0.48;
+    let panX = 0, panY = 0;
+    let zoom = 1.0;
+    
+    // -----  UI состояния -----
+    let projectedCells = [];   // массив ячеек с экранными координатами
+    let hoverIndex = null;     // индекс k ячейки под курсором
+    let drag = false;
+    let lastMouse = { x: 0, y: 0 };
+    let dragMode = '';
+    let aiThinking = false;
+    
+    // ---------- Вспомогательные ----------
+    function idx(x,y,z) { return (z * size + y) * size + x; }
+    function inBounds(x,y,z){ return x>=0 && x<size && y>=0 && y<size && z>=0 && z<size; }
+    
+    function updateUI(){
+      if(gameOver){
+        statusDiv.innerHTML = winSet.size ? `🏆 ПОБЕДА! ${turn === 'X' ? 'КРАСНЫЙ КРЕСТ' : 'СИНИЙ НОЛИК'} выиграл!` : `🤝 НИЧЬЯ!`;
+      } else {
+        statusDiv.innerHTML = turn === 'X' ? '🔴 ТВОЙ ХОД! Поставь КРАСНЫЙ КРЕСТИК' : '🔵 AI думает ... (ставит синий нолик)';
+      }
+      infoBadge.innerText = `📐 ${size}×${size}×${size}  |  цель: ${targetLen} в ряд`;
+    }
+    
+    function initGame(newSize){
+      size = newSize;
+      targetLen = (size === 3) ? 3 : 5;
+      board = new Array(size * size * size).fill(null);
+      turn = 'X';
+      gameOver = false;
+      winSet.clear();
+      aiThinking = false;
+      // сброс камеры для удобства
+      yaw = 0.72;
+      pitch = -0.48;
+      panX = 0; panY = 0;
+      zoom = 1.0;
+      updateUI();
+      resizeAndDraw();
+    }
+    
+    // ---------- 3D проекция ----------
+    function toWorld(x,y,z){
+      const c = size / 2;
+      return { x: x - c, y: y - c, z: z - c };
+    }
+    
+    function rotatePoint(p){
+      let {x,y,z} = p;
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const x1 = x * cy + z * sy;
+      const z1 = -x * sy + z * cy;
+      x = x1; z = z1;
+      const cx = Math.cos(pitch), sx = Math.sin(pitch);
+      const y1 = y * cx - z * sx;
+      const z2 = y * sx + z * cx;
+      y = y1; z = z2;
+      return {x,y,z};
+    }
+    
+    function project(world, W, H){
+      const rp = rotatePoint(world);
+      const camDist = 9 + size * 0.72;
+      const d = camDist / (camDist - rp.z);
+      const scale = Math.min(W, H) * 0.165 * zoom;
+      return {
+        x: W * 0.5 + rp.x * scale * d + panX,
+        y: H * 0.55 + rp.y * scale * d + panY,
+        depth: rp.z,
+        d: d
+      };
+    }
+    
+    // ---------- Построение всех центров ячеек ----------
+    function updateProjectedCenters(W,H){
+      const cells = [];
+      for(let z=0; z<size; z++){
+        for(let y=0; y<size; y++){
+          for(let x=0; x<size; x++){
+            const worldPos = toWorld(x + 0.5, y + 0.5, z + 0.5);
+            const proj = project(worldPos, W, H);
+            cells.push({
+              x, y, z,
+              k: idx(x,y,z),
+              wx: worldPos.x, wy: worldPos.y, wz: worldPos.z,
+              screenX: proj.x,
+              screenY: proj.y,
+              depth: proj.depth,
+              perspective: proj.d,
+              val: board[idx(x,y,z)]
+            });
+          }
+        }
+      }
+      cells.sort((a,b) => a.depth - b.depth);
+      projectedCells = cells;
+      return cells;
+    }
+    
+    // ========== ОТРИСОВКА ==========
+    function drawSpaceBackground(W,H){
+      const bg = ctx.createRadialGradient(W * 0.52, H * 0.48, 20, W * 0.52, H * 0.48, Math.max(W, H) * 0.75);
+      bg.addColorStop(0, '#071b16');
+      bg.addColorStop(0.42, '#020914');
+      bg.addColorStop(1, '#000000');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      for(let i = 0; i < 170; i++){
+        const x = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 * W;
+        const y = (Math.sin(i * 78.233) * 24634.6345 % 1 + 1) % 1 * H;
+        const r = 0.45 + ((i * 17) % 5) * 0.18;
+        const glow = i % 11 === 0 ? 0.75 : 0.28;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = i % 7 === 0 ? `rgba(136,170,255,${glow})` : `rgba(160,255,190,${glow})`;
+        ctx.fill();
+      }
+
+      const nebula = ctx.createRadialGradient(W * 0.68, H * 0.34, 8, W * 0.68, H * 0.34, Math.max(W, H) * 0.3);
+      nebula.addColorStop(0, 'rgba(0,255,120,0.14)');
+      nebula.addColorStop(1, 'rgba(0,255,120,0)');
+      ctx.fillStyle = nebula;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawGridLines(W,H){
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(90, 150, 230, 0.45)';
+      ctx.lineWidth = 1.2;
+      const L = size;
+      for(let z=0; z<=L; z++){
+        for(let y=0; y<=L; y++){
+          const a = project(toWorld(0, y, z), W, H);
+          const b = project(toWorld(L, y, z), W, H);
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+      for(let z=0; z<=L; z++){
+        for(let x=0; x<=L; x++){
+          const a = project(toWorld(x, 0, z), W, H);
+          const b = project(toWorld(x, L, z), W, H);
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+      for(let y=0; y<=L; y++){
+        for(let x=0; x<=L; x++){
+          const a = project(toWorld(x, y, 0), W, H);
+          const b = project(toWorld(x, y, L), W, H);
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    
+    // Объёмный красный крест
+    function drawCross(cell, W, H, isWin){
+      const {wx, wy, wz, screenX, screenY, perspective} = cell;
+      const s = size >= 7 ? 0.28 : 0.38;
+      const armWidth = Math.max(3.5, 7.2 * perspective);
+      const colorMain = isWin ? '#ffaa66' : '#ff3333';
+      const colorGlow = isWin ? '#ffdd99' : '#ff7777';
+      
+      const points3d = [
+        [{x:wx-s, y:wy, z:wz}, {x:wx+s, y:wy, z:wz}],
+        [{x:wx, y:wy-s, z:wz}, {x:wx, y:wy+s, z:wz}],
+        [{x:wx, y:wy, z:wz-s}, {x:wx, y:wy, z:wz+s}]
+      ];
+      
+      ctx.lineCap = 'round';
+      for(let seg of points3d){
+        const p1 = project(seg[0], W, H);
+        const p2 = project(seg[1], W, H);
+        // тень
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        ctx.lineWidth = armWidth + 2.5; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
+        // основная линия
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        ctx.lineWidth = armWidth;
+        const grad = ctx.createLinearGradient(p1.x,p1.y,p2.x,p2.y);
+        grad.addColorStop(0, colorMain); grad.addColorStop(1, colorGlow);
+        ctx.strokeStyle = grad; ctx.stroke();
+        // блик
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        ctx.lineWidth = armWidth * 0.35; ctx.strokeStyle = '#ffccaa'; ctx.stroke();
+      }
+      // центральная сфера
+      const rad = Math.max(6, 8.5 * perspective);
+      ctx.beginPath(); ctx.arc(screenX, screenY, rad, 0, Math.PI*2);
+      ctx.fillStyle = isWin ? '#ffb86b' : '#ff5e5e';
+      ctx.shadowBlur = 10; ctx.shadowColor = '#ff4444aa';
+      ctx.fill();
+      ctx.beginPath(); ctx.arc(screenX-1.5, screenY-1.5, rad*0.45, 0, Math.PI*2);
+      ctx.fillStyle = '#ffcf9a'; ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    
+    // Объёмный СИНИЙ нолик (исправлено!)
+    function drawCircle(cell, isWin){
+      const {screenX, screenY, perspective} = cell;
+      const outerR = Math.max(11, 12 * perspective);
+      const innerR = outerR * 0.44;
+      
+      // настоящий синий градиент (не зелёный!)
+      const grad = ctx.createRadialGradient(screenX-outerR*0.25, screenY-outerR*0.25, outerR*0.2, screenX, screenY, outerR);
+      if(isWin){
+        grad.addColorStop(0, '#88ffbb');
+        grad.addColorStop(0.7, '#44dd77');
+        grad.addColorStop(1, '#1f9e58');
+      } else {
+        grad.addColorStop(0, '#88bbff');
+        grad.addColorStop(0.6, '#3388ff');
+        grad.addColorStop(1, '#1a44aa');
+      }
+      
+      ctx.beginPath(); ctx.arc(screenX, screenY, outerR, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.shadowBlur = 10; 
+      ctx.shadowColor = isWin ? '#33ee77' : '#2266ff';
+      ctx.fill();
+      
+      // внутреннее отверстие
+      ctx.beginPath(); ctx.arc(screenX, screenY, innerR, 0, Math.PI*2);
+      ctx.fillStyle = '#05162ecc'; 
+      ctx.fill();
+      
+      // блик
+      ctx.beginPath(); 
+      ctx.ellipse(screenX-outerR*0.2, screenY-outerR*0.2, outerR*0.32, outerR*0.2, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,245,0.65)'; 
+      ctx.fill();
+      
+      // обводка
+      ctx.beginPath(); 
+      ctx.arc(screenX, screenY, outerR*0.86, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(150,200,255,0.8)'; 
+      ctx.lineWidth = 2; 
+      ctx.stroke();
+      
+      ctx.shadowBlur = 0;
+    }
+    
+    function drawAll(){
+      const W = canvas.width / (window.devicePixelRatio || 1);
+      const H = canvas.height / (window.devicePixelRatio || 1);
+      
+      // защита от нулевых размеров
+      if(W <= 0 || H <= 0) return;
+      
+      ctx.clearRect(0, 0, W, H);
+      drawSpaceBackground(W, H);
+      
+      drawGridLines(W, H);
+      const cells = updateProjectedCenters(W, H);
+      
+      // подсветка пустых ячеек + hover
+      for(let c of cells){
+        if(c.val !== null) continue;
+        const radHover = Math.max(7, 14 * c.perspective);
+        ctx.beginPath(); 
+        ctx.arc(c.screenX, c.screenY, radHover, 0, Math.PI*2);
+        
+        if(!gameOver && hoverIndex === c.k && turn === 'X'){
+          ctx.fillStyle = '#ff6655aa'; 
+          ctx.fill();
+          ctx.beginPath(); 
+          ctx.arc(c.screenX, c.screenY, radHover*0.6, 0, Math.PI*2);
+          ctx.fillStyle = '#ff4433cc'; 
+          ctx.fill();
+        } else if(winSet.has(c.k)){
+          ctx.fillStyle = '#66ff99aa'; 
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#3a6cb044'; 
+          ctx.fill();
+        }
+      }
+      
+      // рисуем нолики (синие) → затем кресты (красные)
+      for(let c of cells) if(c.val === 'O') drawCircle(c, winSet.has(c.k));
+      for(let c of cells) if(c.val === 'X') drawCross(c, W, H, winSet.has(c.k));
+      
+      ctx.font = '12px "Segoe UI"';
+      ctx.fillStyle = '#afcbff';
+      ctx.fillText('🖱️ ЛКМ по сфере → поставить красный крест · ЛКМ+drag вращение · ПКМ+drag панорама', 16, 24);
+    }
+    
+    function resizeAndDraw(){
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(200, rect.width) * dpr;
+      canvas.height = Math.max(200, rect.height) * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawAll();
+    }
+    
+    // ==================== ЛОГИКА ПОБЕДЫ ====================
+    const directions = (() => {
+      const dirs = [];
+      for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(let dz=-1;dz<=1;dz++){
+        if(dx===0 && dy===0 && dz===0) continue;
+        if(dx<0) continue;
+        if(dx===0 && dy<0) continue;
+        if(dx===0 && dy===0 && dz<0) continue;
+        dirs.push([dx,dy,dz]);
+      }
+      return dirs;
+    })();
+    
+    function countDirection(x,y,z, dx,dy,dz, player){
+      let cnt = 0;
+      let nx=x+dx, ny=y+dy, nz=z+dz;
+      while(inBounds(nx,ny,nz) && board[idx(nx,ny,nz)] === player){
+        cnt++;
+        nx+=dx; ny+=dy; nz+=dz;
+      }
+      return cnt;
+    }
+    
+    function checkWin(x,y,z, player){
+      for(let [dx,dy,dz] of directions){
+        let total = 1;
+        total += countDirection(x,y,z, dx,dy,dz, player);
+        total += countDirection(x,y,z, -dx,-dy,-dz, player);
+        if(total >= targetLen){
+          const line = [[x,y,z]];
+          let nx=x+dx, ny=y+dy, nz=z+dz;
+          while(inBounds(nx,ny,nz) && board[idx(nx,ny,nz)] === player){
+            line.push([nx,ny,nz]);
+            nx+=dx; ny+=dy; nz+=dz;
+          }
+          nx=x-dx; ny=y-dy; nz=z-dz;
+          while(inBounds(nx,ny,nz) && board[idx(nx,ny,nz)] === player){
+            line.push([nx,ny,nz]);
+            nx-=dx; ny-=dy; nz-=dz;
+          }
+          return line.slice(0,targetLen);
+        }
+      }
+      return null;
+    }
+    
+    function isFullDraw(){
+      return board.every(cell => cell !== null);
+    }
+    
+    function placeMark(x,y,z, player){
+      if(gameOver) return false;
+      const k = idx(x,y,z);
+      if(board[k] !== null) return false;
+      board[k] = player;
+      const winLine = checkWin(x,y,z, player);
+      if(winLine){
+        gameOver = true;
+        winSet.clear();
+        for(let [xx,yy,zz] of winLine) winSet.add(idx(xx,yy,zz));
+        updateUI();
+        drawAll();
+        return true;
+      }
+      if(isFullDraw()){
+        gameOver = true;
+        updateUI();
+        drawAll();
+        return true;
+      }
+      drawAll();
+      return true;
+    }
+    
+    // ========== AI ==========
+    function getAIMove(){
+      const empty = [];
+      for(let z=0;z<size;z++) for(let y=0;y<size;y++) for(let x=0;x<size;x++) 
+        if(board[idx(x,y,z)] === null) empty.push({x,y,z});
+      if(empty.length === 0) return null;
+      
+      // победа AI
+      for(let p of empty){
+        board[idx(p.x,p.y,p.z)] = 'O';
+        if(checkWin(p.x,p.y,p.z,'O')) { board[idx(p.x,p.y,p.z)] = null; return p; }
+        board[idx(p.x,p.y,p.z)] = null;
+      }
+      // блокировка игрока
+      for(let p of empty){
+        board[idx(p.x,p.y,p.z)] = 'X';
+        if(checkWin(p.x,p.y,p.z,'X')) { board[idx(p.x,p.y,p.z)] = null; return p; }
+        board[idx(p.x,p.y,p.z)] = null;
+      }
+      // центр куба
+      const centerVal = (size-1)/2;
+      empty.sort((a,b)=>{
+        const da = Math.abs(a.x-centerVal)+Math.abs(a.y-centerVal)+Math.abs(a.z-centerVal);
+        const db = Math.abs(b.x-centerVal)+Math.abs(b.y-centerVal)+Math.abs(b.z-centerVal);
+        return da - db;
+      });
+      return empty[0];
+    }
+    
+    async function aiMoveAsync(){
+      if(gameOver) return;
+      if(turn !== 'O') return;
+      if(aiThinking) return;
+      aiThinking = true;
+      updateUI();
+      drawAll();
+      await new Promise(r => setTimeout(r, 80));
+      if(gameOver || turn !== 'O') { aiThinking = false; return; }
+      const move = getAIMove();
+      if(move){
+        placeMark(move.x, move.y, move.z, 'O');
+        if(!gameOver){
+          turn = 'X';
+          updateUI();
+          drawAll();
+        }
+      } else {
+        if(isFullDraw() && !gameOver){ gameOver=true; updateUI(); drawAll(); }
+      }
+      aiThinking = false;
+      drawAll();
+    }
+    
+    // ход игрока (ставим красный крестик)
+    function playerMoveOnCell(cell){
+      if(gameOver){ updateUI(); return false; }
+      if(turn !== 'X'){ updateUI(); return false; }
+      if(aiThinking) return false;
+      if(!cell || cell.val !== null) return false;
+      
+      placeMark(cell.x, cell.y, cell.z, 'X');
+      if(!gameOver){
+        turn = 'O';
+        updateUI();
+        drawAll();
+        aiMoveAsync();
+      } else {
+        updateUI();
+        drawAll();
+      }
+      return true;
+    }
+    
+    // ========== ОБРАБОТКА МЫШИ ==========
+    function getCellUnderMouse(e){
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      let mouseCanvasX = (e.clientX - rect.left) * scaleX;
+      let mouseCanvasY = (e.clientY - rect.top) * scaleY;
+      const dpr = window.devicePixelRatio || 1;
+      mouseCanvasX /= dpr;
+      mouseCanvasY /= dpr;
+      
+      let bestCell = null;
+      let bestDist2 = Infinity;
+      for(let cell of projectedCells){
+        if(cell.val !== null) continue;
+        const dx = mouseCanvasX - cell.screenX;
+        const dy = mouseCanvasY - cell.screenY;
+        const r = Math.max(12, 18 * cell.perspective);
+        const d2 = dx*dx+dy*dy;
+        if(d2 <= r*r && d2 < bestDist2){
+          bestDist2 = d2;
+          bestCell = cell;
+        }
+      }
+      return bestCell;
+    }
+    
+    function onMouseMove(e){
+      if(drag) return;
+      const cell = getCellUnderMouse(e);
+      const newHover = cell ? cell.k : null;
+      if(hoverIndex !== newHover){
+        hoverIndex = newHover;
+        drawAll();
+      }
+    }
+    
+    function onCanvasClick(e){
+      if(gameOver){
+        statusDiv.innerHTML = "Игра закончена. Нажми «Сброс» или выбери размер куба.";
+        return;
+      }
+      if(turn !== 'X'){
+        statusDiv.innerHTML = "Сейчас ходит AI (синий нолик), подожди!";
+        return;
+      }
+      if(aiThinking) return;
+      
+      const cell = getCellUnderMouse(e);
+      if(cell && cell.val === null){
+        playerMoveOnCell(cell);
+      } else if(cell && cell.val !== null){
+        statusDiv.innerHTML = "❌ Эта ячейка уже занята! Выбери пустую сферу.";
+      } else {
+        statusDiv.innerHTML = "🔍 Кликни прямо по светящейся сфере (пустой ячейке)";
+      }
+    }
+    
+    // Управление камерой
+    function startDrag(e, mode){
+      drag = true;
+      dragMode = mode;
+      lastMouse.x = e.clientX;
+      lastMouse.y = e.clientY;
+      e.preventDefault();
+    }
+    
+    function onMouseMoveDrag(e){
+      if(!drag) return;
+      const dx = e.clientX - lastMouse.x;
+      const dy = e.clientY - lastMouse.y;
+      if(dragMode === 'rotate'){
+        yaw += dx * 0.008;
+        pitch += dy * 0.007;
+        pitch = Math.max(-1.3, Math.min(1.3, pitch));
+        drawAll();
+      } else if(dragMode === 'pan'){
+        panX += dx;
+        panY += dy;
+        drawAll();
+      }
+      lastMouse.x = e.clientX;
+      lastMouse.y = e.clientY;
+    }
+    
+    function onWheel(e){
+      e.preventDefault();
+      zoom += e.deltaY > 0 ? -0.08 : 0.08;
+      zoom = Math.min(2.2, Math.max(0.55, zoom));
+      drawAll();
+    }
+    
+    // Назначение событий
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('click', onCanvasClick);
+    canvas.addEventListener('mousedown', (e) => {
+      if(e.button === 0) startDrag(e, 'rotate');
+      else if(e.button === 2) startDrag(e, 'pan');
+    });
+    window.addEventListener('mouseup', () => { drag = false; dragMode = ''; });
+    window.addEventListener('mousemove', onMouseMoveDrag);
+    canvas.addEventListener('wheel', onWheel, {passive: false});
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    
+    // Кнопки
+    document.querySelectorAll('[data-size]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const s = parseInt(btn.getAttribute('data-size'), 10);
+        initGame(s);
+        drawAll();
+      });
+    });
+    document.getElementById('resetGame').addEventListener('click', () => {
+      initGame(size);
+      drawAll();
+    });
+    document.getElementById('forceAI').addEventListener('click', () => {
+      if(!gameOver && turn === 'O' && !aiThinking) aiMoveAsync();
+      else if(!gameOver && turn === 'X') statusDiv.innerHTML = "Сейчас твой ход! Поставь красный крестик.";
+    });
+    
+    window.addEventListener('resize', () => { resizeAndDraw(); });
+    initGame(3);
+    drawAll();
+  })();
+</script>
+</body>
+</html>
