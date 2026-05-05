@@ -205,6 +205,11 @@
     // ---------- Вспомогательные ----------
     function idx(x,y,z) { return (z * size + y) * size + x; }
     function inBounds(x,y,z){ return x>=0 && x<size && y>=0 && y<size && z>=0 && z<size; }
+    function getBoardScale(){ return 0.52 / Math.max(size, 1); }
+    function getVisualScale(){ return size >= 8 ? 0.58 : (size >= 5 ? 0.78 : 1); }
+    function getDefaultZoom(){ return size >= 8 ? 0.95 : 1.0; }
+    function getMinZoom(){ return size >= 8 ? 0.36 : (size >= 5 ? 0.45 : 0.55); }
+    function getMaxZoom(){ return size >= 8 ? 3.4 : 2.8; }
     
     function updateUI(){
       if(gameOver){
@@ -227,7 +232,7 @@
       yaw = 0.72;
       pitch = -0.48;
       panX = 0; panY = 0;
-      zoom = 1.0;
+      zoom = getDefaultZoom();
       updateUI();
       resizeAndDraw();
     }
@@ -255,7 +260,7 @@
       const rp = rotatePoint(world);
       const camDist = 9 + size * 0.72;
       const d = camDist / (camDist - rp.z);
-      const scale = Math.min(W, H) * 0.165 * zoom;
+      const scale = Math.min(W, H) * getBoardScale() * zoom;
       return {
         x: W * 0.5 + rp.x * scale * d + panX,
         y: H * 0.55 + rp.y * scale * d + panY,
@@ -348,8 +353,9 @@
     // Объёмный красный крест
     function drawCross(cell, W, H, isWin){
       const {wx, wy, wz, screenX, screenY, perspective} = cell;
-      const s = size >= 7 ? 0.28 : 0.38;
-      const armWidth = Math.max(3.5, 7.2 * perspective);
+      const markerScale = getVisualScale();
+      const s = (size >= 7 ? 0.28 : 0.38) * markerScale;
+      const armWidth = Math.max(2.2, 7.2 * perspective * markerScale);
       const colorMain = isWin ? '#ffaa66' : '#ff3333';
       const colorGlow = isWin ? '#ffdd99' : '#ff7777';
       
@@ -377,7 +383,7 @@
         ctx.lineWidth = armWidth * 0.35; ctx.strokeStyle = '#ffccaa'; ctx.stroke();
       }
       // центральная сфера
-      const rad = Math.max(6, 8.5 * perspective);
+      const rad = Math.max(3.2, 8.5 * perspective * markerScale);
       ctx.beginPath(); ctx.arc(screenX, screenY, rad, 0, Math.PI*2);
       ctx.fillStyle = isWin ? '#ffb86b' : '#ff5e5e';
       ctx.shadowBlur = 10; ctx.shadowColor = '#ff4444aa';
@@ -390,7 +396,8 @@
     // Объёмный СИНИЙ нолик (исправлено!)
     function drawCircle(cell, isWin){
       const {screenX, screenY, perspective} = cell;
-      const outerR = Math.max(11, 12 * perspective);
+      const markerScale = getVisualScale();
+      const outerR = Math.max(5.5, 12 * perspective * markerScale);
       const innerR = outerR * 0.44;
       
       // настоящий синий градиент (не зелёный!)
@@ -448,7 +455,7 @@
       // подсветка пустых ячеек + hover
       for(let c of cells){
         if(c.val !== null) continue;
-        const radHover = Math.max(7, 14 * c.perspective);
+        const radHover = Math.max(4.5, 14 * c.perspective * getVisualScale());
         ctx.beginPath(); 
         ctx.arc(c.screenX, c.screenY, radHover, 0, Math.PI*2);
         
@@ -650,7 +657,7 @@
         if(cell.val !== null) continue;
         const dx = mouseCanvasX - cell.screenX;
         const dy = mouseCanvasY - cell.screenY;
-        const r = Math.max(12, 18 * cell.perspective);
+        const r = Math.max(8, 18 * cell.perspective * getVisualScale());
         const d2 = dx*dx+dy*dy;
         if(d2 <= r*r && d2 < bestDist2){
           bestDist2 = d2;
@@ -720,8 +727,8 @@
     
     function onWheel(e){
       e.preventDefault();
-      zoom += e.deltaY > 0 ? -0.08 : 0.08;
-      zoom = Math.min(2.2, Math.max(0.55, zoom));
+      zoom *= e.deltaY > 0 ? 0.9 : 1.1;
+      zoom = Math.min(getMaxZoom(), Math.max(getMinZoom(), zoom));
       drawAll();
     }
     
