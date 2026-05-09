@@ -206,11 +206,44 @@
     // ---------- Вспомогательные ----------
     function idx(x,y,z) { return (z * size + y) * size + x; }
     function inBounds(x,y,z){ return x>=0 && x<size && y>=0 && y<size && z>=0 && z<size; }
+    const ABS_MIN_ZOOM = 0.16;
+
     function getBoardScale(){ return 0.52 / Math.max(size, 1); }
     function getVisualScale(){ return size >= 8 ? 0.58 : (size >= 5 ? 0.78 : 1); }
-    function getDefaultZoom(){ return size >= 8 ? 0.95 : 1.0; }
-    function getMinZoom(){ return size >= 8 ? 0.36 : (size >= 5 ? 0.45 : 0.55); }
     function getMaxZoom(){ return size >= 8 ? 3.4 : 2.8; }
+
+    function camDistValue(){ return 9 + size * 0.72; }
+
+    function rotatedScreenFactor(world){
+      const rp = rotatePoint(world);
+      const cd = camDistValue();
+      const d = cd / (cd - rp.z);
+      return { fx: rp.x * d, fy: rp.y * d };
+    }
+
+    function recomputeFitZoom(W, H){
+      if(W < 32 || H < 32) return;
+      const s = size / 2;
+      const corners = [];
+      for(let ax = -1; ax <= 1; ax += 2)
+        for(let ay = -1; ay <= 1; ay += 2)
+          for(let az = -1; az <= 1; az += 2)
+            corners.push({ x: ax * s, y: ay * s, z: az * s });
+      let maxFx = 0, maxFy = 0;
+      for(const w of corners){
+        const { fx, fy } = rotatedScreenFactor(w);
+        maxFx = Math.max(maxFx, Math.abs(fx));
+        maxFy = Math.max(maxFy, Math.abs(fy));
+      }
+      const scale0 = Math.min(W, H) * getBoardScale();
+      if(scale0 < 1e-6) return;
+      maxFx = Math.max(maxFx, 1e-3);
+      maxFy = Math.max(maxFy, 1e-3);
+      const padW = W * 0.42;
+      const padH = H * 0.42;
+      const zFit = Math.min(padW / (scale0 * maxFx), padH / (scale0 * maxFy));
+      zoom = Math.min(getMaxZoom(), Math.max(ABS_MIN_ZOOM, zFit));
+    }
     
     function updateUI(){
       if(gameOver){
@@ -233,7 +266,6 @@
       yaw = 0.72;
       pitch = -0.48;
       panX = 0; panY = 0;
-      zoom = getDefaultZoom();
       updateUI();
       resizeAndDraw();
     }
@@ -259,12 +291,12 @@
     
     function project(world, W, H){
       const rp = rotatePoint(world);
-      const camDist = 9 + size * 0.72;
+      const camDist = camDistValue();
       const d = camDist / (camDist - rp.z);
       const scale = Math.min(W, H) * getBoardScale() * zoom;
       return {
         x: W * 0.5 + rp.x * scale * d + panX,
-        y: H * 0.55 + rp.y * scale * d + panY,
+        y: H * 0.5 + rp.y * scale * d + panY,
         depth: rp.z,
         d: d
       };
@@ -488,9 +520,12 @@
     function resizeAndDraw(){
       const rect = canvas.parentElement.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(200, rect.width) * dpr;
-      canvas.height = Math.max(200, rect.height) * dpr;
+      const W = Math.max(200, rect.width);
+      const H = Math.max(200, rect.height);
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      recomputeFitZoom(W, H);
       drawAll();
     }
     
@@ -515,6 +550,114 @@
         nx+=dx; ny+=dy; nz+=dz;
       }
       return cnt;
+    }
+
+    function maxConsecutiveLine(x,y,z, player){
+      let best = 0;
+      for(let [dx,dy,dz] of directions){
+        let total = 1;
+        total += countDirection(x,y,z, dx,dy,dz, player);
+        total += countDirection(x,y,z, -dx,-dy,-dz, player);
+        if(total > best) best = total;
+      }
+      return best;
+    }
+
+    function bestXReplyThreat(){
+      let worst = 0;
+      let any = false;
+      for(let z=0; z<size; z++){
+        for(let y=0; y<size; y++){
+          for(let x=0; x<size; x++){
+            const k = idx(x,y,z);
+            if(board[k] !== null) continue;
+            any = true;
+            board[k] = 'X';
+            const instant = checkWin(x,y,z,'X');
+            const mx = instant ? targetLen + 50 : maxConsecutiveLine(x,y,z,'X');
+            board[k] = null;
+            if(mx > worst) worst = mx;
+          }
+        }
+      }
+      return any ? worst : 0;
+    }
+
+    function isLineStart(x,y,z, dx,dy,dz){
+      const px = x - dx, py = y - dy, pz = z - dz;
+      return !inBounds(px, py, pz);
+    }
+
+    function forEachBoardLine(cb){
+      for(const [dx,dy,dz] of directions){
+        for(let x=0; x<size; x++) for(let y=0; y<size; y++) for(let z=0; z<size; z++){
+          if(!isLineStart(x,y,z,dx,dy,dz)) continue;
+          const line = [];
+          let cx = x, cy = y, cz = z;
+          while(inBounds(cx,cy,cz)){
+            line.push({ x: cx, y: cy, z: cz, v: board[idx(cx,cy,cz)] });
+            cx += dx; cy += dy; cz += dz;
+          }
+          cb(line);
+        }
+      }
+    }
+
+    /** 4 подряд X, с обеих сторон по линии пусто — следующим ходом X выигрывает (двойное продолжение). */
+    function collectOpenFourBlockCells(){
+      const out = new Map();
+      forEachBoardLine((line) => {
+        if(line.length < targetLen + 1) return;
+        for(let i = 0; i + 3 < line.length; i++){
+          if(line[i].v !== 'X' || line[i+1].v !== 'X' || line[i+2].v !== 'X' || line[i+3].v !== 'X') continue;
+          const li = i - 1, ri = i + 4;
+          if(li < 0 || ri >= line.length) continue;
+          if(line[li].v !== null || line[ri].v !== null) continue;
+          const a = line[li], b = line[ri];
+          out.set(`${a.x},${a.y},${a.z}`, { x: a.x, y: a.y, z: a.z });
+          out.set(`${b.x},${b.y},${b.z}`, { x: b.x, y: b.y, z: b.z });
+        }
+      });
+      return [...out.values()];
+    }
+
+    /** 3 подряд X, с обеих сторон по линии пусто — типичная заготовка под открытую четвёрку (важно на 5³). */
+    function collectOpenThreeBlockCells(){
+      const out = new Map();
+      forEachBoardLine((line) => {
+        if(line.length < 4) return;
+        for(let i = 0; i + 2 < line.length; i++){
+          if(line[i].v !== 'X' || line[i+1].v !== 'X' || line[i+2].v !== 'X') continue;
+          const li = i - 1, ri = i + 3;
+          if(li < 0 || ri >= line.length) continue;
+          if(line[li].v !== null || line[ri].v !== null) continue;
+          const a = line[li], b = line[ri];
+          out.set(`${a.x},${a.y},${a.z}`, { x: a.x, y: a.y, z: a.z });
+          out.set(`${b.x},${b.y},${b.z}`, { x: b.x, y: b.y, z: b.z });
+        }
+      });
+      return [...out.values()];
+    }
+
+    function pickBestAmongCandidates(candidates){
+      const centerVal = (size - 1) / 2;
+      const dist3 = (p) => Math.abs(p.x - centerVal) + Math.abs(p.y - centerVal) + Math.abs(p.z - centerVal);
+      let bestP = null;
+      let bestScore = -Infinity;
+      for(let p of candidates){
+        const k = idx(p.x, p.y, p.z);
+        if(board[k] !== null) continue;
+        board[k] = 'O';
+        const xThreat = bestXReplyThreat();
+        const ownLen = maxConsecutiveLine(p.x, p.y, p.z, 'O');
+        board[k] = null;
+        const score = -xThreat * 10000 + ownLen * 80 - dist3(p);
+        if(score > bestScore){
+          bestScore = score;
+          bestP = p;
+        }
+      }
+      return bestP || candidates[0];
     }
     
     function checkWin(x,y,z, player){
@@ -571,30 +714,47 @@
     // ========== AI ==========
     function getAIMove(){
       const empty = [];
-      for(let z=0;z<size;z++) for(let y=0;y<size;y++) for(let x=0;x<size;x++) 
+      for(let z=0;z<size;z++) for(let y=0;y<size;y++) for(let x=0;x<size;x++)
         if(board[idx(x,y,z)] === null) empty.push({x,y,z});
       if(empty.length === 0) return null;
-      
-      // победа AI
+
       for(let p of empty){
-        board[idx(p.x,p.y,p.z)] = 'O';
-        if(checkWin(p.x,p.y,p.z,'O')) { board[idx(p.x,p.y,p.z)] = null; return p; }
-        board[idx(p.x,p.y,p.z)] = null;
+        const k = idx(p.x,p.y,p.z);
+        board[k] = 'O';
+        if(checkWin(p.x,p.y,p.z,'O')){ board[k] = null; return p; }
+        board[k] = null;
       }
-      // блокировка игрока
       for(let p of empty){
-        board[idx(p.x,p.y,p.z)] = 'X';
-        if(checkWin(p.x,p.y,p.z,'X')) { board[idx(p.x,p.y,p.z)] = null; return p; }
-        board[idx(p.x,p.y,p.z)] = null;
+        const k = idx(p.x,p.y,p.z);
+        board[k] = 'X';
+        if(checkWin(p.x,p.y,p.z,'X')){ board[k] = null; return p; }
+        board[k] = null;
       }
-      // центр куба
-      const centerVal = (size-1)/2;
-      empty.sort((a,b)=>{
-        const da = Math.abs(a.x-centerVal)+Math.abs(a.y-centerVal)+Math.abs(a.z-centerVal);
-        const db = Math.abs(b.x-centerVal)+Math.abs(b.y-centerVal)+Math.abs(b.z-centerVal);
-        return da - db;
-      });
-      return empty[0];
+
+      const open4 = collectOpenFourBlockCells().filter((p) => board[idx(p.x, p.y, p.z)] === null);
+      if(open4.length) return pickBestAmongCandidates(open4);
+
+      const open3 = collectOpenThreeBlockCells().filter((p) => board[idx(p.x, p.y, p.z)] === null);
+      if(open3.length) return pickBestAmongCandidates(open3);
+
+      const centerVal = (size - 1) / 2;
+      const dist3 = (p) => Math.abs(p.x - centerVal) + Math.abs(p.y - centerVal) + Math.abs(p.z - centerVal);
+
+      let bestP = empty[0];
+      let bestScore = -Infinity;
+      for(let p of empty){
+        const k = idx(p.x,p.y,p.z);
+        board[k] = 'O';
+        const xThreat = bestXReplyThreat();
+        const ownLen = maxConsecutiveLine(p.x,p.y,p.z,'O');
+        board[k] = null;
+        const score = -xThreat * 10000 + ownLen * 80 - dist3(p);
+        if(score > bestScore){
+          bestScore = score;
+          bestP = p;
+        }
+      }
+      return bestP;
     }
     
     async function aiMoveAsync(){
@@ -738,7 +898,7 @@
     function onWheel(e){
       e.preventDefault();
       zoom *= e.deltaY > 0 ? 0.9 : 1.1;
-      zoom = Math.min(getMaxZoom(), Math.max(getMinZoom(), zoom));
+      zoom = Math.min(getMaxZoom(), Math.max(ABS_MIN_ZOOM, zoom));
       drawAll();
     }
     
