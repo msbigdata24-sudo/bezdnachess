@@ -208,7 +208,7 @@
     function inBounds(x,y,z){ return x>=0 && x<size && y>=0 && y<size && z>=0 && z<size; }
     const ABS_MIN_ZOOM = 0.16;
 
-    function getBoardScale(){ return 0.52 / Math.max(size, 1); }
+    function getBoardScale(){ return 0.42 / Math.max(size, 1); }
     function getVisualScale(){ return size >= 8 ? 0.58 : (size >= 5 ? 0.78 : 1); }
     function getMaxZoom(){ return size >= 8 ? 3.4 : 2.8; }
 
@@ -221,16 +221,26 @@
       return { fx: rp.x * d, fy: rp.y * d };
     }
 
-    function recomputeFitZoom(W, H){
-      if(W < 32 || H < 32) return;
+    function collectBoundingSampleWorldPoints(){
       const s = size / 2;
-      const corners = [];
+      const pts = [];
       for(let ax = -1; ax <= 1; ax += 2)
         for(let ay = -1; ay <= 1; ay += 2)
           for(let az = -1; az <= 1; az += 2)
-            corners.push({ x: ax * s, y: ay * s, z: az * s });
+            pts.push({ x: ax * s, y: ay * s, z: az * s });
+      pts.push({ x: s, y: 0, z: 0 }, { x: -s, y: 0, z: 0 }, { x: 0, y: s, z: 0 }, { x: 0, y: -s, z: 0 }, { x: 0, y: 0, z: s }, { x: 0, y: 0, z: -s });
+      for(let a = -1; a <= 1; a += 2){
+        for(let b = -1; b <= 1; b += 2){
+          pts.push({ x: a * s, y: b * s, z: 0 }, { x: a * s, y: 0, z: b * s }, { x: 0, y: a * s, z: b * s });
+        }
+      }
+      return pts;
+    }
+
+    function recomputeFitZoom(W, H){
+      if(W < 32 || H < 32) return;
       let maxFx = 0, maxFy = 0;
-      for(const w of corners){
+      for(const w of collectBoundingSampleWorldPoints()){
         const { fx, fy } = rotatedScreenFactor(w);
         maxFx = Math.max(maxFx, Math.abs(fx));
         maxFy = Math.max(maxFy, Math.abs(fy));
@@ -239,9 +249,11 @@
       if(scale0 < 1e-6) return;
       maxFx = Math.max(maxFx, 1e-3);
       maxFy = Math.max(maxFy, 1e-3);
-      const padW = W * 0.42;
-      const padH = H * 0.42;
-      const zFit = Math.min(padW / (scale0 * maxFx), padH / (scale0 * maxFy));
+      const padFrac = size >= 8 ? 0.26 : (size >= 5 ? 0.28 : 0.32);
+      const padW = W * padFrac;
+      const padH = H * padFrac;
+      let zFit = Math.min(padW / (scale0 * maxFx), padH / (scale0 * maxFy));
+      zFit *= 0.82;
       zoom = Math.min(getMaxZoom(), Math.max(ABS_MIN_ZOOM, zFit));
     }
     
