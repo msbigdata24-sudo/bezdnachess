@@ -223,6 +223,23 @@
         font-size: 10px;
         padding: 3px 8px;
       }
+      .legend-details[open] {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        max-height: min(46vh, 320px);
+        overflow: hidden;
+      }
+      .legend-details[open] > .legend {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: min(40vh, 260px);
+        user-select: text;
+      }
     }
   </style>
 </head>
@@ -231,7 +248,7 @@
   <div class="sidebar">
     <div>
       <h1>❌ КРЕСТИКИ-НОЛИКИ БЕЗДНЫ</h1>
-      <div class="sub">3D поле в космосе | Двойной клик по шару → красный крест</div>
+      <div class="sub">3D поле в космосе | Один тап — выбор сферы, двойной тап — красный крест</div>
     </div>
 
     <div class="status-card" id="statusMsg">🎮 Новая игра! Твой ход (КРАСНЫЙ КРЕСТ)</div>
@@ -251,7 +268,8 @@
         <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
         <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
         <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
-        <div>🖱️ Двойной ЛКМ / двойной тап по сфере → поставить <span class="x">крестик</span></div>
+        <div>🖱️ Один клик / тап по пустой сфере → <strong>выбор</strong> (золотая подсветка)</div>
+        <div>🖱️ Двойной клик / двойной тап по <strong>той же</strong> выбранной сфере → поставить <span class="x">крестик</span></div>
         <div>📱 Палец — вращение · два пальца — зум · мышь: ЛКМ+drag / колёсико / ПКМ панорама</div>
         <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
       </div>
@@ -299,6 +317,7 @@
     // -----  UI состояния -----
     let projectedCells = [];   // массив ячеек с экранными координатами
     let hoverIndex = null;     // индекс k ячейки под курсором
+    let selectedCellK = null;  // выбранная пустая ячейка (один тап / клик)
     let drag = false;
     let dragMoved = false;
     let lastMouse = { x: 0, y: 0 };
@@ -371,6 +390,7 @@
       } else {
         statusDiv.innerHTML = turn === 'X' ? '🔴 ТВОЙ ХОД! Поставь КРАСНЫЙ КРЕСТИК' : '🔵 AI думает ... (ставит синий нолик)';
       }
+      if(turn !== 'X' || gameOver) selectedCellK = null;
       infoBadge.innerText = `📐 ${size}×${size}×${size}  |  цель: ${targetLen} в ряд`;
     }
     
@@ -382,6 +402,7 @@
       gameOver = false;
       winSet.clear();
       aiThinking = false;
+      selectedCellK = null;
       // сброс камеры для удобства
       yaw = 0.72;
       pitch = -0.48;
@@ -550,7 +571,7 @@
     function drawCircle(cell, isWin){
       const {screenX, screenY, perspective} = cell;
       const markerScale = getVisualScale();
-      const outerR = Math.max(5.5, 12 * perspective * markerScale);
+      const outerR = Math.max(11, 24 * perspective * markerScale);
       const innerR = outerR * 0.44;
       
       // настоящий синий градиент (не зелёный!)
@@ -605,14 +626,27 @@
       drawGridLines(W, H);
       const cells = updateProjectedCenters(W, H);
       
-      // подсветка пустых ячеек + hover
+      // подсветка пустых ячеек + выбор + hover
+      const zVis = Math.max(0.85, Math.min(2.2, 0.42 + zoom * 0.72));
       for(let c of cells){
         if(c.val !== null) continue;
-        const radHover = Math.max(4.5, 14 * c.perspective * getVisualScale());
+        const radHover = Math.max(4.5, 14 * c.perspective * getVisualScale() * zVis);
         ctx.beginPath(); 
         ctx.arc(c.screenX, c.screenY, radHover, 0, Math.PI*2);
         
-        if(!gameOver && hoverIndex === c.k && turn === 'X'){
+        if(!gameOver && selectedCellK === c.k && turn === 'X'){
+          ctx.fillStyle = 'rgba(255, 213, 80, 0.42)'; 
+          ctx.fill();
+          ctx.beginPath(); 
+          ctx.arc(c.screenX, c.screenY, radHover * 0.62, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(255, 180, 40, 0.55)'; 
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(c.screenX, c.screenY, radHover + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = '#ffe08a';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        } else if(!gameOver && hoverIndex === c.k && turn === 'X'){
           ctx.fillStyle = '#ff6655aa'; 
           ctx.fill();
           ctx.beginPath(); 
@@ -635,8 +669,8 @@
       ctx.font = '11px "Segoe UI",system-ui,sans-serif';
       ctx.fillStyle = '#afcbff';
       const hintY = W < 420 ? 16 : 18;
-      ctx.fillText('Двойной тап / двойной ЛКМ по сфере → крестик', 10, hintY);
-      ctx.fillText('Палец / ЛКМ+drag → вращение  ·  два пальца / колёсико → зум', 10, hintY + (W < 420 ? 14 : 16));
+      ctx.fillText('Один тап / клик — выбор сферы · двойной тап / двойной ЛКМ — крестик', 10, hintY);
+      ctx.fillText('Палец / ЛКМ+drag — вращение  ·  два пальца / колёсико — зум', 10, hintY + (W < 420 ? 14 : 16));
     }
     
     function resizeAndDraw(){
@@ -909,6 +943,9 @@
       if(turn !== 'X'){ updateUI(); return false; }
       if(aiThinking) return false;
       if(!cell || cell.val !== null) return false;
+      selectedCellK = null;
+      lastTapTs = 0;
+      lastTapCellK = null;
       
       placeMark(cell.x, cell.y, cell.z, 'X');
       if(!gameOver){
@@ -934,20 +971,17 @@
       mouseCanvasX /= dpr;
       mouseCanvasY /= dpr;
       
-      let bestCell = null;
-      let bestDist2 = Infinity;
-      for(let cell of projectedCells){
+      const zoomHit = Math.max(0.85, Math.min(2.2, 0.42 + zoom * 0.72));
+      for(let i = projectedCells.length - 1; i >= 0; i--){
+        const cell = projectedCells[i];
         if(cell.val !== null) continue;
         const dx = mouseCanvasX - cell.screenX;
         const dy = mouseCanvasY - cell.screenY;
-        const r = Math.max(8, 18 * cell.perspective * getVisualScale());
-        const d2 = dx*dx+dy*dy;
-        if(d2 <= r*r && d2 < bestDist2){
-          bestDist2 = d2;
-          bestCell = cell;
-        }
+        const r = Math.max(10, 22 * cell.perspective * getVisualScale() * zoomHit);
+        const d2 = dx * dx + dy * dy;
+        if(d2 <= r * r) return cell;
       }
-      return bestCell;
+      return null;
     }
     function getCellUnderMouse(e){
       return getCellAtClient(e.clientX, e.clientY);
@@ -965,9 +999,24 @@
     
     function onCanvasClick(e){
       const cell = getCellUnderMouse(e);
-      if(cell && cell.val === null && turn === 'X' && !gameOver && !aiThinking){
-        statusDiv.innerHTML = "🎯 Ячейка выбрана. Двойной клик поставит красный крестик.";
+      if(gameOver || aiThinking){
+        drawAll();
+        return;
       }
+      if(turn !== 'X'){
+        selectedCellK = null;
+        statusDiv.innerHTML = "Сейчас ходит AI (синий нолик), подожди!";
+        drawAll();
+        return;
+      }
+      if(cell && cell.val === null){
+        selectedCellK = cell.k;
+        statusDiv.innerHTML = "🎯 Ячейка выбрана. Двойной клик или двойной тап по ней — поставить красный крестик.";
+        drawAll();
+        return;
+      }
+      selectedCellK = null;
+      drawAll();
     }
 
     function onCanvasDoubleClick(e){
@@ -983,11 +1032,16 @@
       if(aiThinking) return;
       
       if(cell && cell.val === null){
-        playerMoveOnCell(cell);
+        if(selectedCellK !== null && cell.k === selectedCellK){
+          playerMoveOnCell(cell);
+        } else {
+          statusDiv.innerHTML = "👆 Крестик — двойным кликом или двойным тапом по уже выбранной сфере (золотая обводка). Сначала один клик / тап для выбора.";
+          drawAll();
+        }
       } else if(cell && cell.val !== null){
         statusDiv.innerHTML = "❌ Эта ячейка уже занята! Выбери пустую сферу.";
       } else {
-        statusDiv.innerHTML = "🔍 Двойной клик прямо по светящейся сфере (пустой ячейке)";
+        statusDiv.innerHTML = "🔍 Двойной клик по уже выбранной пустой сфере (см. золотую обводку).";
       }
     }
     
@@ -1101,18 +1155,20 @@
           const cell = getCellAtClient(t.clientX, t.clientY);
           const now = Date.now();
           if(cell && cell.val === null && turn === 'X' && !gameOver && !aiThinking){
-            if(now - lastTapTs < 420 && lastTapCellK === cell.k){
+            if(now - lastTapTs < 420 && lastTapCellK === cell.k && selectedCellK === cell.k){
               playerMoveOnCell(cell);
-              lastTapTs = 0;
-              lastTapCellK = null;
             } else {
+              selectedCellK = cell.k;
               lastTapTs = now;
               lastTapCellK = cell.k;
-              statusDiv.innerHTML = "🎯 Ячейка выбрана. Ещё раз тапни по этой сфере — поставится крестик.";
+              statusDiv.innerHTML = "🎯 Ячейка выбрана. Двойной тап по ней — поставить красный крестик.";
+              drawAll();
             }
           } else {
             lastTapTs = 0;
             lastTapCellK = null;
+            selectedCellK = null;
+            drawAll();
             onCanvasDoubleClick({ clientX: t.clientX, clientY: t.clientY });
           }
         }
