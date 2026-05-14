@@ -141,9 +141,85 @@
       pointer-events: none;
       z-index: 20;
     }
-    @media (max-width: 700px) {
-      .sidebar { width: 260px; }
-      h1 { font-size: 20px; }
+    .legend-details {
+      border-radius: 18px;
+      border: 1px solid rgba(0, 255, 120, 0.35);
+      background: rgba(0, 16, 8, 0.7);
+      overflow: hidden;
+    }
+    .legend-summary {
+      display: none;
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #aef5c8;
+      user-select: none;
+    }
+    .legend-summary::-webkit-details-marker {
+      display: none;
+    }
+    .legend-details > .legend {
+      border: none;
+      border-radius: 0;
+      padding-top: 8px;
+    }
+    @media (min-width: 901px) {
+      .legend-summary {
+        display: none;
+      }
+      .legend-details {
+        border: none;
+        background: transparent;
+        overflow: visible;
+      }
+      .legend-details > .legend {
+        border: 1px solid rgba(0, 255, 120, 0.35);
+        border-radius: 18px;
+        padding: 12px;
+      }
+    }
+    @media (max-width: 900px) {
+      .legend-summary {
+        display: block;
+      }
+      .container {
+        flex-direction: column;
+      }
+      .game-area {
+        order: -1;
+        flex: 1 1 auto;
+        min-height: 52vh;
+        width: 100%;
+      }
+      .sidebar {
+        order: 1;
+        width: 100%;
+        max-height: min(46vh, 340px);
+        flex-shrink: 0;
+        border-right: none;
+        border-top: 1px solid rgba(0, 255, 120, 0.55);
+        padding: 12px 14px;
+        gap: 12px;
+        -webkit-overflow-scrolling: touch;
+      }
+      h1 {
+        font-size: 18px;
+      }
+      .sub {
+        font-size: 11px;
+      }
+      .status-card {
+        font-size: 15px;
+        padding: 10px;
+      }
+      .badge-cube {
+        bottom: 8px;
+        right: 8px;
+        font-size: 10px;
+        padding: 3px 8px;
+      }
     }
   </style>
 </head>
@@ -165,15 +241,18 @@
       <button id="forceAI">🤖 Ход AI</button>
     </div>
 
-    <div class="legend">
-      <div><span class="x">❌ КРАСНЫЙ КРЕСТ</span> — объёмный, три оси</div>
-      <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
-      <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
-      <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
-      <div>🖱️ Двойной ЛКМ по сфере → поставить <span class="x">крестик</span></div>
-      <div>🖱️ ЛКМ + drag: вращение | ПКМ + drag: панорама | колёсико: зум</div>
-      <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
-    </div>
+    <details class="legend-details" id="legendDetails">
+      <summary class="legend-summary">Правила и управление (нажми, чтобы развернуть)</summary>
+      <div class="legend">
+        <div><span class="x">❌ КРАСНЫЙ КРЕСТ</span> — объёмный, три оси</div>
+        <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
+        <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
+        <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
+        <div>🖱️ Двойной ЛКМ / двойной тап по сфере → поставить <span class="x">крестик</span></div>
+        <div>🖱️ ЛКМ + drag: вращение | ПКМ + drag: панорама | колёсико: зум</div>
+        <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
+      </div>
+    </details>
   </div>
 
   <div class="game-area">
@@ -189,6 +268,16 @@
     const ctx = canvas.getContext('2d');
     const statusDiv = document.getElementById('statusMsg');
     const infoBadge = document.getElementById('infoBadge');
+    const legendDetails = document.getElementById('legendDetails');
+    if (legendDetails) {
+      const wideMq = window.matchMedia('(min-width: 901px)');
+      function syncLegendDetailsOpen() {
+        legendDetails.open = wideMq.matches;
+      }
+      syncLegendDetailsOpen();
+      if (wideMq.addEventListener) wideMq.addEventListener('change', syncLegendDetailsOpen);
+      else if (wideMq.addListener) wideMq.addListener(syncLegendDetailsOpen);
+    }
 
     // ---------- Игровые параметры ----------
     let size = 3;           // 3,5,8
