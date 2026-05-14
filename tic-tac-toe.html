@@ -15,10 +15,12 @@
     }
     html {
       height: 100%;
+      min-height: 100dvh;
     }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       height: 100%;
+      min-height: 100dvh;
       margin: 0;
       background:
         radial-gradient(circle at 20% 30%, rgba(0, 255, 120, 0.16), transparent 34%),
@@ -74,6 +76,7 @@
       width: 100%;
       height: 100%;
       cursor: pointer;
+      touch-action: none;
     }
     h1 {
       font-size: 26px;
@@ -165,7 +168,7 @@
       border-radius: 0;
       padding-top: 8px;
     }
-    @media (min-width: 901px) {
+    @media (min-width: 901px) and (min-height: 561px) {
       .legend-summary {
         display: none;
       }
@@ -180,7 +183,7 @@
         padding: 12px;
       }
     }
-    @media (max-width: 900px) {
+    @media (max-width: 900px), (max-height: 560px) {
       .legend-summary {
         display: block;
       }
@@ -249,7 +252,7 @@
         <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
         <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
         <div>🖱️ Двойной ЛКМ / двойной тап по сфере → поставить <span class="x">крестик</span></div>
-        <div>🖱️ ЛКМ + drag: вращение | ПКМ + drag: панорама | колёсико: зум</div>
+        <div>📱 Палец — вращение · два пальца — зум · мышь: ЛКМ+drag / колёсико / ПКМ панорама</div>
         <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
       </div>
     </details>
@@ -270,7 +273,7 @@
     const infoBadge = document.getElementById('infoBadge');
     const legendDetails = document.getElementById('legendDetails');
     if (legendDetails) {
-      const wideMq = window.matchMedia('(min-width: 901px)');
+      const wideMq = window.matchMedia('(min-width: 901px) and (min-height: 561px)');
       function syncLegendDetailsOpen() {
         legendDetails.open = wideMq.matches;
       }
@@ -301,6 +304,12 @@
     let lastMouse = { x: 0, y: 0 };
     let dragMode = '';
     let aiThinking = false;
+    let lastTapTs = 0;
+    let lastTapCellK = null;
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+    let touchWindowBound = false;
+    let gestureFromTouch = false;
     
     // ---------- Вспомогательные ----------
     function idx(x,y,z) { return (z * size + y) * size + x; }
@@ -623,9 +632,11 @@
       for(let c of cells) if(c.val === 'O') drawCircle(c, winSet.has(c.k));
       for(let c of cells) if(c.val === 'X') drawCross(c, W, H, winSet.has(c.k));
       
-      ctx.font = '12px "Segoe UI"';
+      ctx.font = '11px "Segoe UI",system-ui,sans-serif';
       ctx.fillStyle = '#afcbff';
-      ctx.fillText('🖱️ Двойной ЛКМ по сфере → поставить красный крест · ЛКМ+drag вращение · ПКМ+drag панорама', 16, 24);
+      const hintY = W < 420 ? 16 : 18;
+      ctx.fillText('Двойной тап / двойной ЛКМ по сфере → крестик', 10, hintY);
+      ctx.fillText('Палец / ЛКМ+drag → вращение  ·  два пальца / колёсико → зум', 10, hintY + (W < 420 ? 14 : 16));
     }
     
     function resizeAndDraw(){
@@ -913,12 +924,12 @@
     }
     
     // ========== ОБРАБОТКА МЫШИ ==========
-    function getCellUnderMouse(e){
+    function getCellAtClient(clientX, clientY){
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
-      let mouseCanvasX = (e.clientX - rect.left) * scaleX;
-      let mouseCanvasY = (e.clientY - rect.top) * scaleY;
+      let mouseCanvasX = (clientX - rect.left) * scaleX;
+      let mouseCanvasY = (clientY - rect.top) * scaleY;
       const dpr = window.devicePixelRatio || 1;
       mouseCanvasX /= dpr;
       mouseCanvasY /= dpr;
@@ -937,6 +948,9 @@
         }
       }
       return bestCell;
+    }
+    function getCellUnderMouse(e){
+      return getCellAtClient(e.clientX, e.clientY);
     }
     
     function onMouseMove(e){
@@ -978,20 +992,20 @@
     }
     
     // Управление камерой
-    function startDrag(e, mode){
+    function startDrag(clientX, clientY, mode){
       drag = true;
       dragMoved = false;
       dragMode = mode;
-      lastMouse.x = e.clientX;
-      lastMouse.y = e.clientY;
-      e.preventDefault();
+      lastMouse.x = clientX;
+      lastMouse.y = clientY;
     }
     
-    function onMouseMoveDrag(e){
+    function moveDragTo(clientX, clientY){
       if(!drag) return;
-      const dx = e.clientX - lastMouse.x;
-      const dy = e.clientY - lastMouse.y;
-      if(Math.abs(dx) + Math.abs(dy) > 2) dragMoved = true;
+      const dx = clientX - lastMouse.x;
+      const dy = clientY - lastMouse.y;
+      const moveThresh = gestureFromTouch ? 14 : 2;
+      if(Math.abs(dx) + Math.abs(dy) > moveThresh) dragMoved = true;
       if(dragMode === 'rotate'){
         yaw += dx * 0.008;
         pitch += dy * 0.007;
@@ -1001,9 +1015,112 @@
         panX += dx;
         panY += dy;
         drawAll();
+      } else if(dragMode === 'pinch'){
+        /* зум обновляется в onWindowTouchMove по дистанции между пальцами */
       }
-      lastMouse.x = e.clientX;
-      lastMouse.y = e.clientY;
+      lastMouse.x = clientX;
+      lastMouse.y = clientY;
+    }
+    
+    function onMouseMoveDrag(e){
+      moveDragTo(e.clientX, e.clientY);
+    }
+    
+    function touchDist(t0, t1){
+      const dx = t1.clientX - t0.clientX;
+      const dy = t1.clientY - t0.clientY;
+      return Math.sqrt(dx * dx + dy * dy) || 1;
+    }
+    
+    function bindTouchWindow(){
+      if(touchWindowBound) return;
+      touchWindowBound = true;
+      window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
+      window.addEventListener('touchend', onWindowTouchEnd, { passive: false });
+      window.addEventListener('touchcancel', onWindowTouchEnd, { passive: false });
+    }
+    function unbindTouchWindow(){
+      if(!touchWindowBound) return;
+      touchWindowBound = false;
+      window.removeEventListener('touchmove', onWindowTouchMove, { passive: false });
+      window.removeEventListener('touchend', onWindowTouchEnd, { passive: false });
+      window.removeEventListener('touchcancel', onWindowTouchEnd, { passive: false });
+    }
+    
+    function onCanvasTouchStart(e){
+      if(!e.touches || !e.touches.length) return;
+      if(e.touches.length === 2){
+        e.preventDefault();
+        gestureFromTouch = true;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        pinchStartDist = touchDist(t0, t1);
+        pinchStartZoom = zoom;
+        drag = true;
+        dragMoved = false;
+        dragMode = 'pinch';
+        bindTouchWindow();
+        return;
+      }
+      e.preventDefault();
+      gestureFromTouch = true;
+      const t = e.touches[0];
+      startDrag(t.clientX, t.clientY, 'rotate');
+      bindTouchWindow();
+    }
+    
+    function onWindowTouchMove(e){
+      if(!drag) return;
+      if(dragMode === 'pinch' && e.touches && e.touches.length === 2){
+        e.preventDefault();
+        const d = touchDist(e.touches[0], e.touches[1]);
+        const z = pinchStartZoom * (d / pinchStartDist);
+        zoom = Math.min(getMaxZoom(), Math.max(ABS_MIN_ZOOM, z));
+        dragMoved = true;
+        drawAll();
+        return;
+      }
+      if(dragMode === 'rotate' && e.touches && e.touches.length === 1){
+        e.preventDefault();
+        moveDragTo(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }
+    
+    function onWindowTouchEnd(e){
+      if(e.touches && e.touches.length === 1 && dragMode === 'pinch'){
+        dragMode = 'rotate';
+        const t = e.touches[0];
+        lastMouse.x = t.clientX;
+        lastMouse.y = t.clientY;
+        return;
+      }
+      if(e.touches && e.touches.length > 0) return;
+      
+      if(drag && dragMode === 'rotate' && !dragMoved){
+        const t = e.changedTouches && e.changedTouches[0];
+        if(t){
+          const cell = getCellAtClient(t.clientX, t.clientY);
+          const now = Date.now();
+          if(cell && cell.val === null && turn === 'X' && !gameOver && !aiThinking){
+            if(now - lastTapTs < 420 && lastTapCellK === cell.k){
+              playerMoveOnCell(cell);
+              lastTapTs = 0;
+              lastTapCellK = null;
+            } else {
+              lastTapTs = now;
+              lastTapCellK = cell.k;
+              statusDiv.innerHTML = "🎯 Ячейка выбрана. Ещё раз тапни по этой сфере — поставится крестик.";
+            }
+          } else {
+            lastTapTs = 0;
+            lastTapCellK = null;
+            onCanvasDoubleClick({ clientX: t.clientX, clientY: t.clientY });
+          }
+        }
+      }
+      drag = false;
+      dragMode = '';
+      gestureFromTouch = false;
+      unbindTouchWindow();
     }
     
     function onWheel(e){
@@ -1018,10 +1135,12 @@
     canvas.addEventListener('click', onCanvasClick);
     canvas.addEventListener('dblclick', onCanvasDoubleClick);
     canvas.addEventListener('mousedown', (e) => {
-      if(e.button === 0) startDrag(e, 'rotate');
-      else if(e.button === 2) startDrag(e, 'pan');
+      gestureFromTouch = false;
+      if(e.button === 0){ e.preventDefault(); startDrag(e.clientX, e.clientY, 'rotate'); }
+      else if(e.button === 2){ e.preventDefault(); startDrag(e.clientX, e.clientY, 'pan'); }
     });
-    window.addEventListener('mouseup', () => { drag = false; dragMode = ''; });
+    canvas.addEventListener('touchstart', onCanvasTouchStart, { passive: false });
+    window.addEventListener('mouseup', () => { drag = false; dragMode = ''; gestureFromTouch = false; });
     window.addEventListener('mousemove', onMouseMoveDrag);
     canvas.addEventListener('wheel', onWheel, {passive: false});
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
