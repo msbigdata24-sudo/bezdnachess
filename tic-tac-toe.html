@@ -63,6 +63,70 @@
       gap: 18px;
       overflow-y: auto;
       z-index: 10;
+      transition: width 0.22s ease, max-height 0.22s ease, padding 0.22s ease;
+    }
+    .sidebar-panel-bar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .sidebar-panel-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00ff88, #8be9ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1.15;
+      text-shadow: 0 0 18px rgba(0,255,120,0.25);
+    }
+    .sidebar-collapse-x {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-panel-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+    .sidebar.sidebar-collapsed {
+      overflow: hidden;
+      gap: 0;
+    }
+    .sidebar.sidebar-collapsed .sidebar-panel-scroll {
+      display: none !important;
+    }
+    .sidebar.sidebar-collapsed .sidebar-collapse-x {
+      display: none;
+    }
+    .sidebar.sidebar-collapsed .sidebar-panel-bar {
+      cursor: pointer;
+      justify-content: center;
+      align-items: center;
+    }
+    .sidebar.sidebar-collapsed .sidebar-panel-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+      background: none;
+      -webkit-background-clip: border-box;
+      background-clip: border-box;
+      color: #aef5c8;
+      text-shadow: none;
     }
     .game-area {
       flex: 1;
@@ -77,16 +141,6 @@
       height: 100%;
       cursor: pointer;
       touch-action: none;
-    }
-    h1 {
-      font-size: 26px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #00ff88, #8be9ff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-bottom: 4px;
-      text-shadow: 0 0 18px rgba(0,255,120,0.25);
     }
     .sub {
       font-size: 13px;
@@ -207,7 +261,7 @@
         gap: 12px;
         -webkit-overflow-scrolling: touch;
       }
-      h1 {
+      .sidebar-panel-title {
         font-size: 18px;
       }
       .sub {
@@ -240,40 +294,73 @@
         max-height: min(40vh, 260px);
         user-select: text;
       }
+      .sidebar.sidebar-collapsed {
+        max-height: 56px !important;
+        flex: 0 0 auto !important;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+    }
+    @media (min-width: 901px) and (min-height: 561px) {
+      .sidebar.sidebar-collapsed {
+        width: 52px;
+        min-width: 52px;
+        max-height: none !important;
+        padding: 12px 6px;
+        align-items: center;
+      }
+      .sidebar.sidebar-collapsed .sidebar-panel-bar {
+        flex-direction: column;
+        justify-content: flex-start;
+        width: 100%;
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+      .sidebar.sidebar-collapsed .sidebar-panel-title {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        font-size: 12px;
+        white-space: nowrap;
+        max-height: 72vh;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <div class="sidebar">
-    <div>
-      <h1>❌ КРЕСТИКИ-НОЛИКИ БЕЗДНЫ</h1>
+  <div class="sidebar" id="sidebarRoot">
+    <div class="sidebar-panel-bar" id="sidebarPanelBar" role="button" tabindex="0" aria-expanded="true">
+      <div class="sidebar-panel-title" id="sidebarPanelTitle">❌ КРЕСТИКИ-НОЛИКИ БЕЗДНЫ</div>
+      <button type="button" class="sidebar-collapse-x" id="sidebarCollapseBtn" aria-label="Свернуть панель">✕</button>
+    </div>
+    <div class="sidebar-panel-scroll" id="sidebarPanelBody">
       <div class="sub">3D поле в космосе | Один тап — выбор сферы, двойной тап — красный крест</div>
-    </div>
 
-    <div class="status-card" id="statusMsg">🎮 Новая игра! Твой ход (КРАСНЫЙ КРЕСТ)</div>
+      <div class="status-card" id="statusMsg">🎮 Новая игра! Твой ход (КРАСНЫЙ КРЕСТ)</div>
 
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <button data-size="3">3×3×3</button>
-      <button data-size="5">5×5×5</button>
-      <button data-size="8">8×8×8</button>
-      <button id="resetGame">🔄 Сброс</button>
-      <button id="forceAI">🤖 Ход AI</button>
-    </div>
-
-    <details class="legend-details" id="legendDetails">
-      <summary class="legend-summary">Правила и управление (нажми, чтобы развернуть)</summary>
-      <div class="legend">
-        <div><span class="x">❌ КРАСНЫЙ КРЕСТ</span> — объёмный, три оси</div>
-        <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
-        <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
-        <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
-        <div>🖱️ Один клик / тап по пустой сфере → <strong>выбор</strong> (золотая подсветка)</div>
-        <div>🖱️ Двойной клик / двойной тап по <strong>той же</strong> выбранной сфере → поставить <span class="x">крестик</span></div>
-        <div>📱 Палец — вращение · два пальца — зум · мышь: ЛКМ+drag / колёсико / ПКМ панорама</div>
-        <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button data-size="3">3×3×3</button>
+        <button data-size="5">5×5×5</button>
+        <button data-size="8">8×8×8</button>
+        <button id="resetGame">🔄 Сброс</button>
+        <button id="forceAI">🤖 Ход AI</button>
       </div>
-    </details>
+
+      <details class="legend-details" id="legendDetails">
+        <summary class="legend-summary">Правила и управление (нажми, чтобы развернуть)</summary>
+        <div class="legend">
+          <div><span class="x">❌ КРАСНЫЙ КРЕСТ</span> — объёмный, три оси</div>
+          <div><span class="o">⭕ СИНИЙ НОЛИК</span> — объёмный, с бликом</div>
+          <div><span class="win">✨ ЗЕЛЁНОЕ СИЯНИЕ</span> — победная линия</div>
+          <div>🏆 Победа: <strong>3 в ряд</strong> (3×3×3) / <strong>5 в ряд</strong> (5×5×5 и 8×8×8)</div>
+          <div>🖱️ Один клик / тап по пустой сфере → <strong>выбор</strong> (золотая подсветка)</div>
+          <div>🖱️ Двойной клик / двойной тап по <strong>той же</strong> выбранной сфере → поставить <span class="x">крестик</span></div>
+          <div>📱 Палец — вращение · два пальца — зум · мышь: ЛКМ+drag / колёсико / ПКМ панорама</div>
+          <div>🤖 AI ходит автоматически после твоего хода (ставит <span class="o">нолик</span>)</div>
+        </div>
+      </details>
+    </div>
   </div>
 
   <div class="game-area">
@@ -290,6 +377,36 @@
     const statusDiv = document.getElementById('statusMsg');
     const infoBadge = document.getElementById('infoBadge');
     const legendDetails = document.getElementById('legendDetails');
+    const sidebarRoot = document.getElementById('sidebarRoot');
+    const sidebarPanelBar = document.getElementById('sidebarPanelBar');
+    const sidebarPanelTitle = document.getElementById('sidebarPanelTitle');
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+    const SIDEBAR_TITLE_EXPANDED = '❌ КРЕСТИКИ-НОЛИКИ БЕЗДНЫ';
+    const SIDEBAR_TITLE_COLLAPSED = '▲ Развернуть панель';
+    function setSidebarCollapsed(collapsed) {
+      if (!sidebarRoot) return;
+      sidebarRoot.classList.toggle('sidebar-collapsed', collapsed);
+      if (sidebarPanelTitle) sidebarPanelTitle.textContent = collapsed ? SIDEBAR_TITLE_COLLAPSED : SIDEBAR_TITLE_EXPANDED;
+      if (sidebarPanelBar) sidebarPanelBar.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+    if (sidebarCollapseBtn && sidebarRoot) {
+      sidebarCollapseBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setSidebarCollapsed(true);
+      });
+    }
+    if (sidebarPanelBar && sidebarRoot) {
+      sidebarPanelBar.addEventListener('click', function () {
+        if (sidebarRoot.classList.contains('sidebar-collapsed')) setSidebarCollapsed(false);
+      });
+      sidebarPanelBar.addEventListener('keydown', function (e) {
+        if (!sidebarRoot.classList.contains('sidebar-collapsed')) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setSidebarCollapsed(false);
+        }
+      });
+    }
     if (legendDetails) {
       const wideMq = window.matchMedia('(min-width: 901px) and (min-height: 561px)');
       function syncLegendDetailsOpen() {
