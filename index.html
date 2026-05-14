@@ -8,23 +8,14 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="favicon-512.png">
 <meta name="theme-color" content="#000000">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-(function () {
-  try {
-    var w = window.Telegram && window.Telegram.WebApp;
-    if (w) {
-      w.ready();
-      if (typeof w.expand === 'function') w.expand();
-    }
-  } catch (e) {}
-})();
-</script>
+<!-- Telegram SDK только асинхронно (см. loadTelegramSDKNonBlocking): синхронная загрузка в head блокировала парсинг и могла оставить страницу без Three.js -->
+<script async src="https://telegram.org/js/telegram-web-app.js" data-bezdna-tg-sdk="1"></script>
 
 <style>
 *{-webkit-tap-highlight-color:transparent}
 html,body{touch-action:manipulation}
 canvas,#game-page .game-ui{touch-action:none}
+canvas#bezdna-webgl{position:fixed;left:0;top:0;width:100%!important;height:100%!important;z-index:1;display:block;margin:0;padding:0;touch-action:none}
 body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#000;color:#0f0;user-select:none;-webkit-user-select:none;text-transform:uppercase}
 
 #main-menu{position:fixed;top:0;left:0;width:100%;background:rgba(0,0,0,0.96);border-bottom:1px solid #0f0;padding:4px 8px;z-index:7600;display:flex;align-items:center;gap:8px;height:38px;box-sizing:border-box}
@@ -714,6 +705,13 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 // БЕЗДНА — ФИНАЛЬНАЯ СБОРКА
 // ============================================================
 
+function getGameViewportSize() {
+  const vv = window.visualViewport;
+  const w = Math.max(1, (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 1);
+  const h = Math.max(1, (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 1);
+  return { w, h };
+}
+
 // ========== СВОРАЧИВАНИЕ ПАНЕЛИ ИСТОРИИ ==========
 function toggleHistoryPanel() {
     const panel = document.getElementById('history-panel');
@@ -907,6 +905,8 @@ function initTelegramWebApp() {
         setDefaultUserLabel();
         return;
     }
+    if (initTelegramWebApp._done) return;
+    initTelegramWebApp._done = true;
     try {
         tg.ready();
         try {
@@ -928,8 +928,7 @@ function initTelegramWebApp() {
         } catch (ignoreColors) {}
         tg.onEvent('viewportChanged', () => {
             if (typeof camera !== 'undefined' && camera && typeof renderer !== 'undefined' && renderer) {
-                const vw = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
-                const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+                const { w: vw, h: vh } = getGameViewportSize();
                 camera.aspect = vw / vh;
                 camera.updateProjectionMatrix();
                 renderer.setSize(vw, vh);
@@ -946,15 +945,25 @@ function loadTelegramSDKNonBlocking() {
         initTelegramWebApp();
         return;
     }
-    const sdk = document.createElement('script');
-    sdk.src = 'https://telegram.org/js/telegram-web-app.js';
-    sdk.async = true;
-    sdk.onload = () => initTelegramWebApp();
-    sdk.onerror = () => setDefaultUserLabel();
-    document.head.appendChild(sdk);
-    setTimeout(() => {
-        if (!window.Telegram?.WebApp) setDefaultUserLabel();
-    }, 2500);
+    if (!document.querySelector('script[data-bezdna-tg-sdk]')) {
+        const sdk = document.createElement('script');
+        sdk.src = 'https://telegram.org/js/telegram-web-app.js';
+        sdk.async = true;
+        sdk.dataset.bezdnaTgSdk = '1';
+        sdk.onload = () => initTelegramWebApp();
+        sdk.onerror = () => setDefaultUserLabel();
+        document.head.appendChild(sdk);
+    }
+    let tries = 0;
+    const poll = () => {
+        if (window.Telegram?.WebApp) {
+            initTelegramWebApp();
+            return;
+        }
+        if (++tries < 40) setTimeout(poll, 100);
+        else setDefaultUserLabel();
+    };
+    setTimeout(poll, 50);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -3100,11 +3109,12 @@ function addCubeLabels() {
 function init(){
   try{
     if(typeof THREE==='undefined') throw new Error("Three.js не загружен.");
-    const vw = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
-    const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    const { w: vw, h: vh } = getGameViewportSize();
     scene=new THREE.Scene(); scene.background=new THREE.Color(0x000010); scene.fog=new THREE.FogExp2(0x000010,0.02);
     camera=new THREE.PerspectiveCamera(60,vw/vh,0.1,1000); camera.position.set(0,0,30);
-    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setSize(vw,vh); renderer.shadowMap.enabled=true; document.body.appendChild(renderer.domElement);
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setSize(vw,vh); renderer.shadowMap.enabled=true;
+    renderer.domElement.id = 'bezdna-webgl';
+    document.body.appendChild(renderer.domElement);
     controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=0.05; controls.enabled=false;
     raycaster=new THREE.Raycaster(); mouse=new THREE.Vector2();
     scene.add(new THREE.AmbientLight(0x202040,0.5));
@@ -3162,6 +3172,13 @@ window.addEventListener('load',()=>{
     renderLearningProgress();
     saveUserStats();
     initVideoCapture();
+    requestAnimationFrame(() => {
+        if (!camera || !renderer) return;
+        const { w, h } = getGameViewportSize();
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+    });
     
     setInterval(() => {
         if (isRecording && captureCanvas) {
@@ -3170,7 +3187,16 @@ window.addEventListener('load',()=>{
     }, 100);
 });
 
-window.addEventListener('resize',()=>{layoutRightPanels(); if(camera&&renderer){const vw = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1); const vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1); camera.aspect=vw/vh; camera.updateProjectionMatrix(); renderer.setSize(vw,vh);}});
+window.addEventListener('resize',()=>{layoutRightPanels(); if(camera&&renderer){const {w:vw,h:vh}=getGameViewportSize(); camera.aspect=vw/vh; camera.updateProjectionMatrix(); renderer.setSize(vw,vh);}});
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        if (!camera || !renderer) return;
+        const { w, h } = getGameViewportSize();
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+    });
+}
 document.addEventListener('click',onMouseClick);
 window.addEventListener('touchstart',onTouchStart,{passive:false});
 window.addEventListener('touchmove',onTouchMove,{passive:false});
