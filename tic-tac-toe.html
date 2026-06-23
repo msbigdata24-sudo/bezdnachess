@@ -5,7 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
-  <title>Крестики-нолики 3D | Красный крест vs Синий нолик</title>
+  <title>Крестики-нолики 3D | БЕЗДНА — играть онлайн бесплатно</title>
+  <meta name="description" content="Трёхмерные крестики-нолики на кубе 3×3×3, 5×5×5 и 8×8×8. Часть проекта БЕЗДНА. Играйте в браузере бесплатно.">
+  <meta name="keywords" content="крестики нолики 3D, трёхмерные крестики-нолики, 3D tic tac toe, bezdnachess, bezdna">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://bezdnachess.com/tic-tac-toe.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="БЕЗДНА">
+  <meta property="og:title" content="Крестики-нолики 3D | БЕЗДНА">
+  <meta property="og:description" content="Трёхмерные крестики-нолики на кубе. Играйте в браузере бесплатно.">
+  <meta property="og:url" content="https://bezdnachess.com/tic-tac-toe.html">
+  <meta property="og:image" content="https://bezdnachess.com/favicon-512.png">
   <style>
     * {
       margin: 0;
@@ -747,7 +757,7 @@
       const zVis = Math.max(0.85, Math.min(2.2, 0.42 + zoom * 0.72));
       for(let c of cells){
         if(c.val !== null) continue;
-        const radHover = Math.max(4.5, 14 * c.perspective * getVisualScale() * zVis);
+        const radHover = Math.max(3, 7 * c.perspective * getVisualScale() * zVis);
         ctx.beginPath(); 
         ctx.arc(c.screenX, c.screenY, radHover, 0, Math.PI*2);
         
@@ -1094,7 +1104,7 @@
         if(cell.val !== null) continue;
         const dx = mouseCanvasX - cell.screenX;
         const dy = mouseCanvasY - cell.screenY;
-        const r = Math.max(10, 22 * cell.perspective * getVisualScale() * zoomHit);
+        const r = Math.max(8, 11 * cell.perspective * getVisualScale() * zoomHit);
         const d2 = dx * dx + dy * dy;
         if(d2 <= r * r) return cell;
       }
