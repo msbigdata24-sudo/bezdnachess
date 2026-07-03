@@ -116,7 +116,7 @@ body{margin:0;overflow:hidden;font-family:'Courier New',monospace;background:#00
 .page.active{display:block}
 
 /* Информационные страницы поверх игры */
-#tutorial-page, #rules-page, #about-page, #tictactoe-page{
+#tutorial-page, #rules-page, #about-page, #tictactoe-page, #battleship-page{
   position:fixed;
   inset:40px 0 0 0;
   z-index:6500;
@@ -308,6 +308,10 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 #tictactoe-page::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#0f0 0.7px,transparent 0.8px),radial-gradient(#88aaff 0.7px,transparent 0.8px);background-size:90px 90px,140px 140px;background-position:0 0,35px 55px;opacity:0.35;pointer-events:none}
 #tictactoe-shell{position:relative;z-index:1;padding:12px;height:100%;box-sizing:border-box}
 #tictactoe-frame{width:100%;height:100%;border:1px solid #0f0;border-radius:8px;background:#000;box-shadow:0 0 25px rgba(0,255,0,0.25),inset 0 0 30px rgba(0,255,0,0.08)}
+#battleship-page{background:radial-gradient(circle at 50% 55%,rgba(0,120,180,0.14),rgba(0,0,0,0) 38%),radial-gradient(circle at 18% 12%,rgba(0,255,120,0.1),rgba(0,0,0,0) 28%),#000;overflow:hidden}
+#battleship-page::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#0f0 0.6px,transparent 0.7px),radial-gradient(#48a 0.6px,transparent 0.7px);background-size:80px 80px,120px 120px;background-position:0 0,40px 60px;opacity:0.28;pointer-events:none}
+#battleship-shell{position:relative;z-index:1;padding:12px;height:100%;box-sizing:border-box}
+#battleship-frame{width:100%;height:100%;border:1px solid #0f0;border-radius:8px;background:#000;box-shadow:0 0 25px rgba(0,255,0,0.25),inset 0 0 30px rgba(0,255,0,0.08)}
 
 #network-auth-box{border:1px solid #225533;padding:8px;margin:8px 0;text-align:left;font-size:10px;line-height:1.45;color:#d8e6d8;background:rgba(0,16,8,0.35);border-radius:6px}
 #network-auth-title{color:#9cd9a7;margin-bottom:6px;font-weight:bold}
@@ -343,7 +347,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   #undo-panel.compact .control-btn{font-size:9px;padding:5px 6px}
   #quick-onboarding{bottom:56px}
   .game-ui{font-size:9px;padding:4px 6px}
-  #tutorial-page, #rules-page, #about-page, #tictactoe-page{inset:38px 0 0 0;}
+  #tutorial-page, #rules-page, #about-page, #tictactoe-page, #battleship-page{inset:38px 0 0 0;}
   #tutorial-page > div, #rules-page > div, #about-page > div{padding:14px 14px 28px !important;}
   .rules-item summary{font-size:14px;}
   .network-auth-grid{grid-template-columns:1fr}
@@ -368,6 +372,7 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
   <button class="menu-btn" onclick="showDonation(); closeMainMenu();">❤️ ПОДДЕРЖАТЬ</button>
   <button class="menu-btn" onclick="showGift(); closeMainMenu();">🎁 ПОДАРИТЬ</button>
   <button class="menu-btn" onclick="showPage('tictactoe'); closeMainMenu();">❌ КРЕСТИКИ-НОЛИКИ</button>
+  <button class="menu-btn" onclick="showPage('battleship'); closeMainMenu();">🚢 МОРСКОЙ БОЙ</button>
 </div>
 
 <div id="stats-panel">
@@ -779,6 +784,12 @@ body.right-panel-collapsed #undo-panel{transform:translateX(215px);opacity:0;poi
 <div id="tictactoe-page" class="page">
   <div id="tictactoe-shell">
     <iframe id="tictactoe-frame" src="./tic-tac-toe.html" title="Крестики-нолики в Бездне"></iframe>
+  </div>
+</div>
+
+<div id="battleship-page" class="page">
+  <div id="battleship-shell">
+    <iframe id="battleship-frame" src="./morskoy-boy.html" title="Морской бой в Бездне"></iframe>
   </div>
 </div>
 
