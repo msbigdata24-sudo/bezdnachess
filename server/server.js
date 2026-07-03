@@ -1,17 +1,39 @@
 const http = require('http');
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const { attachBattleship } = require('./battleship-socket');
 
 const PORT = process.env.PORT || 3000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || '*';
 const DATABASE_URL = process.env.DATABASE_URL;
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'bezdna-dev-jwt-secret');
+const FRONTEND_BASE_URL = (process.env.FRONTEND_BASE_URL || 'https://bezdnachess.com').replace(/\/$/, '');
+const SMTP_URL = process.env.SMTP_URL || '';
+const MAIL_FROM = process.env.MAIL_FROM || '';
 
 if (!DATABASE_URL) {
   console.error('DATABASE_URL is required');
   process.exit(1);
+}
+if (!JWT_SECRET) {
+  console.error('JWT_SECRET is required in production');
+  process.exit(1);
+}
+
+let mailTransport = null;
+if (SMTP_URL) {
+  try {
+    mailTransport = nodemailer.createTransport(SMTP_URL);
+  } catch (e) {
+    console.warn('SMTP_URL invalid, mail disabled:', e.message);
+  }
 }
 
 const app = express();
@@ -68,6 +90,27 @@ async function initDb() {
     );
   `);
 
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS email TEXT;`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS password_hash TEXT;`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS verification_token TEXT;`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMPTZ;`);
+
+  try {
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS players_email_lower_idx ON players (LOWER(TRIM(email))) WHERE email IS NOT NULL AND TRIM(email) <> '';`
+    );
+  } catch (e) {
+    console.warn('players_email_lower_idx:', e.message);
+  }
+  try {
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS players_username_lower_idx ON players (LOWER(TRIM(username)));`
+    );
+  } catch (e) {
+    console.warn('players_username_lower_idx:', e.message);
+  }
+
   console.log('DB ready');
 }
 
@@ -93,6 +136,59 @@ function rankTitle(rating) {
   if (rating >= 1000) return 'Полумрак';
   if (rating >= 800) return 'Сумерки';
   return 'Тьма';
+}
+
+function normalizeEmail(email) {
+  return String(email || '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 254);
+}
+
+function normalizeUsername(username) {
+  return String(username || '')
+    .trim()
+    .slice(0, 30);
+}
+
+function isValidEmail(email) {
+  const e = normalizeEmail(email);
+  if (e.length < 5 || e.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+}
+
+function signAccessToken(playerId) {
+  return jwt.sign({ sub: playerId, typ: 'access' }, JWT_SECRET, { expiresIn: '30d' });
+}
+
+function bearerToken(req) {
+  const h = req.headers.authorization || '';
+  const m = /^Bearer\s+(.+)$/i.exec(h);
+  return m ? m[1].trim() : '';
+}
+
+async function sendVerificationEmail(toEmail, token) {
+  const verifyUrl = `${FRONTEND_BASE_URL}/?verify_email=${encodeURIComponent(token)}`;
+  const subject = 'Бездна — подтвердите email';
+  const text = `Здравствуйте!\n\nПодтвердите адрес, перейдя по ссылке (действует 48 ч.):\n${verifyUrl}\n\nЕсли это не вы, проигнорируйте письмо.\n`;
+  const html = `<p>Подтвердите email для аккаунта <strong>Бездна</strong>:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`;
+  if (!mailTransport || !MAIL_FROM) {
+    console.warn('[bezdna-api] Письмо не отправлено (нет SMTP_URL или MAIL_FROM). Ссылка:', verifyUrl);
+    return { sent: false, verifyUrl };
+  }
+  try {
+    await mailTransport.sendMail({
+      from: MAIL_FROM,
+      to: toEmail,
+      subject,
+      text,
+      html
+    });
+    return { sent: true };
+  } catch (e) {
+    console.error('[bezdna-api] sendMail failed:', e.message);
+    return { sent: false, verifyUrl };
+  }
 }
 
 const server = http.createServer(app);
@@ -264,29 +360,211 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+app.get('/auth/username-available', async (req, res) => {
+  try {
+    const raw = normalizeUsername(req.query.u || '');
+    if (raw.length < 2) return res.json({ available: false, reason: 'short' });
+    const r = await pool.query(
+      `SELECT 1 FROM players WHERE LOWER(TRIM(username)) = LOWER(TRIM($1)) LIMIT 1`,
+      [raw]
+    );
+    res.json({ available: r.rows.length === 0 });
+  } catch (e) {
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/auth/register', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || '');
+    const username = normalizeUsername(req.body?.username);
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'invalid_email' });
+    if (password.length < 8) return res.status(400).json({ error: 'password_short' });
+    if (username.length < 2) return res.status(400).json({ error: 'username_short' });
+
+    const taken = await pool.query(
+      `SELECT 1 FROM players WHERE LOWER(TRIM(username)) = LOWER(TRIM($1)) LIMIT 1`,
+      [username]
+    );
+    if (taken.rows.length) return res.status(409).json({ error: 'username_taken' });
+
+    const emailUsed = await pool.query(
+      `SELECT 1 FROM players WHERE LOWER(TRIM(email)) = $1 LIMIT 1`,
+      [email]
+    );
+    if (emailUsed.rows.length) return res.status(409).json({ error: 'email_taken' });
+
+    const playerId = uuidv4();
+    const password_hash = await bcrypt.hash(password, 10);
+    const verification_token = crypto.randomBytes(32).toString('hex');
+    const verification_expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    await pool.query(
+      `INSERT INTO players(
+        id, username, email, password_hash, email_verified,
+        verification_token, verification_expires_at
+      ) VALUES ($1,$2,$3,$4,false,$5,$6)`,
+      [playerId, username, email, password_hash, verification_token, verification_expires_at]
+    );
+
+    const mail = await sendVerificationEmail(email, verification_token);
+    res.json({
+      ok: true,
+      playerId,
+      username,
+      emailSent: mail.sent,
+      ...(mail.verifyUrl && !mail.sent ? { devVerificationUrl: mail.verifyUrl } : {})
+    });
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'conflict' });
+    console.error('register', e);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || '');
+    if (!email || !password) return res.status(400).json({ error: 'bad_request' });
+    const p = await pool.query(
+      `SELECT * FROM players WHERE LOWER(TRIM(email)) = $1 LIMIT 1`,
+      [email]
+    );
+    const row = p.rows[0];
+    if (!row || !row.password_hash) return res.status(401).json({ error: 'invalid_credentials' });
+    const ok = await bcrypt.compare(password, row.password_hash);
+    if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
+    const token = signAccessToken(row.id);
+    res.json({
+      ok: true,
+      token,
+      playerId: row.id,
+      username: row.username,
+      emailVerified: !!row.email_verified,
+      rating: row.rating,
+      peakRating: row.peak_rating,
+      calibrationRemaining: row.calibration_games_remaining
+    });
+  } catch (e) {
+    console.error('login', e);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/auth/verify-email', async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token || token.length < 10) return res.status(400).json({ error: 'bad_token' });
+    const r = await pool.query(
+      `UPDATE players
+       SET email_verified = true, verification_token = NULL, verification_expires_at = NULL, updated_at = NOW()
+       WHERE verification_token = $1 AND verification_expires_at > NOW()
+       RETURNING id, username, rating, peak_rating, calibration_games_remaining, email_verified`,
+      [token]
+    );
+    if (!r.rows.length) return res.status(400).json({ error: 'invalid_or_expired' });
+    const row = r.rows[0];
+    const tokenJwt = signAccessToken(row.id);
+    res.json({
+      ok: true,
+      token: tokenJwt,
+      playerId: row.id,
+      username: row.username,
+      emailVerified: true,
+      rating: row.rating,
+      peakRating: row.peak_rating,
+      calibrationRemaining: row.calibration_games_remaining
+    });
+  } catch (e) {
+    console.error('verify-email', e);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/auth/resend-verification', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'invalid_email' });
+    const p = await pool.query(
+      `SELECT id, email_verified FROM players WHERE LOWER(TRIM(email)) = $1 LIMIT 1`,
+      [email]
+    );
+    const row = p.rows[0];
+    if (!row) return res.json({ ok: true });
+    if (row.email_verified) return res.json({ ok: true });
+    const verification_token = crypto.randomBytes(32).toString('hex');
+    const verification_expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await pool.query(
+      `UPDATE players SET verification_token = $2, verification_expires_at = $3, updated_at = NOW() WHERE id = $1`,
+      [row.id, verification_token, verification_expires_at]
+    );
+    const mail = await sendVerificationEmail(email, verification_token);
+    res.json({ ok: true, emailSent: mail.sent, ...(mail.verifyUrl && !mail.sent ? { devVerificationUrl: mail.verifyUrl } : {}) });
+  } catch (e) {
+    console.error('resend', e);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
 io.on('connection', (socket) => {
-  socket.on('register', async ({ playerId, username }) => {
+  socket.on('register', async (payload) => {
     try {
-      if (!playerId || !username) {
-        socket.emit('error_message', { message: 'playerId и username обязательны' });
-        return;
-      }
+      let playerId;
+      let normalized;
 
-      const normalized = String(username).trim().slice(0, 30);
-      if (!normalized) {
-        socket.emit('error_message', { message: 'Никнейм пустой' });
-        return;
-      }
-
-      await pool.query(
-        `
+      if (payload && payload.authToken) {
+        let decoded;
+        try {
+          decoded = jwt.verify(payload.authToken, JWT_SECRET);
+        } catch (_) {
+          socket.emit('error_message', { message: 'Нужен вход: токен устарел или недействителен' });
+          return;
+        }
+        playerId = decoded.sub;
+        const p = await pool.query(`SELECT * FROM players WHERE id = $1`, [playerId]);
+        if (!p.rows.length) {
+          socket.emit('error_message', { message: 'Аккаунт не найден' });
+          return;
+        }
+        normalized = String(p.rows[0].username || '').trim().slice(0, 30);
+        if (!normalized) {
+          socket.emit('error_message', { message: 'Пустой ник в профиле' });
+          return;
+        }
+      } else {
+        playerId = payload?.playerId;
+        const username = payload?.username;
+        if (!playerId || !username) {
+          socket.emit('error_message', { message: 'playerId и username обязательны' });
+          return;
+        }
+        normalized = String(username).trim().slice(0, 30);
+        if (!normalized) {
+          socket.emit('error_message', { message: 'Никнейм пустой' });
+          return;
+        }
+        try {
+          await pool.query(
+            `
           INSERT INTO players(id, username)
           VALUES ($1, $2)
           ON CONFLICT(id) DO UPDATE
           SET username = EXCLUDED.username, updated_at = NOW()
         `,
-        [playerId, normalized]
-      );
+            [playerId, normalized]
+          );
+        } catch (err) {
+          if (err.code === '23505') {
+            socket.emit('error_message', {
+              message: 'Этот ник уже занят. Выберите другой или войдите в аккаунт.'
+            });
+            return;
+          }
+          throw err;
+        }
+      }
 
       socketToPlayer.set(socket.id, playerId);
       playerToSocket.set(playerId, socket.id);
@@ -300,7 +578,8 @@ io.on('connection', (socket) => {
         username: row.username,
         rating: row.rating,
         calibrationRemaining: row.calibration_games_remaining,
-        title: rankTitle(row.rating)
+        title: rankTitle(row.rating),
+        emailVerified: !row.email || String(row.email).trim() === '' ? true : !!row.email_verified
       });
       emitOnlinePlayersToAll();
     } catch (e) {
@@ -318,8 +597,22 @@ io.on('connection', (socket) => {
       if (!playerId) return socket.emit('error_message', { message: 'Сначала register' });
 
       clearQueueForPlayer(playerId);
-      const pRes = await pool.query(`SELECT id, rating FROM players WHERE id = $1`, [playerId]);
+      const pRes = await pool.query(
+        `SELECT id, rating, email, email_verified FROM players WHERE id = $1`,
+        [playerId]
+      );
       if (!pRes.rows.length) return socket.emit('error_message', { message: 'Игрок не найден' });
+      const prow = pRes.rows[0];
+      if (
+        mode === 'ranked' &&
+        prow.email &&
+        String(prow.email).trim() &&
+        !prow.email_verified
+      ) {
+        return socket.emit('error_message', {
+          message: 'Рейтинговый подбор только после подтверждения email. Проверьте почту или нажмите «Выслать ссылку снова».'
+        });
+      }
 
       queue.push({
         socketId: socket.id,
@@ -573,7 +866,10 @@ io.on('connection', (socket) => {
 });
 
 initDb()
-  .then(() => server.listen(PORT, () => console.log(`bezdna-api started on :${PORT}`)))
+  .then(() => {
+    attachBattleship(io, { frontendBase: FRONTEND_BASE_URL });
+    server.listen(PORT, () => console.log(`bezdna-api started on :${PORT}`));
+  })
   .catch((e) => {
     console.error('DB init failed:', e);
     process.exit(1);
