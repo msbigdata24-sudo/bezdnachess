@@ -1052,6 +1052,8 @@
 
   let onlineSocket = null;
   let onlineConnected = false;
+  let onlineSocketListenersBound = false;
+  let onlinePendingAction = null;
   let onlineSlot = null;
   let onlineRoomCode = '';
   let onlineInviteUrl = '';
@@ -1315,32 +1317,54 @@
     }
   }
 
-  function initOnlineSocket() {
-    if (onlineSocket || typeof io !== 'function') return;
-    try {
-      onlineSocket = io(ONLINE_API_URL + '/battleship', {
-        transports: ['websocket', 'polling'],
-        reconnection: true
-      });
-    } catch (e) {
-      setOnlineStatus('Не удалось подключиться к серверу.', true);
-      return;
+  function wakeOnlineServer() {
+    fetch(ONLINE_API_URL + '/health', { mode: 'cors', cache: 'no-store' }).catch(() => {});
+  }
+
+  function setOnlineConnectingStatus() {
+    setOnlineStatus('Подключаемся к серверу… Первый раз может занять до минуты — сервер просыпается.', false);
+  }
+
+  function flushOnlinePendingAction() {
+    if (!onlineConnected || !onlineSocket) return;
+    const action = onlinePendingAction;
+    onlinePendingAction = null;
+    if (action === 'create') {
+      onlineSocket.emit('bb_create_room', { name: getOnlineName(), boardSize });
+    } else if (action === 'join') {
+      const code = (els.onlineCodeInput.value || '').trim().toUpperCase();
+      if (code) {
+        onlineSocket.emit('bb_join_room', { name: getOnlineName(), roomCode: code });
+      }
     }
+  }
+
+  function bindOnlineSocketListeners() {
+    if (!onlineSocket || onlineSocketListenersBound) return;
+    onlineSocketListenersBound = true;
 
     onlineSocket.on('connect', () => {
       onlineConnected = true;
       setOnlineStatus('Сервер подключён. Создайте комнату или введите код.', false);
-      const params = new URLSearchParams(location.search);
-      const roomFromUrl = (params.get('room') || '').trim().toUpperCase();
-      if (roomFromUrl && mode === 'online' && !onlineRoomCode) {
-        els.onlineCodeInput.value = roomFromUrl;
-        joinOnlineRoom();
-      }
+      flushOnlinePendingAction();
     });
 
     onlineSocket.on('disconnect', () => {
       onlineConnected = false;
       setOnlineStatus('Соединение потеряно. Переподключение…', true);
+    });
+
+    onlineSocket.on('connect_error', () => {
+      onlineConnected = false;
+      if (mode === 'online') {
+        setOnlineStatus('Сервер ещё не отвечает. Ждём подключение…', true);
+        wakeOnlineServer();
+      }
+    });
+
+    onlineSocket.io.on('reconnect_attempt', () => {
+      if (mode === 'online') setOnlineConnectingStatus();
+      wakeOnlineServer();
     });
 
     onlineSocket.on('bb_error', (data) => {
@@ -1430,6 +1454,32 @@
     });
   }
 
+  function initOnlineSocket() {
+    if (typeof io !== 'function') {
+      setOnlineStatus('Сеть не загрузилась. Обновите страницу (F5).', true);
+      return;
+    }
+    wakeOnlineServer();
+    if (!onlineSocket) {
+      try {
+        onlineSocket = io(ONLINE_API_URL + '/battleship', {
+          transports: ['polling', 'websocket'],
+          reconnection: true,
+          reconnectionAttempts: 30,
+          reconnectionDelay: 2000,
+          timeout: 30000
+        });
+        bindOnlineSocketListeners();
+      } catch (e) {
+        setOnlineStatus('Не удалось подключиться к серверу.', true);
+        return;
+      }
+    }
+    if (!onlineConnected && mode === 'online') {
+      setOnlineConnectingStatus();
+    }
+  }
+
   function applyOnlineShotResult(data) {
     const shooter = data.shooter;
     const target = shooter === 1 ? 2 : 1;
@@ -1477,10 +1527,13 @@
   function createOnlineRoom() {
     initOnlineSocket();
     saveOnlineName();
-    if (!onlineSocket || !onlineConnected) {
-      setOnlineStatus('Подключаемся… попробуйте через секунду.', true);
+    if (!onlineSocket) return;
+    if (!onlineConnected) {
+      onlinePendingAction = 'create';
+      setOnlineConnectingStatus();
       return;
     }
+    onlinePendingAction = null;
     onlineSocket.emit('bb_create_room', { name: getOnlineName(), boardSize });
   }
 
@@ -1492,10 +1545,13 @@
       setOnlineStatus('Введите код комнаты.', true);
       return;
     }
-    if (!onlineSocket || !onlineConnected) {
-      setOnlineStatus('Подключаемся… попробуйте через секунду.', true);
+    if (!onlineSocket) return;
+    if (!onlineConnected) {
+      onlinePendingAction = 'join';
+      setOnlineConnectingStatus();
       return;
     }
+    onlinePendingAction = null;
     onlineSocket.emit('bb_join_room', { name: getOnlineName(), roomCode: code });
   }
 
@@ -2605,6 +2661,7 @@
     document.querySelectorAll('.mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'online'));
     els.onlineCodeInput.value = urlRoom;
     els.onlinePanel.style.display = 'block';
+    onlinePendingAction = 'join';
     initOnlineSocket();
   }
 
