@@ -1,18 +1,23 @@
 {
   "name": "bezdna-api",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
-  "type": "commonjs",
+  "description": "Socket.IO + HTTP auth + battleship for Бездна",
   "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "pg": "^8.12.0",
-    "socket.io": "^4.7.5",
-    "uuid": "^11.0.3"
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.16",
+    "pg": "^8.13.0",
+    "socket.io": "^4.8.0",
+    "uuid": "^11.0.0"
   }
 }
