@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Морской бой | БЕЗДНА — играть онлайн бесплатно</title>
+  <meta name="description" content="Морской бой в стиле Бездны: поле до 16×16, ночной режим с волнами, силуэты кораблей, звания и озвучка. Играйте в браузере бесплатно.">
+  <meta name="keywords" content="морской бой, морской бой онлайн, battleship, bezdnachess, bezdna, играть бесплатно">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://bezdnachess.com/morskoy-boy.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="БЕЗДНА">
+  <meta property="og:title" content="Морской бой | БЕЗДНА">
+  <meta property="og:description" content="Классический морской бой с силуэтами кораблей, ночным режимом и системой званий.">
+  <meta property="og:url" content="https://bezdnachess.com/morskoy-boy.html">
+  <meta property="og:image" content="https://bezdnachess.com/favicon-512.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      height: 100%;
+      min-height: 100dvh;
+    }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #0f0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(0, 255, 80, 0.08), transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(0, 120, 255, 0.06), transparent 35%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 0, 0.03) 2px,
+        rgba(0, 255, 0, 0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+      animation: scan 8s linear infinite;
+    }
+    @keyframes scan {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(40px); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 6px rgba(0, 255, 0, 0.4); }
+      50% { box-shadow: 0 0 16px rgba(0, 255, 0, 0.8); }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 1; }
+    }
+    @keyframes wave-drift {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes explode-core {
+      0% { transform: scale(0.2); opacity: 1; }
+      40% { transform: scale(1.3); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes explode-particle {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
+    }
+    @keyframes splash-ring {
+      0% { transform: scale(0.3); opacity: 0.9; border-width: 3px; }
+      100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+    }
+    @keyframes moon-glow {
+      0%, 100% { box-shadow: 0 0 30px rgba(200, 220, 255, 0.35); }
+      50% { box-shadow: 0 0 50px rgba(200, 220, 255, 0.55); }
+    }
+
+    /* —— Ночной режим —— */
+    body.night-mode {
+      color: #7ec8e3;
+    }
+    body.night-mode::before {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(20, 40, 80, 0.9), transparent 55%),
+        radial-gradient(circle at 80% 15%, rgba(180, 200, 255, 0.07), transparent 25%);
+    }
+    body.night-mode::after {
+      background-image: none;
+      animation: none;
+    }
+    .sea-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+    body.night-mode .sea-bg {
+      opacity: 1;
+    }
+    .stars {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1.5px 1.5px at 40% 22%, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.85), transparent),
+        radial-gradient(1.5px 1.5px at 85% 12%, rgba(255,255,255,0.75), transparent),
+        radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 28%, rgba(255,255,255,0.65), transparent),
+        radial-gradient(1px 1px at 48% 5%, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 33% 30%, rgba(255,255,255,0.55), transparent);
+      animation: twinkle 4s ease-in-out infinite;
+    }
+    .moon {
+      position: absolute;
+      top: 6%;
+      right: 12%;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f4f8ff, #b8cce8 60%, #8098b8);
+      animation: moon-glow 5s ease-in-out infinite;
+    }
+    .waves-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 38%;
+      overflow: hidden;
+    }
+    .wave {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 200%;
+      height: 100%;
+      opacity: 0.55;
+    }
+    .wave svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .wave-1 { animation: wave-drift 14s linear infinite; opacity: 0.35; bottom: 0; }
+    .wave-2 { animation: wave-drift 10s linear infinite reverse; opacity: 0.5; bottom: 8%; }
+    .wave-3 { animation: wave-drift 18s linear infinite; opacity: 0.25; bottom: 16%; }
+
+    body.night-mode header,
+    body.night-mode .sidebar {
+      background: rgba(5, 15, 35, 0.94);
+      border-color: rgba(100, 180, 220, 0.5);
+    }
+    body.night-mode button,
+    body.night-mode .btn {
+      color: #7ec8e3;
+      border-color: rgba(100, 180, 220, 0.6);
+      text-shadow: 0 0 4px rgba(100, 180, 220, 0.4);
+    }
+    body.night-mode button:hover,
+    body.night-mode button.active {
+      background: #3a7ca5;
+      color: #041020;
+      border-color: #7ec8e3;
+    }
+    body.night-mode .logo { text-shadow: 0 0 8px rgba(126, 200, 227, 0.5); }
+    body.night-mode .status-box {
+      border-color: rgba(100, 180, 220, 0.5);
+      animation: none;
+      box-shadow: 0 0 12px rgba(30, 80, 120, 0.4);
+    }
+    body.night-mode .panel { border-color: rgba(100, 180, 220, 0.3); }
+    body.night-mode .grid {
+      border-color: rgba(100, 180, 220, 0.55);
+      box-shadow: 0 0 24px rgba(30, 100, 160, 0.25), 0 8px 32px rgba(0, 20, 50, 0.5);
+    }
+    body.night-mode .cell {
+      border-color: rgba(80, 140, 180, 0.22);
+      background: rgba(5, 25, 45, 0.65);
+    }
+    body.night-mode .cell.has-ship {
+      background: rgba(10, 40, 60, 0.4);
+    }
+    body.night-mode .board-title {
+      color: #9fdcf0;
+      text-shadow: 0 0 6px rgba(100, 180, 220, 0.5);
+    }
+
+    /* —— Взрывы —— */
+    .fx-layer {
+      position: absolute;
+      left: 22px;
+      top: 22px;
+      z-index: 8;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .fx-layer.size-10 { width: min(72vw, 340px); height: min(72vw, 340px); }
+    .fx-layer.size-12 { width: min(84vw, 380px); height: min(84vw, 380px); }
+    .fx-layer.size-14 { width: min(94vw, 420px); height: min(94vw, 420px); }
+    .fx-layer.size-16 { width: min(98vw, 460px); height: min(98vw, 460px); }
+
+    .explosion {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .explosion-core {
+      position: absolute;
+      width: 70%;
+      height: 70%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, #ff8800 35%, #ff2200 70%, transparent 100%);
+      animation: explode-core 0.55s ease-out forwards;
+    }
+    .explosion-sunk .explosion-core {
+      width: 100%;
+      height: 100%;
+      animation-duration: 0.75s;
+      background: radial-gradient(circle, #fff 0%, #ffaa00 25%, #ff4400 55%, #880000 80%, transparent 100%);
+    }
+    .explosion-ring {
+      position: absolute;
+      inset: 10%;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 160, 50, 0.8);
+      animation: splash-ring 0.6s ease-out forwards;
+    }
+    .explosion-sunk .explosion-ring {
+      inset: 0;
+      animation-duration: 0.85s;
+      border-color: rgba(255, 100, 30, 0.9);
+    }
+    .particle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ffcc44;
+      box-shadow: 0 0 6px #ff6600;
+      --tx: 0px;
+      --ty: 0px;
+      animation: explode-particle 0.55s ease-out forwards;
+    }
+    .explosion-sunk .particle {
+      width: 7px;
+      height: 7px;
+      animation-duration: 0.75s;
+    }
+    .cell.boom-flash {
+      animation: boom-flash 0.45s ease-out;
+    }
+    @keyframes boom-flash {
+      0% { background: rgba(255, 120, 0, 0.85); }
+      100% { background: transparent; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid #0f0;
+      background: rgba(0, 0, 0, 0.96);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      font-size: 14px;
+      text-shadow: 0 0 6px #0f0;
+      letter-spacing: 1px;
+    }
+    .logo small {
+      display: block;
+      font-size: 10px;
+      color: #6f6;
+      letter-spacing: 0;
+      margin-top: 2px;
+      text-transform: none;
+    }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button, .btn {
+      background: transparent;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      text-shadow: 0 0 3px #0f0;
+      transition: all 0.2s;
+      touch-action: manipulation;
+      text-transform: uppercase;
+    }
+    button:hover, .btn:hover {
+      background: #0f0;
+      color: #000;
+      text-shadow: none;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    button.active {
+      background: #0f0;
+      color: #000;
+      text-shadow: none;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      min-height: 0;
+    }
+
+    .sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      border-right: 1px solid #0f0;
+      background: rgba(0, 0, 0, 0.92);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    .status-box {
+      border: 1px solid #0f0;
+      padding: 10px;
+      line-height: 1.5;
+      animation: pulse 3s ease infinite;
+    }
+    .status-box .phase {
+      font-size: 13px;
+      color: #afa;
+      margin-bottom: 4px;
+    }
+    .status-box .hint {
+      font-size: 10px;
+      color: #8c8;
+      text-transform: none;
+      line-height: 1.45;
+    }
+    .panel {
+      border: 1px solid rgba(0, 255, 0, 0.45);
+      padding: 8px;
+    }
+    .panel-title {
+      font-size: 10px;
+      color: #6f6;
+      margin-bottom: 8px;
+    }
+    .mode-row, .size-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .size-row {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .size-row button {
+      flex: 1;
+      min-width: 70px;
+      font-size: 10px;
+      padding: 5px 6px;
+    }
+    .ships-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .ship-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .ship-item.selected {
+      border-color: #0f0;
+      background: rgba(0, 255, 0, 0.08);
+    }
+    .ship-item.placed {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .ship-preview-wrap {
+      width: 120px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .ship-preview-wrap svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .ship-label {
+      font-size: 10px;
+      color: #afa;
+    }
+    .legend {
+      font-size: 10px;
+      line-height: 1.6;
+      text-transform: none;
+      color: #9c9;
+    }
+    .legend .hit { color: #f55; }
+    .legend .miss { color: #48f; }
+    .legend .sunk { color: #f90; }
+
+    .boards-wrap {
+      flex: 1;
+      min-width: 0;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 16px;
+      align-content: flex-start;
+      overflow-y: auto;
+    }
+
+    .board-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .board-block.hidden-board {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .board-title {
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-shadow: 0 0 4px #0f0;
+    }
+    .board-title.enemy.active-turn {
+      color: #ff6;
+      text-shadow: 0 0 8px #ff6;
+    }
+
+    .grid-wrap {
+      position: relative;
+      padding-left: 22px;
+      padding-top: 22px;
+    }
+    .col-labels {
+      position: absolute;
+      top: 0;
+      left: 22px;
+      right: 0;
+      height: 20px;
+      display: grid;
+      font-size: 10px;
+      color: #6f6;
+      text-align: center;
+      align-items: center;
+    }
+    .row-labels {
+      position: absolute;
+      top: 22px;
+      left: 0;
+      bottom: 0;
+      width: 20px;
+      display: grid;
+      font-size: 10px;
+      color: #6f6;
+      align-items: center;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      position: relative;
+      z-index: 2;
+      border: 1px solid #0f0;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.15);
+    }
+    .grid.size-10 {
+      width: min(72vw, 340px);
+      height: min(72vw, 340px);
+    }
+    .grid.size-12 {
+      width: min(84vw, 380px);
+      height: min(84vw, 380px);
+    }
+    .grid.size-14 {
+      width: min(94vw, 420px);
+      height: min(94vw, 420px);
+    }
+    .grid.size-16 {
+      width: min(98vw, 460px);
+      height: min(98vw, 460px);
+    }
+    .ships-layer {
+      position: absolute;
+      left: 22px;
+      top: 22px;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .ships-layer.size-10 { width: min(72vw, 340px); height: min(72vw, 340px); }
+    .ships-layer.size-12 { width: min(84vw, 380px); height: min(84vw, 380px); }
+    .ships-layer.size-14 { width: min(94vw, 420px); height: min(94vw, 420px); }
+    .ships-layer.size-16 { width: min(98vw, 460px); height: min(98vw, 460px); }
+
+    .ship-silhouette {
+      position: absolute;
+      padding: 2px 1px;
+      transition: filter 0.25s, opacity 0.25s;
+    }
+    .ship-silhouette svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 120, 0.6));
+    }
+    .ship-silhouette.sunk svg {
+      filter: drop-shadow(0 0 6px rgba(255, 80, 0, 0.8));
+      opacity: 0.85;
+    }
+    .ship-silhouette.preview {
+      opacity: 0.55;
+      z-index: 3;
+    }
+    .ship-silhouette.preview-bad {
+      opacity: 0.45;
+    }
+    .ship-silhouette.preview-bad svg .hull {
+      fill: rgba(255, 60, 60, 0.5);
+      stroke: #f44;
+    }
+
+    .cell {
+      border: 1px solid rgba(0, 255, 0, 0.2);
+      background: rgba(0, 20, 0, 0.55);
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s;
+      min-width: 0;
+      min-height: 0;
+    }
+    .cell:hover:not(.disabled) {
+      background: rgba(0, 255, 0, 0.1);
+    }
+    .cell.has-ship {
+      background: rgba(0, 30, 15, 0.35);
+    }
+    .cell.preview-ok {
+      background: rgba(0, 255, 0, 0.18);
+    }
+    .cell.preview-bad {
+      background: rgba(255, 0, 0, 0.22);
+    }
+    .cell.miss::after {
+      content: "";
+      position: absolute;
+      inset: 28%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #48f 30%, transparent 70%);
+      box-shadow: 0 0 6px #48f;
+      z-index: 4;
+    }
+    .cell.hit::after {
+      content: "×";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(12px, 3.5vw, 20px);
+      color: #f44;
+      text-shadow: 0 0 8px #f00;
+      font-weight: bold;
+      z-index: 5;
+    }
+    .cell.sunk::after {
+      color: #f90;
+      text-shadow: 0 0 10px #f60;
+    }
+    .cell.disabled {
+      cursor: default;
+    }
+    .cell.last-shot {
+      outline: 2px solid #ff6;
+      outline-offset: -2px;
+      z-index: 6;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      border: 2px solid #0f0;
+      background: #000;
+      padding: 24px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+    }
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 8px #0f0;
+    }
+    .modal p {
+      font-size: 12px;
+      color: #afa;
+      margin-bottom: 16px;
+      line-height: 1.5;
+      text-transform: none;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #8c8;
+      margin-top: 4px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rank-panel { padding: 10px 8px; }
+    .rank-card {
+      border: 1px solid rgba(0, 255, 0, 0.35);
+      padding: 8px;
+      margin-bottom: 8px;
+      text-transform: none;
+    }
+    .rank-card:last-child { margin-bottom: 0; }
+    .rank-card.local-p2 { border-color: rgba(100, 180, 255, 0.35); }
+    .rank-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .rank-icon {
+      font-size: 22px;
+      line-height: 1;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 0, 0.4));
+    }
+    .rank-name {
+      font-size: 12px;
+      color: #afa;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .rank-player {
+      font-size: 9px;
+      color: #7a7;
+      margin-top: 1px;
+    }
+    .rank-bar-wrap {
+      height: 6px;
+      background: rgba(0, 40, 0, 0.6);
+      border: 1px solid rgba(0, 255, 0, 0.25);
+      margin: 6px 0 4px;
+      overflow: hidden;
+    }
+    .rank-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0a6, #0f0);
+      box-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+      transition: width 0.5s ease;
+    }
+    .rank-meta {
+      font-size: 9px;
+      color: #8a8;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .rank-note {
+      font-size: 9px;
+      color: #6a8;
+      margin-top: 6px;
+      line-height: 1.4;
+      text-transform: none;
+    }
+    .rank-ladder {
+      margin-top: 8px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+      text-transform: none;
+    }
+    .rank-ladder.open { max-height: 280px; overflow-y: auto; }
+    .rank-ladder-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      padding: 3px 0;
+      color: #7a9;
+      border-bottom: 1px solid rgba(0, 255, 0, 0.08);
+    }
+    .rank-ladder-item.current {
+      color: #afa;
+      font-weight: bold;
+    }
+    .rank-ladder-item.locked { opacity: 0.45; }
+    .btn-ladder {
+      width: 100%;
+      margin-top: 6px;
+      font-size: 9px;
+      padding: 4px 6px;
+    }
+    .modal-rank {
+      font-size: 11px;
+      color: #ff6;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      text-transform: none;
+      text-shadow: 0 0 6px rgba(255, 150, 0, 0.4);
+      white-space: pre-line;
+    }
+    .modal-rank.promoted { color: #0f0; text-shadow: 0 0 8px rgba(0, 255, 0, 0.5); }
+    body.night-mode .rank-card { border-color: rgba(100, 180, 220, 0.35); }
+    body.night-mode .rank-bar-wrap { background: rgba(5, 30, 50, 0.7); border-color: rgba(100, 180, 220, 0.3); }
+    body.night-mode .rank-bar { background: linear-gradient(90deg, #2a7ca5, #7ec8e3); box-shadow: 0 0 6px rgba(100, 180, 220, 0.5); }
+
+    @media (max-width: 800px) {
+      main { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #0f0;
+      }
+      .boards-wrap { padding: 8px; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sea-bg" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="moon"></div>
+    <div class="waves-wrap">
+      <div class="wave wave-1">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path fill="rgba(15,45,80,0.85)" d="M0,60 C150,100 350,20 600,60 C850,100 1050,20 1200,60 L1200,120 L0,120 Z"/>
+        </svg>
+      </div>
+      <div class="wave wave-2">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path fill="rgba(20,60,100,0.7)" d="M0,70 C200,30 400,90 600,50 C800,10 1000,80 1200,50 L1200,120 L0,120 Z"/>
+        </svg>
+      </div>
+      <div class="wave wave-3">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path fill="rgba(10,35,65,0.6)" d="M0,50 C180,90 420,10 600,55 C780,100 1020,15 1200,65 L1200,120 L0,120 Z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="app">
+    <header>
+      <div class="logo">
+        БЕЗДНА — МОРСКОЙ БОЙ
+        <small>Сонар · поле 10–16 · ночь и волны · bezdnachess.com</small>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="btn-night" title="Ночной режим">🌙 Ночь</button>
+        <button type="button" id="btn-rotate" title="Повернуть корабль">↻ Поворот</button>
+        <button type="button" id="btn-auto">Авто-расстановка</button>
+        <button type="button" id="btn-ready">К бою!</button>
+        <button type="button" id="btn-new">Новая игра</button>
+        <button type="button" id="btn-sound" title="Звук вкл/выкл">🔊 Звук</button>
+      </div>
+    </header>
+
+    <main>
+      <aside class="sidebar">
+        <div class="status-box">
+          <div class="phase" id="status-phase">Загрузка…</div>
+          <div class="hint" id="status-hint"></div>
+          <div class="stats-row">
+            <span id="stat-ships">Корабли: —</span>
+            <span id="stat-shots">Выстрелы: 0</span>
+          </div>
+        </div>
+
+        <div class="panel rank-panel" id="rank-panel">
+          <div class="panel-title">Звание командира</div>
+          <div id="rank-display"></div>
+          <button type="button" class="btn-ladder" id="btn-rank-ladder">▸ Все звания</button>
+          <div class="rank-ladder" id="rank-ladder"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Режим</div>
+          <div class="mode-row">
+            <button type="button" class="mode-btn active" data-mode="ai">Против компьютера</button>
+            <button type="button" class="mode-btn" data-mode="local">Два игрока</button>
+          </div>
+        </div>
+
+        <div class="panel" id="size-panel">
+          <div class="panel-title">Размер поля</div>
+          <div class="size-row">
+            <button type="button" class="size-btn active" data-size="10">10×10</button>
+            <button type="button" class="size-btn" data-size="12">12×12</button>
+            <button type="button" class="size-btn" data-size="14">14×14</button>
+            <button type="button" class="size-btn" data-size="16">16×16</button>
+          </div>
+        </div>
+
+        <div class="panel" id="dock-panel">
+          <div class="panel-title">Флот — выберите корабль</div>
+          <div class="ships-dock" id="ships-dock"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Легенда</div>
+          <div class="legend">
+            Корабли — силуэты (видны только на своём поле)<br>
+            <span class="hit">×</span> попадание &nbsp;
+            <span class="miss">○</span> промах<br>
+            <span class="sunk">×</span> потоплен — оранжевый след<br>
+            Кнопка «🌙 Ночь» — море, луна, волны.<br>
+            Звания растут за победы (сохраняются в браузере).<br>
+            Корабли не соприкасаются, даже углами.
+          </div>
+        </div>
+      </aside>
+
+      <div class="boards-wrap">
+        <div class="board-block" id="block-p1">
+          <div class="board-title" id="title-p1">МОЁ ПОЛЕ</div>
+          <div class="grid-wrap">
+            <div class="col-labels" id="cols-p1"></div>
+            <div class="row-labels" id="rows-p1"></div>
+            <div class="ships-layer size-10" id="ships-p1"></div>
+            <div class="fx-layer size-10" id="fx-p1"></div>
+            <div class="grid size-10" id="grid-p1"></div>
+          </div>
+        </div>
+        <div class="board-block" id="block-enemy">
+          <div class="board-title enemy" id="title-enemy">ПОЛЕ ПРОТИВНИКА</div>
+          <div class="grid-wrap">
+            <div class="col-labels" id="cols-enemy"></div>
+            <div class="row-labels" id="rows-enemy"></div>
+            <div class="ships-layer size-10" id="ships-enemy"></div>
+            <div class="fx-layer size-10" id="fx-enemy"></div>
+            <div class="grid size-10" id="grid-enemy"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modal-title">Победа!</h2>
+      <p class="modal-rank" id="modal-rank"></p>
+      <p id="modal-text"></p>
+      <button type="button" id="modal-btn">Новая игра</button>
+    </div>
+  </div>
+
+  <script>
+(function () {
+  'use strict';
+
+  const ALL_COLS = 'АБВГДЕЖЗИКЛМНОПРС'.split('');
+  const FLEETS = {
+    10: [4, 3, 3, 2, 2, 2, 1, 1, 1, 1],
+    12: [5, 4, 4, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1],
+    14: [6, 5, 5, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1],
+    16: [6, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1]
+  };
+  const BOARD_SIZE_CLASSES = ['size-10', 'size-12', 'size-14', 'size-16'];
+  const RANK_STORAGE_KEY = 'bezdna-battleship-ranks-v1';
+  const RANKS = [
+    { name: 'Юнга', icon: '⚓', rp: 0 },
+    { name: 'Матрос', icon: '🌊', rp: 40 },
+    { name: 'Старшина', icon: '⛵', rp: 100 },
+    { name: 'Боцман', icon: '🚤', rp: 180 },
+    { name: 'Мичман', icon: '🛥️', rp: 280 },
+    { name: 'Лейтенант', icon: '⚔️', rp: 400 },
+    { name: 'Капитан 3 ранга', icon: '🎯', rp: 550 },
+    { name: 'Капитан 2 ранга', icon: '💣', rp: 740 },
+    { name: 'Капитан 1 ранга', icon: '🚢', rp: 970 },
+    { name: 'Контр-адмирал', icon: '⭐', rp: 1240 },
+    { name: 'Адмирал флота', icon: '👑', rp: 1560 }
+  ];
+  const BOARD_RP_BONUS = { 10: 0, 12: 8, 14: 16, 16: 24 };
+  const SHIP_NAMES = {
+    1: 'катер',
+    2: 'сторож',
+    3: 'эсминец',
+    4: 'крейсер',
+    5: 'линкор',
+    6: 'авианосец'
+  };
+
+  const EMPTY = 0, SHIP = 1, MISS = 2, HIT = 3;
+
+  let boardSize = 10;
+  let fleet = [...FLEETS[10]];
+  let mode = 'ai';
+  let phase = 'setup';
+  let currentPlayer = 1;
+  let setupPlayer = 1;
+  let selectedShipIdx = 0;
+  let horizontal = true;
+  let shots = 0;
+  let lastShot = null;
+  let hoverCell = null;
+
+  let soundOn = true;
+  let nightMode = false;
+  let ladderOpen = false;
+  let profiles = null;
+  let audioCtx = null;
+  let ruVoice = null;
+
+  const boards = {
+    p1: [],
+    p2: [],
+    p1Shots: [],
+    p2Shots: []
+  };
+  const placedShips = { p1: [], p2: [] };
+  const dockRemaining = { p1: [], p2: [] };
+
+  let aiTargets = [];
+  let aiLastHit = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    statusPhase: $('status-phase'),
+    statusHint: $('status-hint'),
+    statShips: $('stat-ships'),
+    statShots: $('stat-shots'),
+    shipsDock: $('ships-dock'),
+    dockPanel: $('dock-panel'),
+    sizePanel: $('size-panel'),
+    gridP1: $('grid-p1'),
+    gridEnemy: $('grid-enemy'),
+    shipsP1: $('ships-p1'),
+    shipsEnemy: $('ships-enemy'),
+    fxP1: $('fx-p1'),
+    fxEnemy: $('fx-enemy'),
+    colsP1: $('cols-p1'),
+    rowsP1: $('rows-p1'),
+    colsEnemy: $('cols-enemy'),
+    rowsEnemy: $('rows-enemy'),
+    titleP1: $('title-p1'),
+    titleEnemy: $('title-enemy'),
+    blockEnemy: $('block-enemy'),
+    btnRotate: $('btn-rotate'),
+    btnAuto: $('btn-auto'),
+    btnReady: $('btn-ready'),
+    btnNew: $('btn-new'),
+    btnSound: $('btn-sound'),
+    btnNight: $('btn-night'),
+    rankDisplay: $('rank-display'),
+    rankLadder: $('rank-ladder'),
+    btnRankLadder: $('btn-rank-ladder'),
+    overlay: $('overlay'),
+    modalTitle: $('modal-title'),
+    modalRank: $('modal-rank'),
+    modalText: $('modal-text'),
+    modalBtn: $('modal-btn')
+  };
+
+  function colsForSize() {
+    return ALL_COLS.slice(0, boardSize);
+  }
+
+  function defaultProfile(name) {
+    return { name, rp: 0, wins: 0, losses: 0, bestRank: 0 };
+  }
+
+  function loadProfiles() {
+    try {
+      const raw = localStorage.getItem(RANK_STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        profiles = {
+          ai: Object.assign(defaultProfile('Командир'), data.ai || {}),
+          local1: Object.assign(defaultProfile('Игрок 1'), data.local1 || {}),
+          local2: Object.assign(defaultProfile('Игрок 2'), data.local2 || {})
+        };
+        return;
+      }
+    } catch (e) {}
+    profiles = {
+      ai: defaultProfile('Командир'),
+      local1: defaultProfile('Игрок 1'),
+      local2: defaultProfile('Игрок 2')
+    };
+  }
+
+  function saveProfiles() {
+    try {
+      localStorage.setItem(RANK_STORAGE_KEY, JSON.stringify(profiles));
+    } catch (e) {}
+  }
+
+  function getRankInfo(rp) {
+    let index = 0;
+    for (let i = RANKS.length - 1; i >= 0; i--) {
+      if (rp >= RANKS[i].rp) { index = i; break; }
+    }
+    const rank = RANKS[index];
+    const next = RANKS[index + 1] || null;
+    const progress = next
+      ? Math.min(100, Math.round(((rp - rank.rp) / (next.rp - rank.rp)) * 100))
+      : 100;
+    return { index, rank, next, progress, rp };
+  }
+
+  function calcWinRp() {
+    let rp = 25;
+    rp += BOARD_RP_BONUS[boardSize] || 0;
+    const ideal = totalFleetCells() * 1.75;
+    if (shots <= ideal) rp += 12;
+    else if (shots <= ideal * 1.35) rp += 6;
+    return rp;
+  }
+
+  function applyRankToProfile(key, won) {
+    const prof = profiles[key];
+    const before = getRankInfo(prof.rp);
+    let delta = 0;
+    if (won) {
+      prof.wins++;
+      delta = mode === 'ai' ? calcWinRp() : 18 + (BOARD_RP_BONUS[boardSize] || 0);
+      prof.rp += delta;
+    } else {
+      prof.losses++;
+      delta = mode === 'ai' ? -12 : -8;
+      prof.rp = Math.max(0, prof.rp + delta);
+    }
+    const after = getRankInfo(prof.rp);
+    if (after.index > prof.bestRank) prof.bestRank = after.index;
+    saveProfiles();
+    return { prof, before, after, delta, promoted: after.index > before.index };
+  }
+
+  function buildRankCardHtml(prof, label, extraClass) {
+    const info = getRankInfo(prof.rp);
+    const nextText = info.next
+      ? `до «${info.next.name}»: ${info.next.rp - prof.rp} очк.`
+      : 'максимальное звание';
+    return `
+      <div class="rank-card${extraClass ? ' ' + extraClass : ''}">
+        <div class="rank-head">
+          <span class="rank-icon">${info.rank.icon}</span>
+          <div>
+            <div class="rank-name">${info.rank.name}</div>
+            <div class="rank-player">${label} · ${prof.rp} очков</div>
+          </div>
+        </div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${info.progress}%"></div></div>
+        <div class="rank-meta">
+          <span>${nextText}</span>
+          <span>П ${prof.wins} / ПР ${prof.losses}</span>
+        </div>
+      </div>`;
+  }
+
+  function renderRankLadder(activeIndexes) {
+    const activeSet = new Set(activeIndexes);
+    els.rankLadder.innerHTML = RANKS.map((r, i) => {
+      const cls = [
+        'rank-ladder-item',
+        activeSet.has(i) ? 'current' : '',
+        i > Math.max(...activeIndexes) ? 'locked' : ''
+      ].filter(Boolean).join(' ');
+      return `<div class="${cls}"><span>${r.icon}</span><span>${r.name}</span><span style="margin-left:auto">${r.rp} очк.</span></div>`;
+    }).join('');
+  }
+
+  function renderRankPanel() {
+    if (!profiles) loadProfiles();
+    if (mode === 'ai') {
+      els.rankDisplay.innerHTML = buildRankCardHtml(profiles.ai, profiles.ai.name, '');
+      renderRankLadder([getRankInfo(profiles.ai.rp).index]);
+    } else {
+      els.rankDisplay.innerHTML =
+        buildRankCardHtml(profiles.local1, profiles.local1.name, '') +
+        buildRankCardHtml(profiles.local2, profiles.local2.name, 'local-p2');
+      renderRankLadder([
+        getRankInfo(profiles.local1.rp).index,
+        getRankInfo(profiles.local2.rp).index
+      ]);
+    }
+    els.btnRankLadder.textContent = ladderOpen ? '▾ Скрыть звания' : '▸ Все звания';
+    els.rankLadder.classList.toggle('open', ladderOpen);
+  }
+
+  function formatRankModalMessage(results) {
+    if (!results.length) return '';
+    return results.map(({ prof, after, delta, promoted }) => {
+      const sign = delta > 0 ? '+' : '';
+      let line = `${prof.name}: ${sign}${delta} очк. · ${after.rank.icon} ${after.rank.name}`;
+      if (promoted) line = `🎖 Повышение! ${line}`;
+      return line;
+    }).join('\n');
+  }
+
+  function processRankAfterGame(winner) {
+    if (mode === 'ai') {
+      const res = applyRankToProfile('ai', winner === 1);
+      renderRankPanel();
+      return [res];
+    }
+    const wKey = winner === 1 ? 'local1' : 'local2';
+    const lKey = winner === 1 ? 'local2' : 'local1';
+    const results = [
+      applyRankToProfile(wKey, true),
+      applyRankToProfile(lKey, false)
+    ];
+    renderRankPanel();
+    return results;
+  }
+
+  function createEmptyBoard() {
+    return Array.from({ length: boardSize }, () => Array(boardSize).fill(EMPTY));
+  }
+
+  function cloneBoard(b) {
+    return b.map((row) => row.slice());
+  }
+
+  function totalFleetCells() {
+    return fleet.reduce((a, b) => a + b, 0);
+  }
+
+  function applyBoardSizeClass() {
+    const cls = `size-${boardSize}`;
+    [els.gridP1, els.gridEnemy, els.shipsP1, els.shipsEnemy, els.fxP1, els.fxEnemy].forEach((el) => {
+      BOARD_SIZE_CLASSES.forEach((c) => el.classList.remove(c));
+      el.classList.add(cls);
+    });
+  }
+
+  function updateNightButton() {
+    els.btnNight.textContent = nightMode ? '☀️ День' : '🌙 Ночь';
+    els.btnNight.classList.toggle('active', nightMode);
+    document.body.classList.toggle('night-mode', nightMode);
+  }
+
+  function spawnExplosion(fxLayer, gridEl, r, c, kind) {
+    if (!fxLayer || !gridEl) return;
+    const pct = (n) => (n / boardSize) * 100;
+    const burst = document.createElement('div');
+    burst.className = 'explosion' + (kind === 'sunk' ? ' explosion-sunk' : ' explosion-hit');
+    burst.style.left = pct(c) + '%';
+    burst.style.top = pct(r) + '%';
+    burst.style.width = pct(1) + '%';
+    burst.style.height = pct(1) + '%';
+
+    const core = document.createElement('div');
+    core.className = 'explosion-core';
+    burst.appendChild(core);
+
+    const ring = document.createElement('div');
+    ring.className = 'explosion-ring';
+    burst.appendChild(ring);
+
+    const count = kind === 'sunk' ? 14 : 10;
+    const dist = kind === 'sunk' ? 28 : 18;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle';
+      const angle = (360 / count) * i + Math.random() * 20;
+      const rad = angle * Math.PI / 180;
+      const d = dist + Math.random() * 12;
+      p.style.setProperty('--tx', Math.cos(rad) * d + 'px');
+      p.style.setProperty('--ty', Math.sin(rad) * d + 'px');
+      p.style.animationDelay = (Math.random() * 0.08) + 's';
+      burst.appendChild(p);
+    }
+
+    fxLayer.appendChild(burst);
+
+    const cell = gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+    if (cell) {
+      cell.classList.add('boom-flash');
+      setTimeout(() => cell.classList.remove('boom-flash'), 500);
+    }
+
+    setTimeout(() => burst.remove(), kind === 'sunk' ? 900 : 650);
+  }
+
+  function showShotFx(shooter, r, c, result) {
+    if (result !== 'hit' && result !== 'sunk') return;
+    const isP1Target = shooter === 2;
+    const fxLayer = isP1Target ? els.fxP1 : els.fxEnemy;
+    const gridEl = isP1Target ? els.gridP1 : els.gridEnemy;
+    spawnExplosion(fxLayer, gridEl, r, c, result);
+  }
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function pickRuVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    ruVoice = voices.find((v) => v.lang.startsWith('ru')) || null;
+  }
+
+  function speak(text) {
+    if (!soundOn || !window.speechSynthesis) return;
+    initAudio();
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'ru-RU';
+    utter.rate = 1.05;
+    if (ruVoice) utter.voice = ruVoice;
+    window.speechSynthesis.speak(utter);
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!soundOn || !audioCtx) return;
+    try {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(volume || 0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {}
+  }
+
+  function playShotFx(result) {
+    if (!soundOn) return;
+    initAudio();
+    if (result === 'miss') {
+      playTone(220, 0.18, 'sine', 0.06);
+      setTimeout(() => playTone(160, 0.22, 'sine', 0.04), 80);
+    } else if (result === 'hit') {
+      playTone(520, 0.12, 'square', 0.05);
+      playTone(780, 0.15, 'square', 0.04);
+    } else if (result === 'sunk') {
+      playTone(180, 0.2, 'sawtooth', 0.07);
+      setTimeout(() => playTone(90, 0.35, 'sawtooth', 0.06), 120);
+    }
+  }
+
+  function announceShot(result) {
+    const phrases = { miss: 'Мимо', hit: 'Ранил', sunk: 'Убил' };
+    if (!phrases[result]) return;
+    playShotFx(result);
+    speak(phrases[result]);
+  }
+
+  function announceEnd(winner) {
+    if (!soundOn) return;
+    initAudio();
+    setTimeout(() => {
+      if (!soundOn) return;
+      if (mode === 'ai') {
+        if (winner === 1) {
+          playTone(523, 0.25, 'sine', 0.07);
+          setTimeout(() => playTone(659, 0.25, 'sine', 0.07), 180);
+          setTimeout(() => playTone(784, 0.4, 'sine', 0.08), 360);
+          speak('Победа');
+        } else {
+          playTone(220, 0.35, 'sawtooth', 0.06);
+          setTimeout(() => playTone(140, 0.5, 'sawtooth', 0.05), 200);
+          speak('Проиграл');
+        }
+      } else {
+        playTone(440, 0.2, 'sine', 0.07);
+        setTimeout(() => playTone(554, 0.35, 'sine', 0.07), 200);
+        speak('Победа');
+      }
+    }, 850);
+  }
+
+  function playPromotionFx() {
+    if (!soundOn || !audioCtx) return;
+    initAudio();
+    playTone(392, 0.22, 'sine', 0.07);
+    setTimeout(() => playTone(494, 0.22, 'sine', 0.07), 140);
+    setTimeout(() => playTone(587, 0.22, 'sine', 0.08), 280);
+    setTimeout(() => playTone(784, 0.3, 'triangle', 0.09), 420);
+    setTimeout(() => playTone(988, 0.5, 'sine', 0.08), 560);
+  }
+
+  function announcePromotion(promotedResults) {
+    if (!soundOn || !promotedResults.length) return;
+    initAudio();
+    setTimeout(() => {
+      if (!soundOn) return;
+      playPromotionFx();
+      setTimeout(() => {
+        if (!soundOn) return;
+        const rankName = promotedResults[0].after.rank.name;
+        speak(promotedResults.length === 1 ? `Повышение! ${rankName}` : 'Повышение!');
+      }, 650);
+    }, 2400);
+  }
+
+  function updateSoundButton() {
+    els.btnSound.textContent = soundOn ? '🔊 Звук' : '🔇 Тихо';
+    els.btnSound.classList.toggle('active', soundOn);
+  }
+
+  function unlockSound() {
+    initAudio();
+    if (!ruVoice) pickRuVoice();
+  }
+
+  function shipTypeName(len) {
+    return SHIP_NAMES[Math.min(len, 6)] || 'корабль';
+  }
+
+  function buildShipSvg(len, horiz, opts) {
+    const sunk = opts && opts.sunk;
+    const preview = opts && opts.preview;
+    const w = horiz ? len * 100 : 100;
+    const h = horiz ? 100 : len * 100;
+    const hullFill = sunk ? '#5a1800' : preview ? '#0a6a3a' : '#0d5030';
+    const hullStroke = sunk ? '#f80' : '#0f0';
+    const deckFill = sunk ? '#3a1000' : '#145a38';
+    const wake = sunk ? 'rgba(255,100,0,0.25)' : 'rgba(0,255,120,0.12)';
+
+    let hullPath;
+    let extras = '';
+
+    if (horiz) {
+      const bow = 8;
+      const stern = 6;
+      hullPath = `M ${bow} 52
+        Q ${len * 12} 18, ${len * 50 - 10} 22
+        L ${len * 100 - stern} 28
+        Q ${len * 100 - 2} 50, ${len * 100 - stern} 72
+        L ${len * 50 - 10} 78
+        Q ${len * 12} 82, ${bow} 48 Z`;
+
+      const mid = len * 50;
+      extras += `<ellipse cx="${mid}" cy="88" rx="${len * 28}" ry="8" fill="${wake}"/>`;
+      if (len >= 2) {
+        extras += `<rect class="deck" x="${mid - 14}" y="38" width="28" height="22" rx="3" fill="${deckFill}" stroke="${hullStroke}" stroke-width="1.5"/>`;
+      }
+      if (len >= 3) {
+        extras += `<rect x="${mid - 4}" y="28" width="8" height="14" fill="${deckFill}" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 4) {
+        extras += `<circle cx="${len * 22}" cy="42" r="5" fill="#1a8060" stroke="${hullStroke}" stroke-width="1"/>`;
+        extras += `<circle cx="${len * 78}" cy="42" r="5" fill="#1a8060" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 5) {
+        extras += `<rect x="${len * 15}" y="34" width="18" height="10" rx="2" fill="#186848" stroke="${hullStroke}" stroke-width="1"/>`;
+        extras += `<rect x="${len * 67}" y="34" width="18" height="10" rx="2" fill="#186848" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 6) {
+        extras += `<rect x="${mid - 22}" y="24" width="44" height="16" rx="2" fill="#145a38" stroke="${hullStroke}" stroke-width="1.5"/>`;
+        extras += `<line x1="${mid}" y1="24" x2="${mid}" y2="12" stroke="${hullStroke}" stroke-width="2"/>`;
+      }
+    } else {
+      const bow = 8;
+      const stern = 6;
+      hullPath = `M 48 ${bow}
+        Q 18 ${len * 12}, 22 ${len * 50 - 10}
+        L 28 ${len * 100 - stern}
+        Q 50 ${len * 100 - 2}, 72 ${len * 100 - stern}
+        L 78 ${len * 50 - 10}
+        Q 82 ${len * 12}, 52 ${bow} Z`;
+
+      const mid = len * 50;
+      extras += `<ellipse cx="88" cy="${mid}" rx="8" ry="${len * 28}" fill="${wake}"/>`;
+      if (len >= 2) {
+        extras += `<rect class="deck" x="38" y="${mid - 14}" width="22" height="28" rx="3" fill="${deckFill}" stroke="${hullStroke}" stroke-width="1.5"/>`;
+      }
+      if (len >= 3) {
+        extras += `<rect x="28" y="${mid - 4}" width="14" height="8" fill="${deckFill}" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 4) {
+        extras += `<circle cx="42" cy="${len * 22}" r="5" fill="#1a8060" stroke="${hullStroke}" stroke-width="1"/>`;
+        extras += `<circle cx="42" cy="${len * 78}" r="5" fill="#1a8060" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 5) {
+        extras += `<rect x="34" y="${len * 15}" width="10" height="18" rx="2" fill="#186848" stroke="${hullStroke}" stroke-width="1"/>`;
+        extras += `<rect x="34" y="${len * 67}" width="10" height="18" rx="2" fill="#186848" stroke="${hullStroke}" stroke-width="1"/>`;
+      }
+      if (len >= 6) {
+        extras += `<rect x="24" y="${mid - 22}" width="16" height="44" rx="2" fill="#145a38" stroke="${hullStroke}" stroke-width="1.5"/>`;
+        extras += `<line x1="12" y1="${mid}" x2="24" y2="${mid}" stroke="${hullStroke}" stroke-width="2"/>`;
+      }
+    }
+
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      ${extras}
+      <path class="hull" d="${hullPath}" fill="${hullFill}" stroke="${hullStroke}" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function initLabels() {
+    const cols = colsForSize();
+    const gridCols = `repeat(${boardSize}, 1fr)`;
+    const gridRows = `repeat(${boardSize}, 1fr)`;
+
+    [els.colsP1, els.colsEnemy].forEach((el) => {
+      el.style.gridTemplateColumns = gridCols;
+      el.innerHTML = cols.map((c) => `<span>${c}</span>`).join('');
+    });
+    [els.rowsP1, els.rowsEnemy].forEach((el) => {
+      el.style.gridTemplateRows = gridRows;
+      el.innerHTML = Array.from({ length: boardSize }, (_, i) => `<span>${i + 1}</span>`).join('');
+    });
+
+    [els.gridP1, els.gridEnemy].forEach((el) => {
+      el.style.gridTemplateColumns = gridCols;
+      el.style.gridTemplateRows = gridRows;
+    });
+  }
+
+  function buildGrid(el) {
+    el.innerHTML = '';
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        el.appendChild(cell);
+      }
+    }
+  }
+
+  function getBoard(player) {
+    return player === 1 ? boards.p1 : boards.p2;
+  }
+
+  function getShotsBoard(shooter) {
+    return shooter === 1 ? boards.p1Shots : boards.p2Shots;
+  }
+
+  function getOpponent(player) {
+    return player === 1 ? 2 : 1;
+  }
+
+  function isValidPlacement(board, cells) {
+    const own = new Set(cells.map(([r, c]) => `${r},${c}`));
+    for (const [r, c] of cells) {
+      if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return false;
+      if (board[r][c] === SHIP) return false;
+    }
+    for (const [r, c] of cells) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+            if (board[nr][nc] === SHIP && !own.has(`${nr},${nc}`)) return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  function getPlacementCells(r, c, len, horiz) {
+    const cells = [];
+    for (let i = 0; i < len; i++) {
+      cells.push(horiz ? [r, c + i] : [r + i, c]);
+    }
+    return cells;
+  }
+
+  function autoPlace(player) {
+    const key = player === 1 ? 'p1' : 'p2';
+    const board = createEmptyBoard();
+    const ships = [];
+    const toPlace = [...fleet].sort((a, b) => b - a);
+
+    for (const len of toPlace) {
+      let placed = false;
+      let attempts = 0;
+      while (!placed && attempts < 1200) {
+        attempts++;
+        const horiz = Math.random() < 0.5;
+        const r = Math.floor(Math.random() * boardSize);
+        const c = Math.floor(Math.random() * boardSize);
+        const cells = getPlacementCells(r, c, len, horiz);
+        if (isValidPlacement(board, cells)) {
+          for (const [cr, cc] of cells) board[cr][cc] = SHIP;
+          ships.push({ len, cells: cells.map(([a, b]) => [a, b]), horiz });
+          placed = true;
+        }
+      }
+      if (!placed) return autoPlace(player);
+    }
+
+    if (player === 1) boards.p1 = board;
+    else boards.p2 = board;
+    placedShips[key] = ships;
+    dockRemaining[key] = [];
+  }
+
+  function renderDock() {
+    const key = setupPlayer === 1 ? 'p1' : 'p2';
+    const remaining = dockRemaining[key];
+    els.shipsDock.innerHTML = '';
+    remaining.forEach((len, idx) => {
+      const item = document.createElement('div');
+      item.className = 'ship-item' + (idx === selectedShipIdx ? ' selected' : '');
+      const previewWrap = document.createElement('div');
+      previewWrap.className = 'ship-preview-wrap';
+      previewWrap.innerHTML = buildShipSvg(len, true, { preview: true });
+      const label = document.createElement('span');
+      label.className = 'ship-label';
+      label.textContent = `${shipTypeName(len)} · ${len} пал.`;
+      item.appendChild(previewWrap);
+      item.appendChild(label);
+      item.addEventListener('click', () => {
+        selectedShipIdx = idx;
+        renderDock();
+        renderBoards();
+      });
+      els.shipsDock.appendChild(item);
+    });
+    if (remaining.length === 0) {
+      els.shipsDock.innerHTML = '<div class="ship-label">Все корабли на воде ✓</div>';
+    }
+  }
+
+  function getShipCellsAt(board, hitR, hitC) {
+    const cells = [];
+    const visited = Array.from({ length: boardSize }, () => Array(boardSize).fill(false));
+    const stack = [[hitR, hitC]];
+    while (stack.length) {
+      const [r, c] = stack.pop();
+      if (visited[r][c]) continue;
+      if (board[r][c] !== SHIP && board[r][c] !== HIT) continue;
+      visited[r][c] = true;
+      cells.push([r, c]);
+      [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && !visited[nr][nc]) {
+          if (board[nr][nc] === SHIP || board[nr][nc] === HIT) stack.push([nr, nc]);
+        }
+      });
+    }
+    return cells;
+  }
+
+  function isShipSunk(board, shotsBoard, hitR, hitC) {
+    const cells = getShipCellsAt(board, hitR, hitC);
+    return cells.length > 0 && cells.every(([r, c]) => shotsBoard[r][c] === HIT);
+  }
+
+  function isCellSunk(board, shotsBoard, r, c) {
+    if (board[r][c] !== HIT && board[r][c] !== SHIP) return false;
+    if (shotsBoard[r][c] !== HIT) return false;
+    const cells = getShipCellsAt(board, r, c);
+    return cells.every(([cr, cc]) => shotsBoard[cr][cc] === HIT);
+  }
+
+  function isShipObjSunk(ship, board, shotsBoard) {
+    if (!shotsBoard) return false;
+    return ship.cells.every(([r, c]) => shotsBoard[r][c] === HIT);
+  }
+
+  function placeShipSilhouette(layer, ship, board, shotsBoard, extraClass) {
+    const { len, cells, horiz } = ship;
+    const [r0, c0] = cells[0];
+    const el = document.createElement('div');
+    el.className = 'ship-silhouette' + (extraClass ? ' ' + extraClass : '');
+    const sunk = shotsBoard && isShipObjSunk(ship, board, shotsBoard);
+    if (sunk) el.classList.add('sunk');
+
+    const pct = (n) => (n / boardSize) * 100;
+    el.style.left = pct(c0) + '%';
+    el.style.top = pct(r0) + '%';
+    if (horiz) {
+      el.style.width = pct(len) + '%';
+      el.style.height = pct(1) + '%';
+    } else {
+      el.style.width = pct(1) + '%';
+      el.style.height = pct(len) + '%';
+    }
+    el.innerHTML = buildShipSvg(len, horiz, { sunk });
+    layer.appendChild(el);
+  }
+
+  function renderShipsLayer(layerEl, playerKey, board, shotsBoard, hideShips, preview) {
+    layerEl.innerHTML = '';
+    if (hideShips && !preview) return;
+
+    placedShips[playerKey].forEach((ship) => {
+      placeShipSilhouette(layerEl, ship, board, shotsBoard, '');
+    });
+
+    if (preview && preview.cells) {
+      const ok = isValidPlacement(board, preview.cells);
+      const ghost = {
+        len: preview.len,
+        cells: preview.cells,
+        horiz: preview.horiz
+      };
+      placeShipSilhouette(layerEl, ghost, board, null, 'preview' + (ok ? '' : ' preview-bad'));
+    }
+  }
+
+  function renderCell(cellEl, r, c, opts) {
+    const { board, shots, showPreview, previewCells, interactive, boardId } = opts;
+    cellEl.className = 'cell';
+    cellEl.classList.remove('preview-ok', 'preview-bad', 'disabled', 'has-ship', 'miss', 'hit', 'sunk', 'last-shot');
+
+    const val = board[r][c];
+    const shot = shots ? shots[r][c] : EMPTY;
+
+    if (showPreview && previewCells) {
+      const inPreview = previewCells.some(([pr, pc]) => pr === r && pc === c);
+      if (inPreview) {
+        cellEl.classList.add(isValidPlacement(board, previewCells) ? 'preview-ok' : 'preview-bad');
+      }
+    }
+
+    if (val === SHIP) cellEl.classList.add('has-ship');
+    if (shot === MISS) cellEl.classList.add('miss');
+    if (shot === HIT || val === HIT) cellEl.classList.add('hit');
+    if ((shot === HIT || val === HIT) && shots && isCellSunk(board, shots, r, c)) {
+      cellEl.classList.add('sunk');
+    }
+
+    if (lastShot && lastShot.r === r && lastShot.c === c && lastShot.board === boardId) {
+      cellEl.classList.add('last-shot');
+    }
+
+    if (!interactive) cellEl.classList.add('disabled');
+  }
+
+  function renderBoards() {
+    const setup = phase === 'setup';
+    const p1Board = boards.p1;
+    const enemyBoard = mode === 'ai' ? boards.p2 : (currentPlayer === 1 ? boards.p2 : boards.p1);
+    const enemyShots = mode === 'ai' ? boards.p1Shots : (currentPlayer === 1 ? boards.p1Shots : boards.p2Shots);
+
+    let previewP1 = null;
+    if (setup && setupPlayer === 1 && hoverCell && hoverCell.board === 'p1') {
+      const rem = dockRemaining.p1;
+      if (rem.length > 0) {
+        const len = rem[selectedShipIdx] || rem[0];
+        previewP1 = {
+          len,
+          cells: getPlacementCells(hoverCell.r, hoverCell.c, len, horizontal),
+          horiz: horizontal
+        };
+      }
+    }
+
+    let previewP2 = null;
+    if (setup && setupPlayer === 2 && mode === 'local' && hoverCell && hoverCell.board === 'enemy') {
+      const rem = dockRemaining.p2;
+      if (rem.length > 0) {
+        const len = rem[selectedShipIdx] || rem[0];
+        previewP2 = {
+          len,
+          cells: getPlacementCells(hoverCell.r, hoverCell.c, len, horizontal),
+          horiz: horizontal
+        };
+      }
+    }
+
+    els.gridP1.querySelectorAll('.cell').forEach((cell) => {
+      const r = +cell.dataset.r, c = +cell.dataset.c;
+      const isSetupP1 = setup && setupPlayer === 1;
+      renderCell(cell, r, c, {
+        board: p1Board,
+        shots: boards.p2Shots,
+        showPreview: isSetupP1,
+        previewCells: isSetupP1 && previewP1 ? previewP1.cells : null,
+        boardId: 'p1',
+        interactive: isSetupP1 || (phase === 'battle' && currentPlayer === 1 && mode === 'local')
+      });
+    });
+
+    const hideEnemyShips = phase === 'battle' || mode === 'ai';
+    const isSetupP2 = setup && setupPlayer === 2 && mode === 'local';
+    const enemyInteractive = phase === 'battle' && (
+      (mode === 'ai' && currentPlayer === 1) ||
+      (mode === 'local' && currentPlayer === 2)
+    );
+
+    els.gridEnemy.querySelectorAll('.cell').forEach((cell) => {
+      const r = +cell.dataset.r, c = +cell.dataset.c;
+      renderCell(cell, r, c, {
+        board: enemyBoard,
+        shots: enemyShots,
+        showPreview: isSetupP2,
+        previewCells: isSetupP2 && previewP2 ? previewP2.cells : null,
+        boardId: 'enemy',
+        interactive: enemyInteractive || isSetupP2
+      });
+    });
+
+    renderShipsLayer(els.shipsP1, 'p1', p1Board, boards.p2Shots, false, previewP1);
+    renderShipsLayer(
+      els.shipsEnemy,
+      mode === 'ai' ? 'p2' : 'p2',
+      enemyBoard,
+      enemyShots,
+      hideEnemyShips && !isSetupP2,
+      isSetupP2 ? previewP2 : null
+    );
+
+    if (setup) {
+      els.blockEnemy.classList.toggle('hidden-board', mode === 'ai');
+      els.titleEnemy.textContent = mode === 'ai' ? 'ПОЛЕ ПРОТИВНИКА' : (setupPlayer === 2 ? 'ИГРОК 2 — РАССТАНОВКА' : 'ИГРОК 2');
+      els.titleP1.textContent = setupPlayer === 1 ? 'ИГРОК 1 — РАССТАНОВКА' : 'ИГРОК 1';
+    } else {
+      els.blockEnemy.classList.remove('hidden-board');
+      els.titleP1.textContent = mode === 'ai' ? 'МОЁ ПОЛЕ' : 'ИГРОК 1';
+      els.titleEnemy.textContent = mode === 'ai' ? 'ПОЛЕ КОМПЬЮТЕРА' : 'ИГРОК 2';
+      els.titleEnemy.classList.toggle('active-turn',
+        (mode === 'ai' && currentPlayer === 1) ||
+        (mode === 'local' && currentPlayer === 2)
+      );
+    }
+
+    updateStatus();
+    updateButtons();
+  }
+
+  function countHits(shotsBoard) {
+    let n = 0;
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize; c++) if (shotsBoard[r][c] === HIT) n++;
+    }
+    return n;
+  }
+
+  function updateStatus() {
+    if (phase === 'setup') {
+      const name = setupPlayer === 1 ? 'Игрок 1' : 'Игрок 2';
+      els.statusPhase.textContent = `Расстановка — ${name} · ${boardSize}×${boardSize}`;
+      els.statusHint.textContent = mode === 'ai' && setupPlayer === 1
+        ? 'Клик по полю — поставить корабль. «Авто» — случайно. «К бою!» — когда флот готов.'
+        : 'Выберите корабль слева, клик — поставить. «Поворот» — направление.';
+    } else if (phase === 'battle') {
+      if (mode === 'ai') {
+        els.statusPhase.textContent = currentPlayer === 1 ? 'Ваш ход — стреляйте!' : 'Ход компьютера…';
+        els.statusHint.textContent = currentPlayer === 1
+          ? 'Кликните по полю компьютера. Попал — стреляете снова.'
+          : 'Подождите, сонар обрабатывает…';
+      } else {
+        els.statusPhase.textContent = `Бой — ход игрока ${currentPlayer}`;
+        els.statusHint.textContent = currentPlayer === 1
+          ? 'Игрок 1 стреляет по правому полю.'
+          : 'Игрок 2 стреляет по левому полю.';
+      }
+    }
+    els.statShips.textContent = phase === 'battle'
+      ? `Враг: ~${Math.max(0, totalFleetCells() - countHits(getShotsBoard(currentPlayer)))} клеток`
+      : `Корабли: ${dockRemaining[setupPlayer === 1 ? 'p1' : 'p2'].length} / ${fleet.length}`;
+    els.statShots.textContent = `Выстрелы: ${shots}`;
+    els.dockPanel.style.display = phase === 'setup' ? 'block' : 'none';
+    els.sizePanel.style.display = phase === 'setup' ? 'block' : 'none';
+  }
+
+  function updateButtons() {
+    const inSetup = phase === 'setup';
+    const key = setupPlayer === 1 ? 'p1' : 'p2';
+    els.btnRotate.disabled = !inSetup;
+    els.btnAuto.disabled = !inSetup;
+    els.btnReady.disabled = !inSetup || dockRemaining[key].length > 0;
+    document.querySelectorAll('.size-btn').forEach((b) => {
+      b.disabled = !inSetup;
+    });
+  }
+
+  function tryPlaceShip(player, r, c) {
+    const key = player === 1 ? 'p1' : 'p2';
+    const rem = dockRemaining[key];
+    if (!rem.length) return false;
+    const len = rem[selectedShipIdx] || rem[0];
+    const cells = getPlacementCells(r, c, len, horizontal);
+    const board = getBoard(player);
+    if (!isValidPlacement(board, cells)) return false;
+
+    for (const [cr, cc] of cells) board[cr][cc] = SHIP;
+    placedShips[key].push({ len, cells, horiz: horizontal });
+    rem.splice(selectedShipIdx, 1);
+    if (selectedShipIdx >= rem.length) selectedShipIdx = Math.max(0, rem.length - 1);
+    return true;
+  }
+
+  function startBattle() {
+    phase = 'battle';
+    currentPlayer = 1;
+    shots = 0;
+    aiTargets = [];
+    aiLastHit = null;
+    if (mode === 'ai') autoPlace(2);
+    renderDock();
+    renderBoards();
+    if (mode === 'ai' && currentPlayer === 2) setTimeout(aiTurn, 600);
+  }
+
+  function fireShot(shooter, r, c) {
+    const target = getOpponent(shooter);
+    const targetBoard = getBoard(target);
+    const shotsBoard = getShotsBoard(shooter);
+
+    if (shotsBoard[r][c] === HIT || shotsBoard[r][c] === MISS) return false;
+
+    shots++;
+    lastShot = { r, c, board: shooter === 1 ? 'enemy' : 'p1' };
+
+    if (targetBoard[r][c] === SHIP) {
+      targetBoard[r][c] = HIT;
+      shotsBoard[r][c] = HIT;
+      const sunk = isShipSunk(targetBoard, shotsBoard, r, c);
+      if (sunk) {
+        const shipCells = getShipCellsAt(targetBoard, r, c);
+        markSurroundingMiss(shotsBoard, targetBoard, shipCells);
+      }
+      const result = sunk ? 'sunk' : 'hit';
+      showShotFx(shooter, r, c, result);
+      announceShot(result);
+      if (checkWin(shooter)) {
+        endGame(shooter);
+        return true;
+      }
+      return result;
+    }
+    shotsBoard[r][c] = MISS;
+    announceShot('miss');
+    return 'miss';
+  }
+
+  function markSurroundingMiss(shotsBoard, board, shipCells) {
+    for (const [r, c] of shipCells) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+            if (shotsBoard[nr][nc] === EMPTY && board[nr][nc] !== SHIP && board[nr][nc] !== HIT) {
+              shotsBoard[nr][nc] = MISS;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function checkWin(shooter) {
+    const target = getOpponent(shooter);
+    const board = getBoard(target);
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize; c++) {
+        if (board[r][c] === SHIP) return false;
+      }
+    }
+    return true;
+  }
+
+  function endGame(winner) {
+    phase = 'ended';
+    const rankResults = processRankAfterGame(winner);
+    const rankMsg = formatRankModalMessage(rankResults);
+    announceEnd(winner);
+    announcePromotion(rankResults.filter((r) => r.promoted && r.delta > 0));
+    els.overlay.classList.add('show');
+    if (rankMsg) {
+      els.modalRank.textContent = rankMsg;
+      els.modalRank.classList.toggle('promoted', rankResults.some((r) => r.promoted && r.delta > 0));
+      els.modalRank.style.display = 'block';
+    } else {
+      els.modalRank.style.display = 'none';
+    }
+    if (mode === 'ai') {
+      els.modalTitle.textContent = winner === 1 ? 'Победа!' : 'Поражение';
+      els.modalText.textContent = winner === 1
+        ? `Флот противника потоплен за ${shots} выстрелов на поле ${boardSize}×${boardSize}.`
+        : 'Компьютер уничтожил ваш флот. Попробуйте другое поле или расстановку.';
+    } else {
+      els.modalTitle.textContent = `Игрок ${winner} победил!`;
+      els.modalText.textContent = `Все корабли соперника на дне. Партия за ${shots} выстрелов.`;
+    }
+    renderBoards();
+  }
+
+  function aiTurn() {
+    if (phase !== 'battle' || currentPlayer !== 2) return;
+
+    let r, c;
+    if (aiTargets.length > 0) {
+      const t = aiTargets.shift();
+      r = t.r; c = t.c;
+    } else {
+      const candidates = [];
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          if (boards.p2Shots[i][j] === EMPTY) candidates.push({ r: i, c: j });
+        }
+      }
+      if (!candidates.length) return;
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      r = pick.r; c = pick.c;
+    }
+
+    const result = fireShot(2, r, c);
+    renderBoards();
+    if (phase === 'ended') return;
+
+    if (result === 'hit' || result === 'sunk') {
+      aiLastHit = { r, c };
+      [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boards.p2Shots[nr][nc] === EMPTY) {
+          aiTargets.push({ r: nr, c: nc });
+        }
+      });
+      setTimeout(aiTurn, 700);
+    } else {
+      currentPlayer = 1;
+      renderBoards();
+    }
+  }
+
+  function handleCellClick(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    const r = +cell.dataset.r, c = +cell.dataset.c;
+    const grid = cell.parentElement;
+    const isEnemy = grid === els.gridEnemy;
+
+    if (phase === 'setup') {
+      if (mode === 'ai' && setupPlayer === 1 && !isEnemy) {
+        if (tryPlaceShip(1, r, c)) { renderDock(); renderBoards(); }
+      } else if (mode === 'local') {
+        if (setupPlayer === 1 && !isEnemy) {
+          if (tryPlaceShip(1, r, c)) { renderDock(); renderBoards(); }
+        } else if (setupPlayer === 2 && isEnemy) {
+          if (tryPlaceShip(2, r, c)) { renderDock(); renderBoards(); }
+        }
+      }
+      return;
+    }
+
+    if (phase !== 'battle') return;
+
+    if (mode === 'ai' && currentPlayer === 1 && isEnemy) {
+      const result = fireShot(1, r, c);
+      if (!result) return;
+      renderBoards();
+      if (phase === 'ended') return;
+      if (result === 'miss') {
+        currentPlayer = 2;
+        renderBoards();
+        setTimeout(aiTurn, 500);
+      }
+    } else if (mode === 'local') {
+      if (currentPlayer === 1 && isEnemy) {
+        const result = fireShot(1, r, c);
+        if (!result) return;
+        if (phase !== 'ended' && result === 'miss') currentPlayer = 2;
+        renderBoards();
+      } else if (currentPlayer === 2 && !isEnemy) {
+        const result = fireShot(2, r, c);
+        if (!result) return;
+        if (phase !== 'ended' && result === 'miss') currentPlayer = 1;
+        renderBoards();
+      }
+    }
+  }
+
+  function handleCellHover(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell || phase !== 'setup') { hoverCell = null; return; }
+    const grid = cell.parentElement;
+    hoverCell = {
+      r: +cell.dataset.r,
+      c: +cell.dataset.c,
+      board: grid === els.gridEnemy ? 'enemy' : 'p1'
+    };
+    renderBoards();
+  }
+
+  function resetBoardsState() {
+    boards.p1 = createEmptyBoard();
+    boards.p2 = createEmptyBoard();
+    boards.p1Shots = createEmptyBoard();
+    boards.p2Shots = createEmptyBoard();
+    placedShips.p1 = [];
+    placedShips.p2 = [];
+    dockRemaining.p1 = [...fleet];
+    dockRemaining.p2 = [...fleet];
+  }
+
+  function newGame() {
+    phase = 'setup';
+    setupPlayer = 1;
+    currentPlayer = 1;
+    selectedShipIdx = 0;
+    horizontal = true;
+    shots = 0;
+    lastShot = null;
+    hoverCell = null;
+    aiTargets = [];
+    els.overlay.classList.remove('show');
+    els.modalRank.textContent = '';
+    els.fxP1.innerHTML = '';
+    els.fxEnemy.innerHTML = '';
+    resetBoardsState();
+    initLabels();
+    buildGrid(els.gridP1);
+    buildGrid(els.gridEnemy);
+    applyBoardSizeClass();
+    renderDock();
+    renderBoards();
+  }
+
+  function setBoardSize(size) {
+    if (phase !== 'setup') return;
+    boardSize = size;
+    fleet = [...FLEETS[size]];
+    document.querySelectorAll('.size-btn').forEach((b) => {
+      b.classList.toggle('active', +b.dataset.size === size);
+    });
+    newGame();
+  }
+
+  function onReady() {
+    const key = setupPlayer === 1 ? 'p1' : 'p2';
+    if (dockRemaining[key].length > 0) return;
+    if (mode === 'local' && setupPlayer === 1) {
+      setupPlayer = 2;
+      selectedShipIdx = 0;
+      renderDock();
+      renderBoards();
+      return;
+    }
+    startBattle();
+  }
+
+  function onAuto() {
+    autoPlace(setupPlayer);
+    dockRemaining[setupPlayer === 1 ? 'p1' : 'p2'] = [];
+    selectedShipIdx = 0;
+    renderDock();
+    renderBoards();
+  }
+
+  document.querySelectorAll('.mode-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (phase !== 'setup') return;
+      document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+      newGame();
+      renderRankPanel();
+    });
+  });
+
+  document.querySelectorAll('.size-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      unlockSound();
+      setBoardSize(+btn.dataset.size);
+    });
+  });
+
+  els.btnRotate.addEventListener('click', () => { unlockSound(); horizontal = !horizontal; renderBoards(); });
+  els.btnAuto.addEventListener('click', () => { unlockSound(); onAuto(); });
+  els.btnReady.addEventListener('click', () => { unlockSound(); onReady(); });
+  els.btnNew.addEventListener('click', () => { unlockSound(); newGame(); });
+  els.modalBtn.addEventListener('click', () => { unlockSound(); newGame(); });
+  els.btnSound.addEventListener('click', () => {
+    unlockSound();
+    soundOn = !soundOn;
+    updateSoundButton();
+    if (soundOn) speak('Звук включён');
+    else window.speechSynthesis.cancel();
+  });
+  els.btnNight.addEventListener('click', () => {
+    unlockSound();
+    nightMode = !nightMode;
+    updateNightButton();
+  });
+  els.btnRankLadder.addEventListener('click', () => {
+    ladderOpen = !ladderOpen;
+    renderRankPanel();
+  });
+
+  loadProfiles();
+  renderRankPanel();
+
+  if (window.speechSynthesis) {
+    pickRuVoice();
+    window.speechSynthesis.onvoiceschanged = pickRuVoice;
+  }
+  updateSoundButton();
+  updateNightButton();
+
+  [els.gridP1, els.gridEnemy].forEach((grid) => {
+    grid.addEventListener('click', (e) => { unlockSound(); handleCellClick(e); });
+    grid.addEventListener('mousemove', handleCellHover);
+    grid.addEventListener('mouseleave', () => { hoverCell = null; if (phase === 'setup') renderBoards(); });
+  });
+
+  initLabels();
+  buildGrid(els.gridP1);
+  buildGrid(els.gridEnemy);
+  applyBoardSizeClass();
+  resetBoardsState();
+  renderDock();
+  renderBoards();
+})();
+  </script>
+</body>
+</html>
