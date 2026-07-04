@@ -663,6 +663,27 @@
       line-height: 1.5;
       text-transform: none;
     }
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-actions button {
+      width: 100%;
+    }
+    .modal-actions .btn-secondary {
+      background: transparent;
+      border: 1px solid #0a0;
+      color: #8f8;
+    }
+    .modal-actions .btn-secondary:hover {
+      background: rgba(0, 255, 0, 0.08);
+      color: #0f0;
+    }
+    .ended-review .block-enemy .title-enemy,
+    .ended-review .title-enemy {
+      color: #ff6;
+    }
 
     .stats-row {
       display: flex;
@@ -972,7 +993,10 @@
       <h2 id="modal-title">Победа!</h2>
       <p class="modal-rank" id="modal-rank"></p>
       <p id="modal-text"></p>
-      <button type="button" id="modal-btn">Новая игра</button>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="modal-review-btn">Посмотреть поле</button>
+        <button type="button" id="modal-btn">Новая игра</button>
+      </div>
     </div>
   </div>
 
@@ -1047,8 +1071,9 @@
   const placedShips = { p1: [], p2: [] };
   const dockRemaining = { p1: [], p2: [] };
 
-  let aiTargets = [];
-  let aiLastHit = null;
+  let aiPendingHits = [];
+  let aiHuntDirs = null;
+  let battleReview = false;
 
   let onlineSocket = null;
   let onlineConnected = false;
@@ -1108,7 +1133,8 @@
     modalTitle: $('modal-title'),
     modalRank: $('modal-rank'),
     modalText: $('modal-text'),
-    modalBtn: $('modal-btn')
+    modalBtn: $('modal-btn'),
+    modalReviewBtn: $('modal-review-btn')
   };
 
   function colsForSize() {
@@ -2164,7 +2190,7 @@
       });
     });
 
-    const hideEnemyShips = phase === 'battle' || mode === 'ai' || isOnline;
+    const hideEnemyShips = phase !== 'ended' && (phase === 'battle' || mode === 'ai' || isOnline);
     const isSetupP2 = setup && setupPlayer === 2 && mode === 'local';
     const enemyInteractive = phase === 'battle' && (
       (mode === 'ai' && currentPlayer === 1) ||
@@ -2206,7 +2232,12 @@
       }
     } else {
       els.blockEnemy.classList.remove('hidden-board');
-      if (isOnline) {
+      document.querySelector('.app')?.classList.toggle('ended-review', phase === 'ended' && battleReview);
+      if (phase === 'ended') {
+        els.titleP1.textContent = mode === 'ai' ? 'МОЁ ПОЛЕ' : 'ИГРОК 1';
+        els.titleEnemy.textContent = mode === 'ai' ? 'ФЛОТ КОМПЬЮТЕРА (открыто)' : 'ИГРОК 2';
+        els.titleEnemy.classList.remove('active-turn');
+      } else if (isOnline) {
         els.titleP1.textContent = 'МОЁ ПОЛЕ';
         els.titleEnemy.textContent = onlineOpponentName ? `ВРАГ: ${onlineOpponentName}` : 'ПОЛЕ СОПЕРНИКА';
         els.titleEnemy.classList.toggle('active-turn', phase === 'battle' && currentPlayer !== onlineMyPlayer());
@@ -2266,6 +2297,11 @@
           ? 'Игрок 1 стреляет по правому полю.'
           : 'Игрок 2 стреляет по левому полю.';
       }
+    } else if (phase === 'ended') {
+      els.statusPhase.textContent = 'Партия окончена';
+      els.statusHint.textContent = battleReview
+        ? 'Видны все корабли — можно изучить расстановку. «Новая игра» слева.'
+        : 'Нажмите «Посмотреть поле» в окне результата.';
     }
     const dockKey = mode === 'online' ? myBoardKey() : (setupPlayer === 1 ? 'p1' : 'p2');
     els.statShips.textContent = phase === 'battle'
@@ -2314,8 +2350,8 @@
     phase = 'battle';
     currentPlayer = 1;
     shots = 0;
-    aiTargets = [];
-    aiLastHit = null;
+    battleReview = false;
+    aiResetHunt();
     if (mode === 'ai') autoPlace(2);
     renderDock();
     renderBoards();
@@ -2382,6 +2418,7 @@
 
   function endGame(winner) {
     phase = 'ended';
+    battleReview = false;
     const rankResults = processRankAfterGame(winner);
     const rankMsg = formatRankModalMessage(rankResults);
     announceEnd(winner);
@@ -2412,23 +2449,108 @@
     renderBoards();
   }
 
+  function aiResetHunt() {
+    aiPendingHits = [];
+    aiHuntDirs = null;
+  }
+
+  function aiShotsBoard() {
+    return boards.p2Shots;
+  }
+
+  function aiAddTargetIfEmpty(queue, r, c) {
+    const shots = aiShotsBoard();
+    if (r >= 0 && r < boardSize && c >= 0 && c < boardSize && shots[r][c] === EMPTY) {
+      if (!queue.some((t) => t.r === r && t.c === c)) queue.push({ r, c });
+    }
+  }
+
+  function aiClearSunkHits(r, c) {
+    const shipCells = getShipCellsAt(boards.p1, r, c);
+    const sunkSet = new Set(shipCells.map(([sr, sc]) => `${sr},${sc}`));
+    aiPendingHits = aiPendingHits.filter((h) => !sunkSet.has(`${h.r},${h.c}`));
+    if (aiPendingHits.length === 0) aiHuntDirs = null;
+  }
+
+  function aiBuildTargetQueue() {
+    const queue = [];
+    if (!aiPendingHits.length) return queue;
+
+    if (aiPendingHits.length === 1) {
+      const h = aiPendingHits[0];
+      if (!aiHuntDirs) {
+        aiHuntDirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+        for (let i = aiHuntDirs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [aiHuntDirs[i], aiHuntDirs[j]] = [aiHuntDirs[j], aiHuntDirs[i]];
+        }
+      }
+      aiHuntDirs.forEach(([dr, dc]) => aiAddTargetIfEmpty(queue, h.r + dr, h.c + dc));
+      return queue;
+    }
+
+    const rows = new Set(aiPendingHits.map((h) => h.r));
+    const cols = new Set(aiPendingHits.map((h) => h.c));
+
+    if (rows.size === 1) {
+      const row = aiPendingHits[0].r;
+      const cs = aiPendingHits.map((h) => h.c).sort((a, b) => a - b);
+      aiAddTargetIfEmpty(queue, row, cs[0] - 1);
+      aiAddTargetIfEmpty(queue, row, cs[cs.length - 1] + 1);
+      return queue;
+    }
+
+    if (cols.size === 1) {
+      const col = aiPendingHits[0].c;
+      const rs = aiPendingHits.map((h) => h.r).sort((a, b) => a - b);
+      aiAddTargetIfEmpty(queue, rs[0] - 1, col);
+      aiAddTargetIfEmpty(queue, rs[rs.length - 1] + 1, col);
+      return queue;
+    }
+
+    aiPendingHits.forEach((h) => {
+      [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => aiAddTargetIfEmpty(queue, h.r + dr, h.c + dc));
+    });
+    return queue;
+  }
+
+  function aiPickHuntCell() {
+    const shots = aiShotsBoard();
+    const parityCells = [];
+    const fallback = [];
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize; c++) {
+        if (shots[r][c] !== EMPTY) continue;
+        fallback.push({ r, c });
+        if ((r + c) % 2 === 0) parityCells.push({ r, c });
+      }
+    }
+    const pool = parityCells.length ? parityCells : fallback;
+    if (!pool.length) return null;
+    const center = (boardSize - 1) / 2;
+    pool.sort((a, b) => {
+      const da = Math.abs(a.r - center) + Math.abs(a.c - center);
+      const db = Math.abs(b.r - center) + Math.abs(b.c - center);
+      return da - db;
+    });
+    const top = pool.slice(0, Math.min(4, pool.length));
+    return top[Math.floor(Math.random() * top.length)];
+  }
+
   function aiTurn() {
     if (phase !== 'battle' || currentPlayer !== 2) return;
 
-    let r, c;
-    if (aiTargets.length > 0) {
-      const t = aiTargets.shift();
-      r = t.r; c = t.c;
+    const queue = aiBuildTargetQueue();
+    let r;
+    let c;
+    if (queue.length) {
+      r = queue[0].r;
+      c = queue[0].c;
     } else {
-      const candidates = [];
-      for (let i = 0; i < boardSize; i++) {
-        for (let j = 0; j < boardSize; j++) {
-          if (boards.p2Shots[i][j] === EMPTY) candidates.push({ r: i, c: j });
-        }
-      }
-      if (!candidates.length) return;
-      const pick = candidates[Math.floor(Math.random() * candidates.length)];
-      r = pick.r; c = pick.c;
+      const pick = aiPickHuntCell();
+      if (!pick) return;
+      r = pick.r;
+      c = pick.c;
     }
 
     const result = fireShot(2, r, c);
@@ -2436,14 +2558,12 @@
     if (phase === 'ended') return;
 
     if (result === 'hit' || result === 'sunk') {
-      aiLastHit = { r, c };
-      [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
-        const nr = r + dr, nc = c + dc;
-        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boards.p2Shots[nr][nc] === EMPTY) {
-          aiTargets.push({ r: nr, c: nc });
-        }
-      });
-      setTimeout(aiTurn, 700);
+      if (result === 'sunk') {
+        aiClearSunkHits(r, c);
+      } else if (!aiPendingHits.some((h) => h.r === r && h.c === c)) {
+        aiPendingHits.push({ r, c });
+      }
+      setTimeout(aiTurn, 650);
     } else {
       currentPlayer = 1;
       renderBoards();
@@ -2541,7 +2661,8 @@
     shots = 0;
     lastShot = null;
     hoverCell = null;
-    aiTargets = [];
+    aiResetHunt();
+    battleReview = false;
     els.overlay.classList.remove('show');
     els.modalRank.textContent = '';
     els.fxP1.innerHTML = '';
@@ -2633,6 +2754,12 @@
   els.btnReady.addEventListener('click', () => { unlockSound(); onReady(); });
   els.btnNew.addEventListener('click', () => { unlockSound(); newGame(); });
   els.modalBtn.addEventListener('click', () => { unlockSound(); newGame(); });
+  els.modalReviewBtn.addEventListener('click', () => {
+    unlockSound();
+    battleReview = true;
+    els.overlay.classList.remove('show');
+    renderBoards();
+  });
   els.btnSound.addEventListener('click', () => {
     unlockSound();
     soundOn = !soundOn;
