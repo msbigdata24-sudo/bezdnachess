@@ -696,6 +696,13 @@
     }
 
     .rank-panel { padding: 10px 8px; }
+    .rank-hint {
+      font-size: 9px;
+      color: #686;
+      margin-top: 8px;
+      line-height: 1.4;
+      text-transform: none;
+    }
     .rank-card {
       border: 1px solid rgba(0, 255, 0, 0.35);
       padding: 8px;
@@ -904,6 +911,7 @@
         <div class="panel rank-panel" id="rank-panel">
           <div class="panel-title">Звание командира</div>
           <div id="rank-display"></div>
+          <div class="rank-hint" id="rank-hint">Рейтинг сохраняется в браузере и на сервере Бездны.</div>
           <button type="button" class="btn-ladder" id="btn-rank-ladder">▸ Все звания</button>
           <div class="rank-ladder" id="rank-ladder"></div>
         </div>
@@ -1014,6 +1022,8 @@
   };
   const BOARD_SIZE_CLASSES = ['size-10', 'size-12', 'size-14', 'size-16'];
   const RANK_STORAGE_KEY = 'bezdna-battleship-ranks-v1';
+  const RANK_COOKIE_KEY = 'bezdna_bb_ranks';
+  const PLAYER_ID_KEY = 'bezdna-bb-player-id';
   const RANKS = [
     { name: 'Юнга', icon: '⚓', rp: 0 },
     { name: 'Матрос', icon: '🌊', rp: 40 },
@@ -1059,6 +1069,8 @@
   let nightMode = false;
   let ladderOpen = false;
   let profiles = null;
+  let profileSyncTimer = null;
+  let profileSyncReady = false;
   let audioCtx = null;
   let ruVoice = null;
 
@@ -1127,6 +1139,7 @@
     btnOnlineJoin: $('btn-online-join'),
     btnCopyLink: $('btn-copy-link'),
     rankDisplay: $('rank-display'),
+    rankHint: $('rank-hint'),
     rankLadder: $('rank-ladder'),
     btnRankLadder: $('btn-rank-ladder'),
     overlay: $('overlay'),
@@ -1145,30 +1158,139 @@
     return { name, rp: 0, wins: 0, losses: 0, bestRank: 0 };
   }
 
-  function loadProfiles() {
+  function normalizeStoredProfiles(data) {
+    const src = data && typeof data === 'object' ? data : {};
+    return {
+      ai: Object.assign(defaultProfile('Командир'), src.ai || {}),
+      local1: Object.assign(defaultProfile('Игрок 1'), src.local1 || {}),
+      local2: Object.assign(defaultProfile('Игрок 2'), src.local2 || {})
+    };
+  }
+
+  function mergeStoredProfiles(a, b) {
+    const left = normalizeStoredProfiles(a);
+    const right = normalizeStoredProfiles(b);
+    const keys = ['ai', 'local1', 'local2'];
+    const merged = {};
+    keys.forEach((key) => {
+      merged[key] = {
+        name: left[key].name || right[key].name,
+        rp: Math.max(left[key].rp, right[key].rp),
+        wins: Math.max(left[key].wins, right[key].wins),
+        losses: Math.max(left[key].losses, right[key].losses),
+        bestRank: Math.max(left[key].bestRank, right[key].bestRank)
+      };
+    });
+    return merged;
+  }
+
+  function readProfilesFromLocalStorage() {
     try {
       const raw = localStorage.getItem(RANK_STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        profiles = {
-          ai: Object.assign(defaultProfile('Командир'), data.ai || {}),
-          local1: Object.assign(defaultProfile('Игрок 1'), data.local1 || {}),
-          local2: Object.assign(defaultProfile('Игрок 2'), data.local2 || {})
-        };
-        return;
-      }
+      if (!raw) return null;
+      return normalizeStoredProfiles(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function readProfilesFromCookie() {
+    try {
+      const prefix = `${RANK_COOKIE_KEY}=`;
+      const part = document.cookie.split(';').map((s) => s.trim()).find((s) => s.startsWith(prefix));
+      if (!part) return null;
+      return normalizeStoredProfiles(JSON.parse(decodeURIComponent(part.slice(prefix.length))));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeProfilesToCookie(data) {
+    try {
+      const secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${RANK_COOKIE_KEY}=${encodeURIComponent(JSON.stringify(data))}; max-age=31536000; path=/; SameSite=Lax${secure}`;
     } catch (e) {}
-    profiles = {
+  }
+
+  function getPlayerId() {
+    try {
+      let id = localStorage.getItem(PLAYER_ID_KEY);
+      if (id) return id;
+      id = 'bb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(PLAYER_ID_KEY, id);
+      return id;
+    } catch (e) {
+      return 'bb_' + Date.now().toString(36);
+    }
+  }
+
+  function loadProfiles() {
+    const local = readProfilesFromLocalStorage();
+    const cookie = readProfilesFromCookie();
+    if (local && cookie) profiles = mergeStoredProfiles(local, cookie);
+    else profiles = local || cookie || {
       ai: defaultProfile('Командир'),
       local1: defaultProfile('Игрок 1'),
       local2: defaultProfile('Игрок 2')
     };
+    saveProfilesLocal();
   }
 
-  function saveProfiles() {
+  function saveProfilesLocal() {
+    if (!profiles) return;
     try {
       localStorage.setItem(RANK_STORAGE_KEY, JSON.stringify(profiles));
     } catch (e) {}
+    writeProfilesToCookie(profiles);
+  }
+
+  function scheduleProfileSync() {
+    saveProfilesLocal();
+    clearTimeout(profileSyncTimer);
+    profileSyncTimer = setTimeout(syncProfilesToServer, 400);
+  }
+
+  function saveProfiles() {
+    scheduleProfileSync();
+  }
+
+  async function syncProfilesFromServer() {
+    try {
+      const res = await fetch(`${ONLINE_API_URL}/battleship/profile/${encodeURIComponent(getPlayerId())}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data?.profiles) {
+        profileSyncReady = true;
+        scheduleProfileSync();
+        return;
+      }
+      profiles = mergeStoredProfiles(profiles, data.profiles);
+      saveProfilesLocal();
+      profileSyncReady = true;
+      renderRankPanel();
+    } catch (e) {
+      profileSyncReady = true;
+    }
+  }
+
+  async function syncProfilesToServer() {
+    if (!profiles || !profileSyncReady) return;
+    try {
+      await fetch(`${ONLINE_API_URL}/battleship/profile/${encodeURIComponent(getPlayerId())}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profiles })
+      });
+      if (els.rankHint) {
+        els.rankHint.textContent = 'Рейтинг сохранён в браузере и на сервере Бездны.';
+      }
+    } catch (e) {
+      if (els.rankHint) {
+        els.rankHint.textContent = 'Рейтинг сохранён в браузере. Сервер временно недоступен.';
+      }
+    }
   }
 
   function getRankInfo(rp) {
@@ -2779,6 +2901,8 @@
 
   loadProfiles();
   renderRankPanel();
+  syncProfilesFromServer();
+  window.addEventListener('beforeunload', saveProfilesLocal);
   els.onlineName.value = localStorage.getItem(ONLINE_NAME_KEY) || '';
 
   const urlRoom = (new URLSearchParams(location.search).get('room') || '').trim().toUpperCase();

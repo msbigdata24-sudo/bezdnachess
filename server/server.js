@@ -111,7 +111,54 @@ async function initDb() {
     console.warn('players_username_lower_idx:', e.message);
   }
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS battleship_profiles (
+      player_id TEXT PRIMARY KEY,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   console.log('DB ready');
+}
+
+const BB_PLAYER_ID_RE = /^bb_[a-z0-9]{8,40}$/i;
+
+function sanitizeBattleshipProfile(raw, fallbackName) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    name: String(src.name || fallbackName).slice(0, 24),
+    rp: Math.max(0, Math.min(99999, Number(src.rp) || 0)),
+    wins: Math.max(0, Math.min(99999, Number(src.wins) || 0)),
+    losses: Math.max(0, Math.min(99999, Number(src.losses) || 0)),
+    bestRank: Math.max(0, Math.min(20, Number(src.bestRank) || 0))
+  };
+}
+
+function sanitizeBattleshipProfiles(body) {
+  const src = body?.profiles && typeof body.profiles === 'object' ? body.profiles : body;
+  return {
+    ai: sanitizeBattleshipProfile(src.ai, 'Командир'),
+    local1: sanitizeBattleshipProfile(src.local1, 'Игрок 1'),
+    local2: sanitizeBattleshipProfile(src.local2, 'Игрок 2')
+  };
+}
+
+function mergeBattleshipProfiles(localProfiles, remoteProfiles) {
+  const keys = ['ai', 'local1', 'local2'];
+  const merged = {};
+  keys.forEach((key) => {
+    const a = localProfiles[key] || sanitizeBattleshipProfile(null, key);
+    const b = remoteProfiles[key] || sanitizeBattleshipProfile(null, key);
+    merged[key] = {
+      name: a.name || b.name,
+      rp: Math.max(a.rp, b.rp),
+      wins: Math.max(a.wins, b.wins),
+      losses: Math.max(a.losses, b.losses),
+      bestRank: Math.max(a.bestRank, b.bestRank)
+    };
+  });
+  return merged;
 }
 
 function expectedScore(rA, rB) {
@@ -357,6 +404,56 @@ app.get('/health', async (_req, res) => {
     res.json({ ok: true, service: 'bezdna-api' });
   } catch (e) {
     res.status(500).json({ ok: false, error: 'db_unavailable' });
+  }
+});
+
+app.get('/battleship/profile/:playerId', async (req, res) => {
+  try {
+    const playerId = String(req.params.playerId || '').trim();
+    if (!BB_PLAYER_ID_RE.test(playerId)) {
+      return res.status(400).json({ error: 'invalid_player_id' });
+    }
+    const r = await pool.query(
+      `SELECT data, updated_at FROM battleship_profiles WHERE player_id = $1 LIMIT 1`,
+      [playerId]
+    );
+    if (!r.rows.length) {
+      return res.json({ profiles: null, updatedAt: null });
+    }
+    const data = r.rows[0].data || {};
+    res.json({
+      profiles: sanitizeBattleshipProfiles(data),
+      updatedAt: r.rows[0].updated_at
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.put('/battleship/profile/:playerId', async (req, res) => {
+  try {
+    const playerId = String(req.params.playerId || '').trim();
+    if (!BB_PLAYER_ID_RE.test(playerId)) {
+      return res.status(400).json({ error: 'invalid_player_id' });
+    }
+    const incoming = sanitizeBattleshipProfiles(req.body);
+    const existing = await pool.query(
+      `SELECT data FROM battleship_profiles WHERE player_id = $1 LIMIT 1`,
+      [playerId]
+    );
+    const merged = existing.rows.length
+      ? mergeBattleshipProfiles(incoming, sanitizeBattleshipProfiles(existing.rows[0].data))
+      : incoming;
+    await pool.query(
+      `INSERT INTO battleship_profiles (player_id, data, updated_at)
+       VALUES ($1, $2::jsonb, NOW())
+       ON CONFLICT (player_id)
+       DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+      [playerId, JSON.stringify(merged)]
+    );
+    res.json({ ok: true, profiles: merged });
+  } catch (e) {
+    res.status(500).json({ error: 'server' });
   }
 });
 
