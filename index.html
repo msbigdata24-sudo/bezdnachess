@@ -1220,6 +1220,7 @@ let currentOnlineRoomId = null;
 let currentOnlinePlayerColor = null;
 let onlineMatchActive = false;
 let onlineRemoteMoveLock = false;
+let onlineGameEndReported = false;
 let onlinePlayers = [];
 
 function updateOnlineStatus(text, isError) {
@@ -1500,6 +1501,14 @@ function sendOnlineMove(movePayload) {
   });
 }
 
+function notifyOnlineGameEnd(result) {
+  if (!onlineMatchActive || !currentOnlineRoomId || onlineGameEndReported) return;
+  if (!onlineSocket || !onlineConnected) return;
+  if (!['white', 'black', 'draw'].includes(result)) return;
+  onlineGameEndReported = true;
+  onlineSocket.emit('game_end', { roomId: currentOnlineRoomId, result });
+}
+
 function applyRemoteMove(moveData) {
   if (!moveData || !moveData.from || !moveData.to) return;
   const src = moveData.from;
@@ -1593,6 +1602,7 @@ function initOnlineBridge() {
     currentOnlineRoomId = data?.roomId || null;
     currentOnlinePlayerColor = (data?.white?.playerId === identity.playerId) ? 'white' : 'black';
     onlineMatchActive = true;
+    onlineGameEndReported = false;
     setNetworkPlayButtonVisible(true);
     setMode('pvp');
     onlineSearching = false;
@@ -1638,8 +1648,14 @@ function initOnlineBridge() {
 
   onlineSocket.on('game_finished', (data) => {
     onlineMatchActive = false;
+    onlineGameEndReported = true;
+    currentOnlineRoomId = null;
+    currentOnlinePlayerColor = null;
     setNetworkPlayButtonVisible(false);
-    updateOnlineStatus(`🏁 Сетевая партия завершена: ${data?.result || 'результат неизвестен'}.`, false);
+    const ratedText = data?.rated === false && data?.reason
+      ? ' (без рейтинга)'
+      : data?.rated ? ' (рейтинговая)' : '';
+    updateOnlineStatus(`🏁 Сетевая партия завершена: ${data?.result || 'результат неизвестен'}${ratedText}.`, false);
   });
 
   onlineSocket.on('rating_updated', (data) => {
@@ -1933,6 +1949,7 @@ function openGameOverMate() {
   msgEl.innerHTML = `МАТ!<br>Победили ${winnerRu}`;
   if (statsEl) statsEl.textContent = moves > 0 ? `Ходов: ${moves}` : '';
   lastResultForShare = composeMateShareText(winnerColor, moves);
+  if (onlineMatchActive) notifyOnlineGameEnd(winnerColor);
   document.getElementById('result-modal').style.display = 'flex';
 }
 
@@ -1954,6 +1971,7 @@ function openGameOverStalemate() {
   msgEl.innerHTML = 'ПАТ!<br>Ничья';
   if (statsEl) statsEl.textContent = moves > 0 ? `Ходов: ${moves}` : '';
   lastResultForShare = composePatShareText(moves);
+  if (onlineMatchActive) notifyOnlineGameEnd('draw');
   document.getElementById('result-modal').style.display = 'flex';
 }
 
